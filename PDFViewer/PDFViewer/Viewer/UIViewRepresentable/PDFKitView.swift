@@ -9,14 +9,16 @@ import PDFKit
 import SwiftUI
 
 struct PDFKitView: UIViewRepresentable {
-   
     @Binding var pdfURL: URL
     @ObservedObject var settings: PDFSettings
-    @Binding var mode: AnnotationMode
-    let pdfDrawer = PDFDrawer()
+    @Binding var mode: DrawingTool
+
+    @Binding var lineColor: UIColor
+    @Binding var lineWidth: CGFloat
+    @Binding var zoomScale: CGFloat
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(self)
+        Coordinator()
     }
 
     func makeUIView(context: Context) -> PDFView {
@@ -24,20 +26,24 @@ struct PDFKitView: UIViewRepresentable {
         pdfView.document = PDFDocument(url: pdfURL)
         applySettings(to: pdfView)
 
-        let pdfDrawingGestureRecognizer = DrawingGestureRecognizer()
-        pdfView.addGestureRecognizer(pdfDrawingGestureRecognizer)
-        pdfDrawingGestureRecognizer.drawingDelegate = pdfDrawer
-        pdfDrawer.pdfView = pdfView
+        // Setup Drawer
+        context.coordinator.drawer.pdfView = pdfView
 
-      
-     
+        // Gesture recognizer for drawing
+        let drawingGesture = DrawingGestureRecognizer()
+        drawingGesture.drawingDelegate = context.coordinator.drawer
+        pdfView.addGestureRecognizer(drawingGesture)
+
+        // Save references
+        context.coordinator.gestureRecognizer = drawingGesture
+        context.coordinator.pdfView = pdfView
 
         return pdfView
     }
 
     func updateUIView(_ pdfView: PDFView, context: Context) {
         // Reload PDF when the URL changes
-       let currentPage = pdfView.currentPage
+        let currentPage = pdfView.currentPage
 
         // If the PDF has changed, reload it
         if pdfView.document?.documentURL != pdfURL {
@@ -51,7 +57,25 @@ struct PDFKitView: UIViewRepresentable {
         if let currentPage = currentPage {
             pdfView.go(to: currentPage)
         }
- 
+        
+        // ✅ Toggle drawing gesture recognizer
+           if let gesture = context.coordinator.gestureRecognizer {
+               gesture.isEnabled = mode != .none
+           }
+
+        // ✅ Update the drawing tool and color here
+//        context.coordinator.drawer.drawingTool = mode
+//        context.coordinator.drawer.color = (mode == .highlighter)
+//            ? UIColor.yellow.withAlphaComponent(mode.alpha)
+//            : UIColor.red.withAlphaComponent(mode.alpha)
+        
+        context.coordinator.drawer.drawingTool = mode
+               context.coordinator.drawer.color = lineColor.withAlphaComponent(mode.alpha)
+               context.coordinator.drawer.lineWidth = lineWidth
+        
+        pdfView.scaleFactor = zoomScale
+        
+        
     }
 
     private func applySettings(to pdfView: PDFView) {
@@ -60,43 +84,12 @@ struct PDFKitView: UIViewRepresentable {
         pdfView.displayDirection = settings.displayDirection
     }
 
-    class Coordinator: NSObject {
-        var parent: PDFKitView
+    // MARK: - Coordinator Keeps Objects Alive
+
+    class Coordinator {
+        let drawer = PDFDrawer()
+        var gestureRecognizer: DrawingGestureRecognizer?
         var pdfView: PDFView?
-        var mode: AnnotationMode = .none
-
-        init(_ parent: PDFKitView) {
-            self.parent = parent
-        }
-
-        @objc func handleTap(_ sender: UITapGestureRecognizer) {
-            guard let pdfView = pdfView,
-                  let page = pdfView.page(for: sender.location(in: pdfView), nearest: true) else {
-                return
-            }
-
-            let location = sender.location(in: pdfView)
-            let pagePoint = pdfView.convert(location, to: page)
-
-            switch mode {
-            case .highlight:
-                let highlight = PDFAnnotation(bounds: CGRect(x: pagePoint.x - 50, y: pagePoint.y - 10, width: 100, height: 20),
-                                              forType: .highlight,
-                                              withProperties: nil)
-                highlight.color = UIColor.yellow.withAlphaComponent(0.5)
-                page.addAnnotation(highlight)
-
-            case .erase:
-                let annotations = page.annotations
-                for annotation in annotations {
-                    if annotation.bounds.contains(pagePoint) {
-                        page.removeAnnotation(annotation)
-                    }
-                }
-
-            case .none:
-                break
-            }
-        }
     }
 }
+

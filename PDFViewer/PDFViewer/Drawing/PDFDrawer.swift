@@ -10,23 +10,24 @@ import Foundation
 import PDFKit
 
 enum DrawingTool: Int {
+    case none = -1
     case eraser = 0
     case pencil = 1
     case pen = 2
     case highlighter = 3
     
-    var width: CGFloat {
-        switch self {
-        case .pencil:
-            return 1
-        case .pen:
-            return 5
-        case .highlighter:
-            return 20 //10
-        default:
-            return 10
-        }
-    }
+//    var width: CGFloat {
+//        switch self {
+//        case .pencil:
+//            return 1
+//        case .pen:
+//            return 5
+//        case .highlighter:
+//            return 20 //10
+//        default:
+//            return 10
+//        }
+//    }
     
     var alpha: CGFloat {
         switch self {
@@ -45,6 +46,7 @@ class PDFDrawer {
     private var currentPage: PDFPage?
     var color = UIColor.red // default color is red
     var drawingTool = DrawingTool.pen
+    var lineWidth : CGFloat = 2.0
 }
 
 extension PDFDrawer: DrawingGestureRecognizerDelegate {
@@ -96,7 +98,7 @@ extension PDFDrawer: DrawingGestureRecognizerDelegate {
     
     private func createAnnotation(path: UIBezierPath, page: PDFPage) -> DrawingAnnotation {
         let border = PDFBorder()
-        border.lineWidth = drawingTool.width
+        border.lineWidth = lineWidth//drawingTool.width
         
         let annotation = DrawingAnnotation(bounds: page.bounds(for: pdfView.displayBox), forType: .ink, withProperties: nil)
         annotation.color = color.withAlphaComponent(drawingTool.alpha)
@@ -138,10 +140,11 @@ extension PDFDrawer: DrawingGestureRecognizerDelegate {
     
     private func createFinalAnnotation(path: UIBezierPath, page: PDFPage) -> PDFAnnotation {
         let border = PDFBorder()
-        border.lineWidth = drawingTool.width
+        border.lineWidth = lineWidth//drawingTool.width
 
         // Expand the bounds based on the drawing tool width
-        let padding = drawingTool.width / 2 + 2  // Add extra padding just to be safe
+//        let padding = drawingTool.width / 2 + 2  // Add extra padding just to be safe
+        let padding = lineWidth / 2 + 2  // Add extra padding just to be safe
         let bounds = path.bounds.insetBy(dx: -padding, dy: -padding)
         
         // Create a copy of the path to center inside the bounds
@@ -160,12 +163,7 @@ extension PDFDrawer: DrawingGestureRecognizerDelegate {
 
         return annotation
     }
-    
-//    private func removeAnnotationAtPoint(point: CGPoint, page: PDFPage) {
-//        if let selectedAnnotation = page.annotationWithHitTest(at: point) {
-//            selectedAnnotation.page?.removeAnnotation(selectedAnnotation)
-//        }
-//    }
+
     
     private func removeAnnotationAtPoint(point: CGPoint, page: PDFPage) {
         let hitTestRect = CGRect(x: point.x - 10,
