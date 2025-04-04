@@ -11,7 +11,8 @@ import SwiftUI
 struct PDFViewerApp: App {
     var body: some Scene {
         WindowGroup {
-            PDFViewerView()
+            //PDFViewerView()
+            PDFListView()
         }
     }
 }
