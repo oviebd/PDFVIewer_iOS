@@ -24,6 +24,13 @@ struct PDFListView: View {
                     Button("Select files") {
                         showFilePicker.toggle()
                     }
+                    
+                    Button("From Cache") {
+                        Task{
+                            await pdfManager.restorePDFsFromBookmarks()
+                        }
+                       
+                    }
                 }
                 
                 .padding()

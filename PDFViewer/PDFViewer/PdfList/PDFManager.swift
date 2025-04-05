@@ -53,6 +53,7 @@ class PDFManager: ObservableObject {
             
             DispatchQueue.main.async {
                 self.pdfFiles = pdfs
+                self.savePDFBookmarks(urls: urls)
             }
         }
     }
@@ -71,5 +72,68 @@ class PDFManager: ObservableObject {
         let title = pdfDocument.documentAttributes?[PDFDocumentAttribute.titleAttribute] as? String ?? url.lastPathComponent
         
         return PDFMetadata(image: image, author: author, title: title)
+    }
+    
+    
+    func restorePDFsFromBookmarks() async {
+        guard let bookmarkDataArray = UserDefaults.standard.array(forKey: "SavedPDFBookmarks") as? [Data] else { return }
+
+        var restoredPDFs: [PDFFile] = []
+
+        for bookmarkData in bookmarkDataArray {
+            do {
+                var isStale = false
+                let url = try URL(
+                    resolvingBookmarkData: bookmarkData,
+                    options: [],
+                    relativeTo: nil,
+                    bookmarkDataIsStale: &isStale
+                )
+
+                let metadata = extractPDFMetadata(from: url)
+                restoredPDFs.append(PDFFile(name: url.lastPathComponent, url: url, metadata: metadata))
+
+            } catch {
+                print("❌ Failed to resolve bookmark: \(error)")
+            }
+        }
+
+        // ✅ Fix: assign to a `let` copy before calling `await`
+        let finalPDFs = restoredPDFs
+
+        await MainActor.run {
+            self.pdfFiles = finalPDFs
+        }
+    }
+
+    func savePDFBookmarks(urls: [URL]) {
+        var savedBookmarks: [Data] = []
+
+        // Step 1: Load existing bookmarks if any
+        if let existing = UserDefaults.standard.array(forKey: "SavedPDFBookmarks") as? [Data] {
+            savedBookmarks = existing
+        }
+
+        // Step 2: Convert new URLs to bookmark data
+        for url in urls {
+            do {
+                let bookmark = try url.bookmarkData(
+                    options: [],
+                    includingResourceValuesForKeys: nil,
+                    relativeTo: nil
+                )
+                
+                // Avoid duplicate bookmarks
+                if !savedBookmarks.contains(bookmark) {
+                    savedBookmarks.append(bookmark)
+                }
+
+            } catch {
+                print("❌ Error creating bookmark for \(url): \(error)")
+            }
+        }
+
+        // Step 3: Save combined data back to UserDefaults
+        UserDefaults.standard.set(savedBookmarks, forKey: "SavedPDFBookmarks")
     }
 }
