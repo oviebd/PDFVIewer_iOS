@@ -44,6 +44,19 @@ class PDFManager: ObservableObject {
             print("Error fetching PDFs: \(error)")
         }
     }
+    
+    func loadSelectedPDFFiles(urls: [URL]) {
+        DispatchQueue.global(qos: .userInitiated).async {
+
+            let pdfs = urls.filter { $0.pathExtension.lowercased() == "pdf" }
+                .map { PDFFile(name: $0.lastPathComponent, url: $0, metadata: self.extractPDFMetadata(from: $0))}
+            
+            DispatchQueue.main.async {
+                self.pdfFiles = pdfs
+            }
+        }
+    }
+    
     func extractPDFMetadata(from url: URL) -> PDFMetadata {
         guard let pdfDocument = PDFDocument(url: url) else {
             return PDFMetadata(image: nil, author: "Unknown", title: url.lastPathComponent)

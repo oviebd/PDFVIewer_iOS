@@ -10,14 +10,22 @@ import SwiftUI
 struct PDFListView: View {
     @StateObject private var pdfManager = PDFManager()
     @State private var selectedFolderURL: URL?
-    @State private var showPicker = false
+    @State private var showFolderPicker = false
+    @State private var showFilePicker = false
+    
 
     var body: some View {
         NavigationView {
             VStack {
-                Button("Select Folder") {
-                    showPicker.toggle()
+                HStack{
+                    Button("Select Folder") {
+                        showFolderPicker.toggle()
+                    }
+                    Button("Select files") {
+                        showFilePicker.toggle()
+                    }
                 }
+                
                 .padding()
 
                 List(pdfManager.pdfFiles) { pdf in
@@ -54,12 +62,23 @@ struct PDFListView: View {
                 }
                 .navigationTitle("PDF Files")
             }
-            .sheet(isPresented: $showPicker) {
-                FolderPickerView { folderURL in
-                    self.selectedFolderURL = folderURL
-                    pdfManager.fetchPDFFiles(from: folderURL)
+            .sheet(isPresented: $showFolderPicker) {
+                FileOrFolderPickerView(mode: .folder) { urls in
+                    if let folderURL = urls.first {
+                        pdfManager.fetchPDFFiles(from: folderURL)
+                    }
+                }
+            }.sheet(isPresented: $showFilePicker) {
+                FileOrFolderPickerView(mode: .file) { urls in
+                    pdfManager.loadSelectedPDFFiles(urls: urls)
                 }
             }
+//            .sheet(isPresented: $showPicker) {
+//                FolderPickerView { folderURL in
+//                    self.selectedFolderURL = folderURL
+//                    pdfManager.fetchPDFFiles(from: folderURL)
+//                }
+//            }
         }
     }
 }
