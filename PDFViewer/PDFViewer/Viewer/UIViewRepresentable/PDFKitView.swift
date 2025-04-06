@@ -57,25 +57,23 @@ struct PDFKitView: UIViewRepresentable {
         if let currentPage = currentPage {
             pdfView.go(to: currentPage)
         }
-        
+
         // ✅ Toggle drawing gesture recognizer
-           if let gesture = context.coordinator.gestureRecognizer {
-               gesture.isEnabled = mode != .none
-           }
+        if let gesture = context.coordinator.gestureRecognizer {
+            gesture.isEnabled = mode != .none
+        }
 
         // ✅ Update the drawing tool and color here
 //        context.coordinator.drawer.drawingTool = mode
 //        context.coordinator.drawer.color = (mode == .highlighter)
 //            ? UIColor.yellow.withAlphaComponent(mode.alpha)
 //            : UIColor.red.withAlphaComponent(mode.alpha)
-        
+
         context.coordinator.drawer.drawingTool = mode
-               context.coordinator.drawer.color = lineColor.withAlphaComponent(mode.alpha)
-               context.coordinator.drawer.lineWidth = lineWidth
-        
+        context.coordinator.drawer.color = lineColor.withAlphaComponent(mode.alpha)
+        context.coordinator.drawer.lineWidth = lineWidth
+
         pdfView.scaleFactor = zoomScale
-        
-        
     }
 
     private func applySettings(to pdfView: PDFView) {
@@ -92,4 +90,3 @@ struct PDFKitView: UIViewRepresentable {
         var pdfView: PDFView?
     }
 }
-

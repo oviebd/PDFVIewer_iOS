@@ -69,13 +69,14 @@ struct PDFListView: View {
                 }
                 .navigationTitle("PDF Files")
             }
-            .sheet(isPresented: $showFolderPicker) {
-                FileOrFolderPickerView(mode: .folder) { urls in
-                    if let folderURL = urls.first {
-                        pdfManager.fetchPDFFiles(from: folderURL)
-                    }
-                }
-            }.sheet(isPresented: $showFilePicker) {
+//            .sheet(isPresented: $showFolderPicker) {
+//                FileOrFolderPickerView(mode: .folder) { urls in
+//                    if let folderURL = urls.first {
+//                        pdfManager.fetchPDFFiles(from: folderURL)
+//                    }
+//                }
+//            }
+            .sheet(isPresented: $showFilePicker) {
                 FileOrFolderPickerView(mode: .file) { urls in
                     pdfManager.loadSelectedPDFFiles(urls: urls)
                 }
