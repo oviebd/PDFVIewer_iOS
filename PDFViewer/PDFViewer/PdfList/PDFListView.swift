@@ -36,7 +36,7 @@ struct PDFListView: View {
                 .padding()
 
                 List(pdfManager.pdfFiles) { pdf in
-                    NavigationLink(destination: PDFViewerView(pdfUrl: pdf.url)) {
+                    NavigationLink(destination: PDFViewerView(pdfFile: pdf)) {
                        // Text(pdf.name)
                         
                         HStack{

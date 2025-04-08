@@ -10,6 +10,16 @@ import SwiftUI
 
 let sampleUrl : URL = Bundle.main.url(forResource: "sample1", withExtension: "pdf")!
 
+
+let samplePDFFile = PDFFile(
+    name: "Sample Document",
+    url: URL(fileURLWithPath: "/path/to/sample.pdf"),
+    metadata: PDFMetadata(
+        image: nil, author: "Sample author", title: "Sample title"
+    ),
+    pdfKey: "sample_pdf_001"
+)
+
 struct PDFViewerView: View {
     @State private var currentPDF: URL
     @StateObject private var pdfSettings = PDFSettings()
@@ -18,8 +28,8 @@ struct PDFViewerView: View {
     @State private var lineWidth: CGFloat = 5
     @State private var zoomScale: CGFloat = 1.0
 
-    init(pdfUrl : URL) {
-        currentPDF = pdfUrl
+    init(pdfFile : PDFFile) {
+        currentPDF = pdfFile.url//pdfUrl
 //        if let startURL = Bundle.main.url(forResource: "sample1", withExtension: "pdf") {
 //            _currentPDF = State(initialValue: startURL)
 //        } else {
@@ -119,5 +129,5 @@ struct PDFViewerView: View {
 }
 
 #Preview {
-    PDFViewerView(pdfUrl: sampleUrl)
+    PDFViewerView(pdfFile: samplePDFFile)
 }

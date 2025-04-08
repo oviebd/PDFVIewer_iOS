@@ -16,7 +16,7 @@ struct PDFFile: Identifiable {
     let name: String
     let url: URL
     let metadata: PDFMetadata
-
+    let pdfKey : String
 }
 
 struct PDFMetadata {
@@ -47,7 +47,7 @@ class PDFManager: ObservableObject {
     func loadSelectedPDFFiles(urls: [URL]) {
         DispatchQueue.global(qos: .userInitiated).async {
             let pdfs = urls.filter { $0.pathExtension.lowercased() == "pdf" }
-                .map { PDFFile(name: $0.lastPathComponent, url: $0, metadata: self.extractPDFMetadata(from: $0)) }
+                .map { PDFFile(name: $0.lastPathComponent, url: $0, metadata: self.extractPDFMetadata(from: $0), pdfKey: self.generatePDFKey(for: $0)) }
 
             DispatchQueue.main.async {
                 self.pdfFiles = pdfs
@@ -84,10 +84,13 @@ class PDFManager: ObservableObject {
             do {
                 let url = try URL(resolvingBookmarkData: bookmarkData, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
                 let metadata = extractPDFMetadata(from: url)
-                restoredPDFs.append(PDFFile(name: url.lastPathComponent, url: url, metadata: metadata))
-                if isStale {
-                    print("⚠️ Bookmark for key \(key) is stale.")
-                }
+                let pdfFile = PDFFile(name: url.lastPathComponent, url: url, metadata: metadata, pdfKey: key)
+                restoredPDFs.append(pdfFile)
+                
+                print("U>> restored key is -  \(key) - name - \(pdfFile.name) - title \(pdfFile.metadata.title)")
+//                if isStale {
+//                    print("⚠️ Bookmark for key \(key) is stale.")
+//                }
             } catch {
                 print("❌ Error restoring bookmark for key \(key): \(error)")
             }
