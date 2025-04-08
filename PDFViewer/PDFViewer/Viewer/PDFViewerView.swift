@@ -8,8 +8,7 @@
 import PDFKit
 import SwiftUI
 
-let sampleUrl : URL = Bundle.main.url(forResource: "sample1", withExtension: "pdf")!
-
+let sampleUrl: URL = Bundle.main.url(forResource: "sample1", withExtension: "pdf")!
 
 let samplePDFFile = PDFFile(
     name: "Sample Document",
@@ -27,9 +26,11 @@ struct PDFViewerView: View {
     @State private var color: UIColor = .red
     @State private var lineWidth: CGFloat = 5
     @State private var zoomScale: CGFloat = 1.0
+    @State private var actions = PDFKitViewActions()
+    @State private var savedAnnotations: Data?
 
-    init(pdfFile : PDFFile) {
-        currentPDF = pdfFile.url//pdfUrl
+    init(pdfFile: PDFFile) {
+        currentPDF = pdfFile.url // pdfUrl
 //        if let startURL = Bundle.main.url(forResource: "sample1", withExtension: "pdf") {
 //            _currentPDF = State(initialValue: startURL)
 //        } else {
@@ -42,18 +43,33 @@ struct PDFViewerView: View {
             PDFKitView(pdfURL: $currentPDF, settings: pdfSettings, mode: $drawingTool,
                        lineColor: $color,
                        lineWidth: $lineWidth,
-                       zoomScale: $zoomScale)
+                       zoomScale: $zoomScale,
+                       actions: actions)
                 .edgesIgnoringSafeArea(.all)
-            
+
             HStack {
-                           Button("Zoom -") {
-                               zoomScale = max(zoomScale - 0.2, 0.5)
-                           }
-                           Button("Zoom +") {
-                               zoomScale = min(zoomScale + 0.2, 5.0)
-                           }
-                       }
-                       .padding()
+                Button("Zoom -") {
+                    zoomScale = max(zoomScale - 0.2, 0.5)
+                }
+                Button("Zoom +") {
+                    zoomScale = min(zoomScale + 0.2, 5.0)
+                }
+            }
+            .padding()
+
+            HStack {
+                Button("Save Annotations") {
+                  //  savedAnnotations = actions.saveAnnotations()
+                    actions.saveAnnotedPdf(url: currentPDF)
+                }
+
+                Button("Restore Annotations") {
+                    if let data = savedAnnotations {
+                        actions.restoreAnnotations(from: data)
+                    }
+                }
+            }
+            .padding()
 
             HStack {
                 Button("Switch to Horizontal") {
@@ -89,7 +105,6 @@ struct PDFViewerView: View {
                 Button("Pen") { drawingTool = .pen }
                 Button("Highlighter") { drawingTool = .highlighter }
                 Button("Eraser") { drawingTool = .eraser }
-                
             }
 
             HStack {
@@ -101,31 +116,24 @@ struct PDFViewerView: View {
             Slider(value: $lineWidth, in: 1 ... 20, step: 1) {
                 Text("Line Width")
             }
-
-//            HStack {
-//                Button(action: { drawingTool = .pen }) {
-//                    Label("Pen", systemImage: "pencil.tip")
-//                        .padding()
-//                        .background(drawingTool == .pen ? Color.blue : Color.gray.opacity(0.3))
-//                        .cornerRadius(10)
-//                }
-//
-//                Button(action: { drawingTool = .highlighter }) {
-//                    Label("Highlight", systemImage: "highlighter")
-//                        .padding()
-//                        .background(drawingTool == .highlighter ? Color.yellow : Color.gray.opacity(0.3))
-//                        .cornerRadius(10)
-//                }
-//
-//                Button(action: { drawingTool = .eraser }) {
-//                    Label("Eraser", systemImage: "eraser")
-//                        .padding()
-//                        .background(drawingTool == .eraser ? Color.red : Color.gray.opacity(0.3))
-//                        .cornerRadius(10)
-//                }
-//            }
         }
     }
+    
+//    func saveAnnotatedPDF(to url: URL, pdfView: PDFView) -> Bool {
+//        guard let document = pdfView.document else {
+//            print("No PDF document found in PDFView")
+//            return false
+//        }
+//        
+//        let success = document.write(to: url)
+//        if success {
+//            print("PDF saved successfully to \(url)")
+//        } else {
+//            print("Failed to save PDF")
+//        }
+//        
+//        return success
+//    }
 }
 
 #Preview {

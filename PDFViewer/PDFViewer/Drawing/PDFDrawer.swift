@@ -16,19 +16,6 @@ enum DrawingTool: Int {
     case pen = 2
     case highlighter = 3
     
-//    var width: CGFloat {
-//        switch self {
-//        case .pencil:
-//            return 1
-//        case .pen:
-//            return 5
-//        case .highlighter:
-//            return 20 //10
-//        default:
-//            return 10
-//        }
-//    }
-    
     var alpha: CGFloat {
         switch self {
         case .highlighter:
@@ -92,7 +79,7 @@ extension PDFDrawer: DrawingGestureRecognizerDelegate {
         
         // Final annotation
         page.removeAnnotation(currentAnnotation!)
-        let finalAnnotation = createFinalAnnotation(path: path!, page: page)
+        _ = createFinalAnnotation(path: path!, page: page)
         currentAnnotation = nil
     }
     
@@ -116,27 +103,9 @@ extension PDFDrawer: DrawingGestureRecognizerDelegate {
         currentAnnotation?.path = path
         forceRedraw(annotation: currentAnnotation!, onPage: onPage)
     }
+
     
-//    private func createFinalAnnotation(path: UIBezierPath, page: PDFPage) -> PDFAnnotation {
-//        let border = PDFBorder()
-//        border.lineWidth = drawingTool.width
-//        
-//        let bounds = CGRect(x: path.bounds.origin.x - 5,
-//                            y: path.bounds.origin.y - 5,
-//                            width: path.bounds.size.width + 10,
-//                            height: path.bounds.size.height + 10)
-//        var signingPathCentered = UIBezierPath()
-//        signingPathCentered.cgPath = path.cgPath
-//        signingPathCentered.moveCenter(to: bounds.center)
-//        
-//        let annotation = PDFAnnotation(bounds: bounds, forType: .ink, withProperties: nil)
-//        annotation.color = color.withAlphaComponent(drawingTool.alpha)
-//        annotation.border = border
-//        annotation.add(signingPathCentered)
-//        page.addAnnotation(annotation)
-//                
-//        return annotation
-//    }
+    
     
     private func createFinalAnnotation(path: UIBezierPath, page: PDFPage) -> PDFAnnotation {
         let border = PDFBorder()

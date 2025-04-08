@@ -8,6 +8,15 @@
 import PDFKit
 import SwiftUI
 
+class PDFKitViewActions: ObservableObject {
+    fileprivate var coordinator: PDFKitView.Coordinator?
+
+
+    func saveAnnotedPdf(url : URL) -> Bool {
+        coordinator?.saveAnnotatedPDF(to: url) ?? false
+    }
+}
+
 struct PDFKitView: UIViewRepresentable {
     @Binding var pdfURL: URL
     @ObservedObject var settings: PDFSettings
@@ -16,6 +25,8 @@ struct PDFKitView: UIViewRepresentable {
     @Binding var lineColor: UIColor
     @Binding var lineWidth: CGFloat
     @Binding var zoomScale: CGFloat
+
+    @ObservedObject var actions: PDFKitViewActions
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -37,6 +48,9 @@ struct PDFKitView: UIViewRepresentable {
         // Save references
         context.coordinator.gestureRecognizer = drawingGesture
         context.coordinator.pdfView = pdfView
+
+        // 👇 Connect the coordinator to actions
+        actions.coordinator = context.coordinator
 
         return pdfView
     }
@@ -88,5 +102,21 @@ struct PDFKitView: UIViewRepresentable {
         let drawer = PDFDrawer()
         var gestureRecognizer: DrawingGestureRecognizer?
         var pdfView: PDFView?
+
+        func saveAnnotatedPDF(to url: URL) -> Bool {
+            guard let  document = pdfView?.document else {
+                print("No PDF document found in PDFView")
+                return false
+            }
+            
+            let success = document.write(to: url)
+            if success {
+                print("PDF saved successfully to \(url)")
+            } else {
+                print("Failed to save PDF")
+            }
+            
+            return success
+        }
     }
 }
