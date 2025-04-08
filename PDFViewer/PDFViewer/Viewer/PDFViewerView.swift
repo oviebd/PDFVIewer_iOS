@@ -27,7 +27,6 @@ struct PDFViewerView: View {
     @State private var lineWidth: CGFloat = 5
     @State private var zoomScale: CGFloat = 1.0
     @State private var actions = PDFKitViewActions()
-    @State private var savedAnnotations: Data?
 
     init(pdfFile: PDFFile) {
         currentPDF = pdfFile.url // pdfUrl
@@ -59,14 +58,7 @@ struct PDFViewerView: View {
 
             HStack {
                 Button("Save Annotations") {
-                  //  savedAnnotations = actions.saveAnnotations()
-                    actions.saveAnnotedPdf(url: currentPDF)
-                }
-
-                Button("Restore Annotations") {
-                    if let data = savedAnnotations {
-                        actions.restoreAnnotations(from: data)
-                    }
+                   _ = actions.saveAnnotedPdf(url: currentPDF)
                 }
             }
             .padding()
