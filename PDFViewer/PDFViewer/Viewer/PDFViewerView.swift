@@ -111,21 +111,7 @@ struct PDFViewerView: View {
         }
     }
     
-//    func saveAnnotatedPDF(to url: URL, pdfView: PDFView) -> Bool {
-//        guard let document = pdfView.document else {
-//            print("No PDF document found in PDFView")
-//            return false
-//        }
-//        
-//        let success = document.write(to: url)
-//        if success {
-//            print("PDF saved successfully to \(url)")
-//        } else {
-//            print("Failed to save PDF")
-//        }
-//        
-//        return success
-//    }
+
 }
 
 #Preview {

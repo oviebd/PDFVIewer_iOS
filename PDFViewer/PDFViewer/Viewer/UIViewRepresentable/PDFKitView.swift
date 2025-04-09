@@ -87,7 +87,13 @@ struct PDFKitView: UIViewRepresentable {
         context.coordinator.drawer.color = lineColor.withAlphaComponent(mode.alpha)
         context.coordinator.drawer.lineWidth = lineWidth
 
-        pdfView.scaleFactor = zoomScale
+        if abs(pdfView.scaleFactor - zoomScale) > 0.01 {
+            pdfView.scaleFactor = zoomScale
+        }
+        
+        let visibleRect = pdfView.convert(pdfView.bounds, to: pdfView.currentPage!)
+        // ... later after settings:
+        pdfView.go(to: visibleRect, on: pdfView.currentPage!)
     }
 
     private func applySettings(to pdfView: PDFView) {
