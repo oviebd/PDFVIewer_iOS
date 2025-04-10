@@ -11,9 +11,16 @@ import SwiftUI
 class PDFKitViewActions: ObservableObject {
     fileprivate var coordinator: PDFKitView.Coordinator?
 
-
-    func saveAnnotedPdf(url : URL) -> Bool {
+    func saveAnnotedPdf(url: URL) -> Bool {
         coordinator?.saveAnnotatedPDF(to: url) ?? false
+    }
+
+    func setZoomScale(scaleFactor: CGFloat) {
+        coordinator?.setZoomSscale(scaleFactor: scaleFactor)
+    }
+
+    func goPage(pageNumber: Int) {
+        coordinator?.goToPage(pageNumber)
     }
 }
 
@@ -24,9 +31,10 @@ struct PDFKitView: UIViewRepresentable {
 
     @Binding var lineColor: UIColor
     @Binding var lineWidth: CGFloat
-    @Binding var zoomScale: CGFloat
-
+ //   @Binding var zoomScale : CGFloat
+    
     @ObservedObject var actions: PDFKitViewActions
+    
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -37,6 +45,7 @@ struct PDFKitView: UIViewRepresentable {
         pdfView.document = PDFDocument(url: pdfURL)
         applySettings(to: pdfView)
 
+        print("P>> Make Ui View ")
         // Setup Drawer
         context.coordinator.drawer.pdfView = pdfView
 
@@ -59,18 +68,19 @@ struct PDFKitView: UIViewRepresentable {
         // Reload PDF when the URL changes
         let currentPage = pdfView.currentPage
 
+        print("P>> Update Ui View ")
         // If the PDF has changed, reload it
-        if pdfView.document?.documentURL != pdfURL {
-            pdfView.document = PDFDocument(url: pdfURL)
-        }
+//        if pdfView.document?.documentURL != pdfURL {
+//            pdfView.document = PDFDocument(url: pdfURL)
+//        }
 
         // Reapply settings
         applySettings(to: pdfView)
 
         // Restore page if available
-        if let currentPage = currentPage {
-            pdfView.go(to: currentPage)
-        }
+//        if let currentPage = currentPage {
+//            pdfView.go(to: currentPage)
+//        }
 
         // ✅ Toggle drawing gesture recognizer
         if let gesture = context.coordinator.gestureRecognizer {
@@ -78,22 +88,9 @@ struct PDFKitView: UIViewRepresentable {
         }
 
         // ✅ Update the drawing tool and color here
-//        context.coordinator.drawer.drawingTool = mode
-//        context.coordinator.drawer.color = (mode == .highlighter)
-//            ? UIColor.yellow.withAlphaComponent(mode.alpha)
-//            : UIColor.red.withAlphaComponent(mode.alpha)
-
         context.coordinator.drawer.drawingTool = mode
         context.coordinator.drawer.color = lineColor.withAlphaComponent(mode.alpha)
         context.coordinator.drawer.lineWidth = lineWidth
-
-        if abs(pdfView.scaleFactor - zoomScale) > 0.01 {
-            pdfView.scaleFactor = zoomScale
-        }
-        
-        let visibleRect = pdfView.convert(pdfView.bounds, to: pdfView.currentPage!)
-        // ... later after settings:
-        pdfView.go(to: visibleRect, on: pdfView.currentPage!)
     }
 
     private func applySettings(to pdfView: PDFView) {
@@ -108,21 +105,35 @@ struct PDFKitView: UIViewRepresentable {
         let drawer = PDFDrawer()
         var gestureRecognizer: DrawingGestureRecognizer?
         var pdfView: PDFView?
+      
 
         func saveAnnotatedPDF(to url: URL) -> Bool {
-            guard let  document = pdfView?.document else {
+            guard let document = pdfView?.document else {
                 print("No PDF document found in PDFView")
                 return false
             }
-            
+
             let success = document.write(to: url)
             if success {
                 print("PDF saved successfully to \(url)")
             } else {
                 print("Failed to save PDF")
             }
-            
+
             return success
+        }
+
+        func setZoomSscale(scaleFactor: CGFloat) {
+            pdfView?.scaleFactor = scaleFactor
+        }
+
+        func goToPage(_ number: Int) {
+            guard let pdfView = pdfView,
+                  let document = pdfView.document,
+                  number > 0, number <= document.pageCount,
+                  let page = document.page(at: number - 1) else { return }
+
+            pdfView.go(to: page)
         }
     }
 }

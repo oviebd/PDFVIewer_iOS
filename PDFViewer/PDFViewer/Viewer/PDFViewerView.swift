@@ -42,16 +42,18 @@ struct PDFViewerView: View {
             PDFKitView(pdfURL: $currentPDF, settings: pdfSettings, mode: $drawingTool,
                        lineColor: $color,
                        lineWidth: $lineWidth,
-                       zoomScale: $zoomScale,
+                   //    zoomScale: $zoomScale,
                        actions: actions)
                 .edgesIgnoringSafeArea(.all)
 
             HStack {
                 Button("Zoom -") {
                     zoomScale = max(zoomScale - 0.2, 0.5)
+                    actions.setZoomScale(scaleFactor: zoomScale)
                 }
                 Button("Zoom +") {
                     zoomScale = min(zoomScale + 0.2, 5.0)
+                    actions.setZoomScale(scaleFactor: zoomScale)
                 }
             }
             .padding()
@@ -94,8 +96,12 @@ struct PDFViewerView: View {
 
             HStack {
                 Button("None") { drawingTool = .none }
-                Button("Pen") { drawingTool = .pen }
-                Button("Highlighter") { drawingTool = .highlighter }
+                Button("Pen") { drawingTool = .pen
+                    //actions.setZoomScale(scaleFactor: zoomScale)
+                }
+                Button("Highlighter") { drawingTool = .highlighter
+                    //actions.setZoomScale(scaleFactor: zoomScale)
+                }
                 Button("Eraser") { drawingTool = .eraser }
             }
 
