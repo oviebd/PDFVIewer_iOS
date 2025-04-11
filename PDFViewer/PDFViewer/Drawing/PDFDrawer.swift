@@ -49,7 +49,7 @@ extension PDFDrawer: DrawingGestureRecognizerDelegate {
         guard let page = currentPage else { return }
         let convertedPoint = pdfView.convert(location, to: page)
         
-        print(convertedPoint)
+    //    print(convertedPoint)
         
         if drawingTool == .eraser {
             removeAnnotationAtPoint(point: convertedPoint, page: page)

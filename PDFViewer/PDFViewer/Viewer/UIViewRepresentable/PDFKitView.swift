@@ -66,13 +66,13 @@ struct PDFKitView: UIViewRepresentable {
 
     func updateUIView(_ pdfView: PDFView, context: Context) {
         // Reload PDF when the URL changes
-        let currentPage = pdfView.currentPage
+        //let currentPage = pdfView.currentPage
 
         print("P>> Update Ui View ")
         // If the PDF has changed, reload it
-//        if pdfView.document?.documentURL != pdfURL {
-//            pdfView.document = PDFDocument(url: pdfURL)
-//        }
+        if pdfView.document?.documentURL != pdfURL {
+            pdfView.document = PDFDocument(url: pdfURL)
+        }
 
         // Reapply settings
         applySettings(to: pdfView)
@@ -94,7 +94,7 @@ struct PDFKitView: UIViewRepresentable {
     }
 
     private func applySettings(to pdfView: PDFView) {
-        pdfView.autoScales = settings.autoScales
+      //  pdfView.autoScales = settings.autoScales
         pdfView.displayMode = settings.displayMode
         pdfView.displayDirection = settings.displayDirection
     }
