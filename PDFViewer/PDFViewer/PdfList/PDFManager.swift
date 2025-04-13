@@ -19,14 +19,22 @@ struct PDFFile: Identifiable {
     let pdfKey : String
 }
 
+
 struct PDFMetadata {
     let image: UIImage?
     let author: String
     let title: String
 }
 
+struct PDFCoreDataModel {
+    var key : String
+    var data : Data
+}
+
 class PDFManager: ObservableObject {
     @Published var pdfFiles: [PDFFile] = []
+    
+    let manager = PdfCoreDataManager()
 
 //    func fetchPDFFiles(from folderURL: URL) {
 //        let fileManager = FileManager.default
@@ -106,7 +114,8 @@ class PDFManager: ObservableObject {
 
     func savePDFBookmarks(urls: [URL]) {
         // Step 1: Load existing dictionary of bookmarks
-        var savedBookmarksDict = UserDefaults.standard.dictionary(forKey: "SavedPDFBookmarks") as? [String: Data] ?? [:]
+        var coreDataList = [PDFCoreDataModel]()
+      //  var savedBookmarksDict = UserDefaults.standard.dictionary(forKey: "SavedPDFBookmarks") as? [String: Data] ?? [:]
 
         // Step 2: Convert new URLs to bookmark data
         for url in urls {
@@ -118,15 +127,18 @@ class PDFManager: ObservableObject {
                 )
 
                 let key = generatePDFKey(for: url)
-                savedBookmarksDict[key] = bookmark
+              //  savedBookmarksDict[key] = bookmark
+                coreDataList.append(PDFCoreDataModel(key: key, data: bookmark))
 
             } catch {
                 print("❌ Error creating bookmark for \(url): \(error)")
             }
         }
+        
+        manager.addPdfBookmarkData(pdfDatas: coreDataList)
 
         // Step 3: Save the updated dictionary to UserDefaults
-        UserDefaults.standard.set(savedBookmarksDict, forKey: "SavedPDFBookmarks")
+       // UserDefaults.standard.set(savedBookmarksDict, forKey: "SavedPDFBookmarks")
     }
 
     func generatePDFKey(for url: URL) -> String {
