@@ -11,30 +11,30 @@ import CoreData
 class PdfCoreDataManager {
     
     
-    let manager = PDFDataStore.instance
-
-    func addPdfBookmarkData(pdfDatas: [PDFCoreDataModel]) -> Bool {
-        
-        manager.context.perform {
-            for pdf in pdfDatas {
-                let newData = PDFEntity(context: self.manager.context)
-                newData.key = pdf.key
-                newData.bookmarkData = pdf.data
-                self.manager.save()
-            }
-        }
-        
-        
-        
-//        newRecipe.name = recipe.name
-//        newRecipe.category = recipe.category
-//        newRecipe.ingridients = recipe.ingredients
-//        newRecipe.id = recipe.id
-//        newRecipe.duration = recipe.duration
-//        newRecipe.fileName = recipe.image ?? ""
-
-        return manager.save()
-    }
+//    let manager = CoreDataManager(storeURL: nil)
+//
+//    func addPdfBookmarkData(pdfDatas: [PDFCoreDataModel]) -> Bool {
+//        
+//        manager.context.perform {
+//            for pdf in pdfDatas {
+//                let newData = PDFEntity(context: self.manager.context)
+//                newData.key = pdf.key
+//                newData.bookmarkData = pdf.data
+//                self.manager.save()
+//            }
+//        }
+//        
+//        
+//        
+////        newRecipe.name = recipe.name
+////        newRecipe.category = recipe.category
+////        newRecipe.ingridients = recipe.ingredients
+////        newRecipe.id = recipe.id
+////        newRecipe.duration = recipe.duration
+////        newRecipe.fileName = recipe.image ?? ""
+//
+//        return manager.save()
+//    }
     
 //
 //    func updateRecipe(recipe: Recipe) -> Bool {

@@ -1,5 +1,5 @@
 //
-//  CoreDataManager.swift
+//  PDFDataStore.swift
 //  FoodBook
 //
 //  Created by Habibur Rahman on 21/10/24.
@@ -11,29 +11,59 @@ import Foundation
 
 class PDFDataStore {
     
-    static let instance = PDFDataStore()
+   // static let instance = PDFDataStore()
+   
     public struct ModelNotFound: Error {
         public let modelName: String
     }
 
-    public static let modelName = "InspectionContainer"
+    public static let modelName = "PDFDataContainer"
     public static let model = NSManagedObjectModel(name: modelName, in: Bundle(for: PDFDataStore.self))
 
+
     private let container: NSPersistentContainer
-    private let context: NSManagedObjectContext
+    let context: NSManagedObjectContext
     
-    private init() {
-        container = NSPersistentContainer(name: Constants.CORE_DATA.dataContainer)
-        container.loadPersistentStores { (description, error) in
-            if let error = error {
-                print("Error Loading Core Data - \(error)")
+//    private init() {
+//        container = NSPersistentContainer(name: Constants.CORE_DATA.dataContainer)
+//        container.loadPersistentStores { (description, error) in
+//            if let error = error {
+//                print("Error Loading Core Data - \(error)")
+//            }
+//        }
+//        context = container.viewContext
+//  
+//        whereIsMySQLite()
+//
+//      //  deleteFullDB()
+//    }
+    
+    public init(storeURL: URL? = nil) throws {
+        if let storeURL = storeURL {
+            // Test
+            guard let model = PDFDataStore.model else {
+                throw ModelNotFound(modelName: PDFDataStore.modelName)
             }
+
+            container = try NSPersistentContainer.load(
+                name: PDFDataStore.modelName,
+                model: model,
+                url: storeURL
+            )
+            debugPrint("DB>> Stored DB in \(storeURL.absoluteString)")
+            context = container.newBackgroundContext()
+
+        } else {
+            container = NSPersistentContainer(name: PDFDataStore.modelName)
+            container.loadPersistentStores { _, error in
+                if let error = error {
+                    debugPrint("Error Loading Core Data - \(error)")
+                }
+            }
+            context = container.newBackgroundContext()
+
+            whereIsMySQLite()
         }
-        context = container.viewContext
-  
-        whereIsMySQLite()
-        
-      //  deleteFullDB()
     }
     
     func save() -> Bool{
@@ -48,7 +78,20 @@ class PDFDataStore {
         }
     }
     
-   
+    func addData(pdfDatas: [PDFCoreDataModel]) -> Bool {
+        
+        context.perform {
+            for pdf in pdfDatas {
+                let newData = PDFEntity(context: self.context)
+                newData.key = pdf.key
+                newData.bookmarkData = pdf.data
+                self.save()
+            }
+        }
+
+        return save()
+    }
+    
     
     
     private func whereIsMySQLite() {
