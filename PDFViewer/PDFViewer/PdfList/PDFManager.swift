@@ -26,10 +26,7 @@ struct PDFMetadata {
     let title: String
 }
 
-struct PDFCoreDataModel {
-    var key : String
-    var data : Data
-}
+
 
 class PDFManager: ObservableObject {
     @Published var pdfFiles: [PDFFile] = []
@@ -128,14 +125,14 @@ class PDFManager: ObservableObject {
 
                 let key = generatePDFKey(for: url)
               //  savedBookmarksDict[key] = bookmark
-                coreDataList.append(PDFCoreDataModel(key: key, data: bookmark))
+                coreDataList.append(PDFCoreDataModel(key: key, data: bookmark, isFavourite: false))
 
             } catch {
                 print("❌ Error creating bookmark for \(url): \(error)")
             }
         }
         
-        manager.addPdfBookmarkData(pdfDatas: coreDataList)
+       // manager.addPdfBookmarkData(pdfDatas: coreDataList)
 
         // Step 3: Save the updated dictionary to UserDefaults
        // UserDefaults.standard.set(savedBookmarksDict, forKey: "SavedPDFBookmarks")
