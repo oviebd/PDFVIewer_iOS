@@ -9,11 +9,11 @@ import CoreData
 import Foundation
 
 struct PDFCoreDataModel {
-    var key : String
-    var data : Data
-    var isFavourite : Bool
-    var lastReadTime : Date?
-    var lastReadPageNumber : Int?
+    var key: String
+    var data: Data
+    var isFavourite: Bool
+    var lastReadTime: Date?
+    var lastReadPageNumber: Int?
 }
 
 class PDFLocalDataStore {
@@ -32,6 +32,12 @@ class PDFLocalDataStore {
 
     public typealias InsertionResult = Result<[PDFCoreDataModel]?, Error>
     public typealias InsertionCompletion = (InsertionResult) -> Void
+
+    public typealias RetrievalResult = Result<[PDFCoreDataModel]?, Error>
+    public typealias RetrievalCompletion = (RetrievalResult) -> Void
+
+    public typealias SingleRetrievalResult = Result<PDFCoreDataModel?, Error>
+    public typealias SingleRetrievalCompletion = (SingleRetrievalResult) -> Void
 
     private let container: NSPersistentContainer
     let context: NSManagedObjectContext
@@ -108,27 +114,75 @@ class PDFLocalDataStore {
         perform { context in
             do {
                 let fetchRequest: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
-                let existingKeys = try context.fetch(fetchRequest).compactMap { $0.key }
+                var existingKeys = try context.fetch(fetchRequest).compactMap { $0.key }
 
                 // Filter out duplicates based on `key`
                 let newPDFs = pdfDatas.filter { !existingKeys.contains($0.key) }
 
                 for pdf in newPDFs {
+                    let key = pdf.key
+                    if existingKeys.contains(key) {
+                        continue
+                    }
                     let newData = PDFEntity(context: self.context)
-                    newData.key = pdf.key
+
+                    newData.key = key
                     newData.bookmarkData = pdf.data
+                    newData.isFavourite = pdf.isFavourite
+                    existingKeys.append(key)
                     try context.save()
                 }
 
                 // If there's nothing to insert
-                guard !newPDFs.isEmpty else {
-                    completion(.failure(DataAlreadyExistError(description: "Selected data already exist")))
-                    return
-                }
+//                guard !newPDFs.isEmpty else {
+//                    completion(.failure(DataAlreadyExistError(description: "Selected data already exist")))
+//                    return
+//                }
 
-                completion(.success((newPDFs)))
+                completion(.success(newPDFs))
             } catch {
                 context.rollback()
+                completion(.failure(error))
+            }
+        }
+    }
+
+    public func retrieve(completion: @escaping RetrievalCompletion) {
+        perform { context in
+
+            do {
+                let fetchRequest: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
+                let results = try context.fetch(fetchRequest)
+
+                let models = results.map {
+                    PDFCoreDataModel(key: $0.key ?? "", data: $0.bookmarkData ?? Data(), isFavourite: false)
+                }
+
+                completion(.success(models))
+
+            } catch {
+                completion(.failure(error))
+            }
+        }
+    }
+
+    public func filter(parameters: [String: Any], completion: @escaping RetrievalCompletion) {
+        perform { context in
+            do {
+                let request: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
+                request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates:
+                    parameters.map { NSPredicate(format: "%K == %@", $0.key, "\($0.value)") }
+                )
+                request.fetchLimit = 1
+
+                let results = try context.fetch(request)
+
+                let models = results.map {
+                    PDFCoreDataModel(key: $0.key ?? "", data: $0.bookmarkData ?? Data(), isFavourite: false)
+                }
+
+                completion(.success(models))
+            } catch {
                 completion(.failure(error))
             }
         }

@@ -32,4 +32,33 @@ class PDFLocalDataLoader {
             }
         }
     }
+    
+    public func retrieve(completion: @escaping ([PDFCoreDataModel]?) -> Void) {
+        store.retrieve { [weak self] result in
+            guard let _ = self else { return }
+            switch result {
+            case let .success(inspectiondata):
+                completion(inspectiondata)
+            default:
+                completion(nil)
+            }
+        }
+    }
+
+//    public func toggleFavorite(pdfItem : PDFCoreDataModel, completion: @escaping (PDFCoreDataModel?) -> Void) {
+//        let parameters = ["key": pdfItem.key]
+//        store.filter(parameters: parameters) { [weak self] result in
+//            guard let _ = self else { return }
+//            switch result {
+//            case let .success(inspectiondata):
+//                completion(inspectiondata)
+//            default:
+//                completion(nil)
+//            }
+//        }
+//    }
+//    
+   
+    
+    
 }

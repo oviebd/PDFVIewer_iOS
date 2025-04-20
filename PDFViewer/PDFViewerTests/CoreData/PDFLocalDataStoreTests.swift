@@ -13,19 +13,48 @@ final class PDFLocalDataStoreTests: XCTestCase {
 
     //Tests
     
-    func test_insertStatus_NewDataWillInsertSuccessfully() throws {
+    func test_insert_NewDataWillInsertSuccessfully() throws {
         let sut = try makeSUT()
         let firstPdfData = createDummyPDFCoreDataModel(key: "first")
         let secondPdfData = createDummyPDFCoreDataModel(key: "second")
         
-        let exp = expectation(description: "waitig for insertion")
-        sut.insertPDFDatas(pdfDatas: [firstPdfData,secondPdfData]) { isSuccess in
-            XCTAssertTrue(isSuccess)
-            exp.fulfill()
-        }
-        wait(for: [exp], timeout: 1.0)
-//        insert(sut, statusList: [singleStatus])
-//        expect(sut, toRetrieve: [singleStatus])
+        insert(sut, datas: [firstPdfData,secondPdfData])
+        expect(sut, toRetrieve: [firstPdfData,secondPdfData])
+    }
+    
+    func test_insert_ExistingDataWillNotInsert() throws {
+        let sut = try makeSUT()
+        let firstPdfData = createDummyPDFCoreDataModel(key: "first")
+        let secondPdfData = createDummyPDFCoreDataModel(key: "second")
+        let thirdPdfData = createDummyPDFCoreDataModel(key: "first")
+        
+        insert(sut, datas: [firstPdfData,secondPdfData,thirdPdfData])
+        expect(sut, toRetrieve: [firstPdfData,secondPdfData])
+       
+    }
+    
+    func test_insert_PreviouslyExistingDataWillNotInsert() throws {
+        let sut = try makeSUT()
+        let firstPdfData = createDummyPDFCoreDataModel(key: "first")
+        let secondPdfData = createDummyPDFCoreDataModel(key: "second")
+        let thirdPdfData = createDummyPDFCoreDataModel(key: "first")
+        
+        insert(sut, datas: [firstPdfData,secondPdfData])
+        expect(sut, toRetrieve: [firstPdfData,secondPdfData])
+        insert(sut, datas: [thirdPdfData])
+        expect(sut, toRetrieve: [firstPdfData,secondPdfData])
+    }
+    
+    func test_favorite_UpdateFavoriteData() throws {
+        let sut = try makeSUT()
+        let firstFavoriteItem = createDummyPDFCoreDataModel(key: "first",isfavorite: true)
+        let secondPdfData = createDummyPDFCoreDataModel(key: "second")
+        let thirdPdfData = createDummyPDFCoreDataModel(key: "first")
+        
+        insert(sut, datas: [firstFavoriteItem,secondPdfData])
+//        expect(sut, toRetrieve: [firstPdfData,secondPdfData])
+//        insert(sut, datas: [thirdPdfData])
+//        expect(sut, toRetrieve: [firstPdfData,secondPdfData])
     }
     
     
@@ -42,6 +71,51 @@ final class PDFLocalDataStoreTests: XCTestCase {
     private func inMemoryStoreURL() -> URL {
         URL(fileURLWithPath: "/dev/null")
             .appendingPathComponent("\(type(of: self)).store")
+    }
+
+    @discardableResult
+    func insert(_ sut: PDFLocalDataLoader, datas: [PDFCoreDataModel], file: StaticString = #filePath, line: UInt = #line) -> Bool {
+        let exp = expectation(description: "waitig for insertion")
+        var isInsertionSuccess = false
+
+        sut.insertPDFDatas(pdfDatas: datas) { isSuccess in
+            isInsertionSuccess = isSuccess
+            XCTAssertTrue(isSuccess)
+            exp.fulfill()
+        }
+
+        wait(for: [exp], timeout: 1.0)
+        return isInsertionSuccess
+    }
+    
+    @discardableResult
+    func retrieve(_ sut: PDFLocalDataLoader, file: StaticString = #filePath, line: UInt = #line) -> [PDFCoreDataModel]? {
+        let exp = expectation(description: "waitig for insertion")
+        var localDatas : [PDFCoreDataModel] = []
+        sut.retrieve { datas in
+            localDatas = datas ?? []
+            exp.fulfill()
+        }
+        wait(for: [exp], timeout: 1.0)
+        return localDatas
+    }
+    
+    
+    func expect(_ sut: PDFLocalDataLoader, toRetrieve expectedDatas: [PDFCoreDataModel], file: StaticString = #file, line: UInt = #line) {
+        let exp = expectation(description: "Wait for cache retrieval")
+        sut.retrieve { fetchedInspection in
+
+            let dataList = fetchedInspection ?? []
+            XCTAssertEqual(dataList.count, expectedDatas.count, file: file, line: line)
+
+            for i in 0..<expectedDatas.count {
+                XCTAssertEqual(dataList[i].key, expectedDatas[i].key,file: file, line: line)
+            }
+
+            exp.fulfill()
+        }
+
+        wait(for: [exp], timeout: 10)
     }
 
 }
