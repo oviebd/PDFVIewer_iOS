@@ -45,19 +45,22 @@ class PDFLocalDataLoader {
         }
     }
 
-//    public func toggleFavorite(pdfItem : PDFCoreDataModel, completion: @escaping (PDFCoreDataModel?) -> Void) {
-//        let parameters = ["key": pdfItem.key]
-//        store.filter(parameters: parameters) { [weak self] result in
-//            guard let _ = self else { return }
-//            switch result {
-//            case let .success(inspectiondata):
-//                completion(inspectiondata)
-//            default:
-//                completion(nil)
-//            }
-//        }
-//    }
-//    
+    public func toggleFavorite( pdfItem : PDFCoreDataModel, completion: @escaping (PDFCoreDataModel?) -> Void) {
+        let parameters = ["key": pdfItem.key]
+        
+        let isFavourite = !pdfItem.isFavourite
+        let newItem = PDFCoreDataModel(key: pdfItem.key, data: pdfItem.data, isFavourite: isFavourite)
+        
+        store.update(updatedData: newItem, completion: { result in
+            switch result {
+            case .success(let isSuccess):
+                completion(newItem)
+            default:
+                completion(nil)
+            }
+        })
+    }
+    
    
     
     

@@ -36,6 +36,9 @@ class PDFLocalDataStore {
     public typealias RetrievalResult = Result<[PDFCoreDataModel]?, Error>
     public typealias RetrievalCompletion = (RetrievalResult) -> Void
 
+    public typealias FilterResultEntity = Result<[PDFEntity]?, Error>
+    public typealias FilterCompletionEntity = (FilterResultEntity) -> Void
+
     public typealias SingleRetrievalResult = Result<PDFCoreDataModel?, Error>
     public typealias SingleRetrievalCompletion = (SingleRetrievalResult) -> Void
 
@@ -96,20 +99,6 @@ class PDFLocalDataStore {
         }
     }
 
-//    func addData(pdfDatas: [PDFCoreDataModel]) -> Bool {
-//        context.perform {
-//
-//            for pdf in pdfDatas {
-//                let newData = PDFEntity(context: self.context)
-//                newData.key = pdf.key
-//                newData.bookmarkData = pdf.data
-//                self.save()
-//            }
-//        }
-//
-//        return save()
-//    }
-
     public func insert(pdfDatas: [PDFCoreDataModel], completion: @escaping InsertionCompletion) {
         perform { context in
             do {
@@ -166,7 +155,45 @@ class PDFLocalDataStore {
         }
     }
 
-    public func filter(parameters: [String: Any], completion: @escaping RetrievalCompletion) {
+    public func update(updatedData: PDFCoreDataModel,
+                       completion: @escaping (Result<Bool, Error>) -> Void
+    ) {
+        perform { _ in
+            do {
+                let key = updatedData.key
+
+                self.filter(parameters: ["key": key]) { result in
+
+                    switch result {
+                    case let .success(entityList):
+                        if let object = entityList?.first {
+                            object.key = updatedData.key
+                            object.bookmarkData = updatedData.data
+
+                            object.isFavourite = updatedData.isFavourite
+                            
+                            do{
+                                try self.context.save()
+                                completion(.success((true)))
+                            }catch{
+                                completion(.failure((error)))
+                            }
+
+                        }
+                        break
+
+                    case let .failure(error):
+                        
+                        print("Error fetching data: \(error)")
+                        completion(.failure((error)))
+                        break
+                    }
+                }
+            }
+        }
+    }
+
+    public func filter(parameters: [String: Any], completion: @escaping FilterCompletionEntity) {
         perform { context in
             do {
                 let request: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
@@ -177,11 +204,11 @@ class PDFLocalDataStore {
 
                 let results = try context.fetch(request)
 
-                let models = results.map {
-                    PDFCoreDataModel(key: $0.key ?? "", data: $0.bookmarkData ?? Data(), isFavourite: false)
-                }
+//                let models = results.map {
+//                    PDFCoreDataModel(key: $0.key ?? "", data: $0.bookmarkData ?? Data(), isFavourite: false)
+//                }
 
-                completion(.success(models))
+                completion(.success(results))
             } catch {
                 completion(.failure(error))
             }
