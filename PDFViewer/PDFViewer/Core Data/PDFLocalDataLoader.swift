@@ -19,7 +19,8 @@ class PDFLocalDataLoader {
         pdfDatas: [PDFCoreDataModel],
         completion: @escaping CreationCompletion
     ) {
-        store.insert(pdfDatas: pdfDatas) { result in
+        store.insert(pdfDatas: pdfDatas) { [weak self] result in
+            guard let self = self else { return }
             switch result {
             case let .success(datas):
                 debugPrint("U>> Inserted \(String(describing: datas?.count)) files")
@@ -45,7 +46,8 @@ class PDFLocalDataLoader {
         }
     }
 
-    public func toggleFavorite( pdfItem : PDFCoreDataModel, completion: @escaping (PDFCoreDataModel?) -> Void) {
+    public func toggleFavorite( pdfItem : PDFCoreDataModel,
+                                completion: @escaping (_ updatedData : PDFCoreDataModel? , _ isSuccess : Bool)  -> Void) {
         let parameters = ["key": pdfItem.key]
         
         let isFavourite = !pdfItem.isFavourite
@@ -54,9 +56,9 @@ class PDFLocalDataLoader {
         store.update(updatedData: newItem, completion: { result in
             switch result {
             case .success(let isSuccess):
-                completion(newItem)
+                completion(newItem, isSuccess)
             default:
-                completion(nil)
+                completion(nil, false)
             }
         })
     }

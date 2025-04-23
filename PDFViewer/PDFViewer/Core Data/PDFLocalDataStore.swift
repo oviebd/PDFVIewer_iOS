@@ -45,19 +45,6 @@ class PDFLocalDataStore {
     private let container: NSPersistentContainer
     let context: NSManagedObjectContext
 
-//    private init() {
-//        container = NSPersistentContainer(name: Constants.CORE_DATA.dataContainer)
-//        container.loadPersistentStores { (description, error) in
-//            if let error = error {
-//                print("Error Loading Core Data - \(error)")
-//            }
-//        }
-//        context = container.viewContext
-//
-//        whereIsMySQLite()
-//
-//      //  deleteFullDB()
-//    }
 
     public init(storeURL: URL? = nil) throws {
         if let storeURL = storeURL {
@@ -100,7 +87,8 @@ class PDFLocalDataStore {
     }
 
     public func insert(pdfDatas: [PDFCoreDataModel], completion: @escaping InsertionCompletion) {
-        perform { context in
+        perform {[weak self] context in
+            guard let self = self else { return }
             do {
                 let fetchRequest: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
                 var existingKeys = try context.fetch(fetchRequest).compactMap { $0.key }
@@ -137,8 +125,8 @@ class PDFLocalDataStore {
     }
 
     public func retrieve(completion: @escaping RetrievalCompletion) {
-        perform { context in
-
+        perform {  context in
+           
             do {
                 let fetchRequest: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
                 let results = try context.fetch(fetchRequest)
@@ -158,12 +146,13 @@ class PDFLocalDataStore {
     public func update(updatedData: PDFCoreDataModel,
                        completion: @escaping (Result<Bool, Error>) -> Void
     ) {
-        perform { _ in
+        perform { [weak self] _ in
+            guard let self = self else { return }
             do {
                 let key = updatedData.key
 
-                self.filter(parameters: ["key": key]) { result in
-
+                self.filter(parameters: ["key": key]) {  [weak self] result in
+                    guard let self = self else { return }
                     switch result {
                     case let .success(entityList):
                         if let object = entityList?.first {
@@ -194,6 +183,7 @@ class PDFLocalDataStore {
     }
 
     public func filter(parameters: [String: Any], completion: @escaping FilterCompletionEntity) {
+        
         perform { context in
             do {
                 let request: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
@@ -203,10 +193,6 @@ class PDFLocalDataStore {
                 request.fetchLimit = 1
 
                 let results = try context.fetch(request)
-
-//                let models = results.map {
-//                    PDFCoreDataModel(key: $0.key ?? "", data: $0.bookmarkData ?? Data(), isFavourite: false)
-//                }
 
                 completion(.success(results))
             } catch {

@@ -48,13 +48,21 @@ final class PDFLocalDataStoreTests: XCTestCase {
     func test_favorite_UpdateFavoriteData() throws {
         let sut = try makeSUT()
         let firstFavoriteItem = createDummyPDFCoreDataModel(key: "first",isfavorite: true)
-        let secondPdfData = createDummyPDFCoreDataModel(key: "second")
-        let thirdPdfData = createDummyPDFCoreDataModel(key: "first")
+        let secondNotFavoritePdfData = createDummyPDFCoreDataModel(key: "second",isfavorite: false)
         
-        insert(sut, datas: [firstFavoriteItem,secondPdfData])
-//        expect(sut, toRetrieve: [firstPdfData,secondPdfData])
-//        insert(sut, datas: [thirdPdfData])
-//        expect(sut, toRetrieve: [firstPdfData,secondPdfData])
+        let expectation = self.expectation(description: "Toggle favorite")
+        
+        insert(sut, datas: [firstFavoriteItem,secondNotFavoritePdfData])
+        sut.toggleFavorite(pdfItem: firstFavoriteItem) { [weak self] updatedData, isSuccess in
+            XCTAssertTrue(isSuccess)
+            XCTAssertFalse(updatedData!.isFavourite)
+            
+            sut.retrieve { datas in
+                self?.comparePDFData(expectedDatas: [updatedData!,secondNotFavoritePdfData], actualdata: datas!)
+                expectation.fulfill()
+            }
+        }
+        wait(for: [expectation], timeout: 5.0)
     }
     
     
@@ -100,22 +108,37 @@ final class PDFLocalDataStoreTests: XCTestCase {
         return localDatas
     }
     
+
     
     func expect(_ sut: PDFLocalDataLoader, toRetrieve expectedDatas: [PDFCoreDataModel], file: StaticString = #file, line: UInt = #line) {
         let exp = expectation(description: "Wait for cache retrieval")
         sut.retrieve { fetchedInspection in
 
             let dataList = fetchedInspection ?? []
-            XCTAssertEqual(dataList.count, expectedDatas.count, file: file, line: line)
-
-            for i in 0..<expectedDatas.count {
-                XCTAssertEqual(dataList[i].key, expectedDatas[i].key,file: file, line: line)
-            }
+            
+            self.comparePDFData(expectedDatas: expectedDatas, actualdata: dataList, file: file, line: line)
+//            XCTAssertEqual(dataList.count, expectedDatas.count, file: file, line: line)
+//
+//            for i in 0..<expectedDatas.count {
+//                XCTAssertEqual(dataList[i].key, expectedDatas[i].key,file: file, line: line)
+//                XCTAssertEqual(dataList[i].isFavourite, expectedDatas[i].isFavourite,file: file, line: line)
+//            }
 
             exp.fulfill()
         }
 
         wait(for: [exp], timeout: 10)
+    }
+    
+    func comparePDFData(expectedDatas: [PDFCoreDataModel], actualdata :  [PDFCoreDataModel] , file: StaticString = #file, line: UInt = #line)  {
+      
+        let dataList = actualdata
+        XCTAssertEqual(dataList.count, expectedDatas.count, file: file, line: line)
+
+        for i in 0..<expectedDatas.count {
+            XCTAssertEqual(dataList[i].key, expectedDatas[i].key,file: file, line: line)
+            XCTAssertEqual(dataList[i].isFavourite, expectedDatas[i].isFavourite,file: file, line: line)
+        }
     }
 
 }
