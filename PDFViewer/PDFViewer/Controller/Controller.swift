@@ -24,7 +24,7 @@ struct Controller: View {
                     // Main Expand Button
                     Button(action: {
                         withAnimation {
-                            isExpanded.toggle()
+                            vm.isExpanded.toggle()
                         }
                     }) {
                            
@@ -39,16 +39,16 @@ struct Controller: View {
                        
                     }
 
-                    if isExpanded {
+                    if vm.isExpanded {
                         HStack(spacing: 10) {
                             Button(action: {
                                 withAnimation(.spring()) {
-                                                           showColorPalette.toggle()
+                                    vm.showColorPalette.toggle()
                                                        }
 
                             }) {
                                 Circle()
-                                    .fill(selectedColor)
+                                    .fill(vm.selectedColor)
                                     .frame(width: 25, height: 25)
                                 
                                     .overlay(Image(systemName: "paintpalette.fill")
@@ -67,8 +67,8 @@ struct Controller: View {
 
                 Spacer()
                 
-                if showColorPalette {
-                                ColorPaletteView(selectedColor: $selectedColor, showPalette: $showColorPalette)
+                if vm.showColorPalette {
+                    ColorPaletteView(selectedColor: $vm.selectedColor, showPalette: $vm.showColorPalette)
                                     .transition(.scale.combined(with: .opacity))
                             }
             }
