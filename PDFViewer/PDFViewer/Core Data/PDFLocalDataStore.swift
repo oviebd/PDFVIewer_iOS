@@ -5,6 +5,7 @@
 //  Created by Habibur Rahman on 21/10/24.
 //
 
+import Combine
 import CoreData
 import Foundation
 
@@ -44,7 +45,6 @@ class PDFLocalDataStore {
 
     private let container: NSPersistentContainer
     let context: NSManagedObjectContext
-
 
     public init(storeURL: URL? = nil) throws {
         if let storeURL = storeURL {
@@ -86,119 +86,209 @@ class PDFLocalDataStore {
         }
     }
 
-    public func insert(pdfDatas: [PDFCoreDataModel], completion: @escaping InsertionCompletion) {
-        perform {[weak self] context in
-            guard let self = self else { return }
-            do {
-                let fetchRequest: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
-                var existingKeys = try context.fetch(fetchRequest).compactMap { $0.key }
-
-                // Filter out duplicates based on `key`
-                let newPDFs = pdfDatas.filter { !existingKeys.contains($0.key) }
-
-                for pdf in newPDFs {
-                    let key = pdf.key
-                    if existingKeys.contains(key) {
-                        continue
-                    }
-                    let newData = PDFEntity(context: self.context)
-
-                    newData.key = key
-                    newData.bookmarkData = pdf.data
-                    newData.isFavourite = pdf.isFavourite
-                    existingKeys.append(key)
-                    try context.save()
-                }
-
-                // If there's nothing to insert
-//                guard !newPDFs.isEmpty else {
-//                    completion(.failure(DataAlreadyExistError(description: "Selected data already exist")))
-//                    return
+//    public func insert(pdfDatas: [PDFCoreDataModel], completion: @escaping InsertionCompletion) {
+//        perform {[weak self] context in
+//            guard let self = self else { return }
+//            do {
+//                let fetchRequest: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
+//                var existingKeys = try context.fetch(fetchRequest).compactMap { $0.key }
+//
+//                // Filter out duplicates based on `key`
+//                let newPDFs = pdfDatas.filter { !existingKeys.contains($0.key) }
+//
+//                for pdf in newPDFs {
+//                    let key = pdf.key
+//                    if existingKeys.contains(key) {
+//                        continue
+//                    }
+//                    let newData = PDFEntity(context: self.context)
+//
+//                    newData.key = key
+//                    newData.bookmarkData = pdf.data
+//                    newData.isFavourite = pdf.isFavourite
+//                    existingKeys.append(key)
+//                    try context.save()
 //                }
+//                completion(.success(newPDFs))
+//            } catch {
+//                context.rollback()
+//                completion(.failure(error))
+//            }
+//        }
+//    }
 
-                completion(.success(newPDFs))
-            } catch {
-                context.rollback()
-                completion(.failure(error))
-            }
-        }
-    }
+    public func insert(pdfDatas: [PDFCoreDataModel]) -> AnyPublisher<[PDFCoreDataModel], Error> {
+        return Future { [weak self] promise in
+            self?.perform { context in
+                guard let self = self else { return }
 
-    public func retrieve(completion: @escaping RetrievalCompletion) {
-        perform {  context in
-           
-            do {
-                let fetchRequest: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
-                let results = try context.fetch(fetchRequest)
+                do {
+                    let fetchRequest: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
+                    var existingKeys = try context.fetch(fetchRequest).compactMap { $0.key }
 
-                let models = results.map {
-                    PDFCoreDataModel(key: $0.key ?? "", data: $0.bookmarkData ?? Data(), isFavourite: false)
-                }
+                    let newPDFs = pdfDatas.filter { !existingKeys.contains($0.key) }
 
-                completion(.success(models))
+                    for pdf in newPDFs {
+                        let key = pdf.key
+                        if existingKeys.contains(key) { continue }
 
-            } catch {
-                completion(.failure(error))
-            }
-        }
-    }
-
-    public func update(updatedData: PDFCoreDataModel,
-                       completion: @escaping (Result<Bool, Error>) -> Void
-    ) {
-        perform { [weak self] _ in
-            guard let self = self else { return }
-            do {
-                let key = updatedData.key
-
-                self.filter(parameters: ["key": key]) {  [weak self] result in
-                    guard let self = self else { return }
-                    switch result {
-                    case let .success(entityList):
-                        if let object = entityList?.first {
-                            object.key = updatedData.key
-                            object.bookmarkData = updatedData.data
-
-                            object.isFavourite = updatedData.isFavourite
-                            
-                            do{
-                                try self.context.save()
-                                completion(.success((true)))
-                            }catch{
-                                completion(.failure((error)))
-                            }
-
-                        }
-                        break
-
-                    case let .failure(error):
-                        
-                        print("Error fetching data: \(error)")
-                        completion(.failure((error)))
-                        break
+                        let newData = PDFEntity(context: self.context)
+                        newData.key = key
+                        newData.bookmarkData = pdf.data
+                        newData.isFavourite = pdf.isFavourite
+                        existingKeys.append(key)
                     }
+
+                    try context.save()
+                    promise(.success(newPDFs))
+                } catch {
+                    context.rollback()
+                    promise(.failure(error))
                 }
             }
         }
+        .eraseToAnyPublisher()
     }
 
-    public func filter(parameters: [String: Any], completion: @escaping FilterCompletionEntity) {
-        
-        perform { context in
-            do {
-                let request: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
-                request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates:
-                    parameters.map { NSPredicate(format: "%K == %@", $0.key, "\($0.value)") }
-                )
-                request.fetchLimit = 1
+    public func retrieve() -> AnyPublisher<[PDFCoreDataModel], Error> {
+        return Future { [weak self] promise in
+            self?.perform { context in
+                do {
+                    let fetchRequest: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
+                    let results = try context.fetch(fetchRequest)
 
-                let results = try context.fetch(request)
+                    let models = results.map {
+                        PDFCoreDataModel(
+                            key: $0.key ?? "",
+                            data: $0.bookmarkData ?? Data(),
+                            isFavourite: $0.isFavourite
+                        )
+                    }
 
-                completion(.success(results))
-            } catch {
-                completion(.failure(error))
+                    promise(.success(models))
+                } catch {
+                    promise(.failure(error))
+                }
             }
         }
+        .eraseToAnyPublisher()
+    }
+
+//    public func retrieve(completion: @escaping RetrievalCompletion) {
+//        perform { context in
+//
+//            do {
+//                let fetchRequest: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
+//                let results = try context.fetch(fetchRequest)
+//
+//                let models = results.map {
+//                    PDFCoreDataModel(key: $0.key ?? "", data: $0.bookmarkData ?? Data(), isFavourite: false)
+//                }
+//
+//                completion(.success(models))
+//
+//            } catch {
+//                completion(.failure(error))
+//            }
+//        }
+//    }
+
+//    public func update(updatedData: PDFCoreDataModel,
+//                       completion: @escaping (Result<Bool, Error>) -> Void
+//    ) {
+//        perform { [weak self] _ in
+//            guard let self = self else { return }
+//            do {
+//                let key = updatedData.key
+//
+//                self.filter(parameters: ["key": key]) { [weak self] result in
+//                    guard let self = self else { return }
+//                    switch result {
+//                    case let .success(entityList):
+//                        if let object = entityList?.first {
+//                            object.key = updatedData.key
+//                            object.bookmarkData = updatedData.data
+//
+//                            object.isFavourite = updatedData.isFavourite
+//
+//                            do {
+//                                try self.context.save()
+//                                completion(.success(true))
+//                            } catch {
+//                                completion(.failure(error))
+//                            }
+//                        }
+//                        break
+//
+//                    case let .failure(error):
+//
+//                        print("Error fetching data: \(error)")
+//                        completion(.failure(error))
+//                        break
+//                    }
+//                }
+//            }
+//        }
+//    }
+
+//    public func filter(parameters: [String: Any], completion: @escaping FilterCompletionEntity) {
+//        perform { context in
+//            do {
+//                let request: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
+//                request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates:
+//                    parameters.map { NSPredicate(format: "%K == %@", $0.key, "\($0.value)") }
+//                )
+//                request.fetchLimit = 1
+//
+//                let results = try context.fetch(request)
+//
+//                completion(.success(results))
+//            } catch {
+//                completion(.failure(error))
+//            }
+//        }
+//    }
+
+    public func update(updatedData: PDFCoreDataModel) -> AnyPublisher<Bool, Error> {
+        filter(parameters: ["key": updatedData.key])
+            .tryMap { [weak self] entityList in
+                guard let self = self else {
+                    throw NSError(domain: "PDFLocalDataLoader", code: -1, userInfo: [NSLocalizedDescriptionKey: "Self was deallocated"])
+                }
+
+                guard let object = entityList.first else {
+                    throw NSError(domain: "PDFLocalDataLoader", code: -1, userInfo: [NSLocalizedDescriptionKey: "No entity found with matching key"])
+                }
+
+                object.key = updatedData.key
+                object.bookmarkData = updatedData.data
+                object.isFavourite = updatedData.isFavourite
+
+                try self.context.save()
+
+                return true
+            }
+            .eraseToAnyPublisher()
+    }
+
+    public func filter(parameters: [String: Any]) -> AnyPublisher<[PDFEntity], Error> {
+        return Future { [weak self] promise in
+            self?.perform { context in
+                do {
+                    let request: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
+                    request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates:
+                        parameters.map { NSPredicate(format: "%K == %@", $0.key, "\($0.value)") }
+                    )
+                    request.fetchLimit = 1
+
+                    let results = try context.fetch(request)
+                    promise(.success(results))
+                } catch {
+                    promise(.failure(error))
+                }
+            }
+        }
+        .eraseToAnyPublisher()
     }
 
     private func perform(_ action: @escaping (NSManagedObjectContext) -> Void) {

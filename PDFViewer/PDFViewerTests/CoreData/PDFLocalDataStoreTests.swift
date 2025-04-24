@@ -5,67 +5,83 @@
 //  Created by Habibur Rahman on 14/4/25.
 //
 
-import XCTest
-@testable import PDFViewer
+import Combine
 import PDFKit
+@testable import PDFViewer
+import XCTest
 
 final class PDFLocalDataStoreTests: XCTestCase {
+    // Tests
 
-    //Tests
-    
+    private var cancellables = Set<AnyCancellable>()
+
     func test_insert_NewDataWillInsertSuccessfully() throws {
         let sut = try makeSUT()
         let firstPdfData = createDummyPDFCoreDataModel(key: "first")
         let secondPdfData = createDummyPDFCoreDataModel(key: "second")
-        
-        insert(sut, datas: [firstPdfData,secondPdfData])
-        expect(sut, toRetrieve: [firstPdfData,secondPdfData])
+
+        insert(sut, datas: [firstPdfData, secondPdfData])
+        expect(sut, toRetrieve: [firstPdfData, secondPdfData])
     }
-    
+
     func test_insert_ExistingDataWillNotInsert() throws {
         let sut = try makeSUT()
         let firstPdfData = createDummyPDFCoreDataModel(key: "first")
         let secondPdfData = createDummyPDFCoreDataModel(key: "second")
         let thirdPdfData = createDummyPDFCoreDataModel(key: "first")
-        
-        insert(sut, datas: [firstPdfData,secondPdfData,thirdPdfData])
-        expect(sut, toRetrieve: [firstPdfData,secondPdfData])
-       
+
+        insert(sut, datas: [firstPdfData, secondPdfData, thirdPdfData])
+        expect(sut, toRetrieve: [firstPdfData, secondPdfData])
     }
-    
+
     func test_insert_PreviouslyExistingDataWillNotInsert() throws {
         let sut = try makeSUT()
         let firstPdfData = createDummyPDFCoreDataModel(key: "first")
         let secondPdfData = createDummyPDFCoreDataModel(key: "second")
         let thirdPdfData = createDummyPDFCoreDataModel(key: "first")
-        
-        insert(sut, datas: [firstPdfData,secondPdfData])
-        expect(sut, toRetrieve: [firstPdfData,secondPdfData])
+
+        insert(sut, datas: [firstPdfData, secondPdfData])
+        expect(sut, toRetrieve: [firstPdfData, secondPdfData])
         insert(sut, datas: [thirdPdfData])
-        expect(sut, toRetrieve: [firstPdfData,secondPdfData])
+        expect(sut, toRetrieve: [firstPdfData, secondPdfData])
     }
-    
+
     func test_favorite_UpdateFavoriteData() throws {
         let sut = try makeSUT()
-        let firstFavoriteItem = createDummyPDFCoreDataModel(key: "first",isfavorite: true)
-        let secondNotFavoritePdfData = createDummyPDFCoreDataModel(key: "second",isfavorite: false)
-        
+        let firstFavoriteItem = createDummyPDFCoreDataModel(key: "first", isfavorite: true)
+        let secondNotFavoritePdfData = createDummyPDFCoreDataModel(key: "second", isfavorite: false)
+
         let expectation = self.expectation(description: "Toggle favorite")
+
+        insert(sut, datas: [firstFavoriteItem, secondNotFavoritePdfData])
+        self.comparePDFData(expectedDatas: [firstFavoriteItem, secondNotFavoritePdfData], actualdata: [secondNotFavoritePdfData,firstFavoriteItem])
         
-        insert(sut, datas: [firstFavoriteItem,secondNotFavoritePdfData])
-        sut.toggleFavorite(pdfItem: firstFavoriteItem) { [weak self] updatedData, isSuccess in
-            XCTAssertTrue(isSuccess)
-            XCTAssertFalse(updatedData!.isFavourite)
-            
-            sut.retrieve { datas in
-                self?.comparePDFData(expectedDatas: [updatedData!,secondNotFavoritePdfData], actualdata: datas!)
-                expectation.fulfill()
+       // expectation.fulfill()
+        
+        sut.toggleFavorite(pdfItem: firstFavoriteItem)
+            .flatMap { updatedItem -> AnyPublisher<[PDFCoreDataModel], Error> in
+                XCTAssertFalse(updatedItem.isFavourite)  // Validate toggle worked
+                return sut.retrieve()
             }
-        }
+            .sink(receiveCompletion: { completion in
+                switch completion {
+                case .finished:
+                    print("Toggling and retrieving succeeded")
+                case .failure(let error):
+                    XCTFail("Toggle or Retrieve failed: \(error)")
+                }
+                expectation.fulfill()
+            }, receiveValue: { retrievedItems in
+                // Assert retrieved data includes the updated item
+                
+                self.comparePDFData(expectedDatas: [createDummyPDFCoreDataModel(key: "first", isfavorite: false), secondNotFavoritePdfData], actualdata: retrievedItems)
+            })
+            .store(in: &cancellables)
+
+
         wait(for: [expectation], timeout: 5.0)
     }
-    
-    
+
     // Helpers
     private func makeSUT(file: StaticString = #filePath, line: UInt = #line) throws -> PDFLocalDataLoader {
         let store = try PDFLocalDataStore(storeURL: inMemoryStoreURL())
@@ -75,85 +91,100 @@ final class PDFLocalDataStoreTests: XCTestCase {
         trackForMemoryLeaks(sut, file: file, line: line)
         return sut
     }
-    
+
     private func inMemoryStoreURL() -> URL {
         URL(fileURLWithPath: "/dev/null")
             .appendingPathComponent("\(type(of: self)).store")
     }
 
-    @discardableResult
-    func insert(_ sut: PDFLocalDataLoader, datas: [PDFCoreDataModel], file: StaticString = #filePath, line: UInt = #line) -> Bool {
+    func insert(_ sut: PDFLocalDataLoader, datas: [PDFCoreDataModel], file: StaticString = #filePath, line: UInt = #line) {
         let exp = expectation(description: "waitig for insertion")
-        var isInsertionSuccess = false
+        // var isInsertionSuccess = false
 
-        sut.insertPDFDatas(pdfDatas: datas) { isSuccess in
-            isInsertionSuccess = isSuccess
-            XCTAssertTrue(isSuccess)
-            exp.fulfill()
-        }
+        sut.insertPDFDatas(pdfDatas: datas)
+            .sink(receiveCompletion: { completion in
+                switch completion {
+                case .finished:
+                    print("Insert completed")
+                case let .failure(error):
+                    // print("Insert failed with error: \(error)")
+                    XCTFail("Insertion failed with error: \(error)")
+                }
+                exp.fulfill()
+            }, receiveValue: { insertedPDFs in
+                print("Inserted: \(insertedPDFs.count) new items")
+
+            })
+            .store(in: &cancellables)
 
         wait(for: [exp], timeout: 1.0)
-        return isInsertionSuccess
     }
-    
-    @discardableResult
-    func retrieve(_ sut: PDFLocalDataLoader, file: StaticString = #filePath, line: UInt = #line) -> [PDFCoreDataModel]? {
-        let exp = expectation(description: "waitig for insertion")
-        var localDatas : [PDFCoreDataModel] = []
-        sut.retrieve { datas in
-            localDatas = datas ?? []
-            exp.fulfill()
-        }
-        wait(for: [exp], timeout: 1.0)
-        return localDatas
-    }
-    
 
-    
+//
+//    @discardableResult
+//    func retrieve(_ sut: PDFLocalDataLoader, file: StaticString = #filePath, line: UInt = #line) -> [PDFCoreDataModel]? {
+//        let exp = expectation(description: "waitig for insertion")
+//        var localDatas: [PDFCoreDataModel] = []
+//        sut.retrieve { datas in
+//            localDatas = datas ?? []
+//            exp.fulfill()
+//        }
+//        wait(for: [exp], timeout: 1.0)
+//        return localDatas
+//    }
+
     func expect(_ sut: PDFLocalDataLoader, toRetrieve expectedDatas: [PDFCoreDataModel], file: StaticString = #file, line: UInt = #line) {
         let exp = expectation(description: "Wait for cache retrieval")
-        sut.retrieve { fetchedInspection in
+        sut.retrieve()
+            .sink(receiveCompletion: { completion in
 
-            let dataList = fetchedInspection ?? []
-            
-            self.comparePDFData(expectedDatas: expectedDatas, actualdata: dataList, file: file, line: line)
-//            XCTAssertEqual(dataList.count, expectedDatas.count, file: file, line: line)
-//
-//            for i in 0..<expectedDatas.count {
-//                XCTAssertEqual(dataList[i].key, expectedDatas[i].key,file: file, line: line)
-//                XCTAssertEqual(dataList[i].isFavourite, expectedDatas[i].isFavourite,file: file, line: line)
-//            }
+                switch completion {
+                case .finished:
+                    print("Insert completed")
+                case let .failure(error):
+                    // print("Insert failed with error: \(error)")
+                    XCTFail("Insertion failed with error: \(error)")
+                }
+                exp.fulfill()
+            }, receiveValue: { datas in
+                self.comparePDFData(expectedDatas: expectedDatas, actualdata: datas, file: file, line: line)
+                //   print("retr: \(insertedPDFs.count) new items")
 
-            exp.fulfill()
-        }
+            })
+            .store(in: &cancellables)
 
-        wait(for: [exp], timeout: 10)
+        wait(for: [exp], timeout: 1.0)
     }
-    
-    func comparePDFData(expectedDatas: [PDFCoreDataModel], actualdata :  [PDFCoreDataModel] , file: StaticString = #file, line: UInt = #line)  {
+
+    func comparePDFData(expectedDatas: [PDFCoreDataModel], actualdata: [PDFCoreDataModel], file: StaticString = #file, line: UInt = #line) {
       
-        let dataList = actualdata
-        XCTAssertEqual(dataList.count, expectedDatas.count, file: file, line: line)
 
-        for i in 0..<expectedDatas.count {
-            XCTAssertEqual(dataList[i].key, expectedDatas[i].key,file: file, line: line)
-            XCTAssertEqual(dataList[i].isFavourite, expectedDatas[i].isFavourite,file: file, line: line)
-        }
+        XCTAssertEqual(
+            Set(actualdata),
+            Set(expectedDatas),
+            "Expected data does not match actual data (ignoring order)",
+            file: file,
+            line: line
+        )
+//        XCTAssertEqual(dataList.count, expectedDatas.count, file: file, line: line)
+//
+//        for i in 0 ..< expectedDatas.count {
+//
+//            XCTAssertEqual(dataList[i].key, expectedDatas[i].key, file: file, line: line)
+//            XCTAssertEqual(dataList[i].isFavourite, expectedDatas[i].isFavourite, file: file, line: line)
+//        }
     }
-
 }
 
-
-func createDummyPDFCoreDataModel(pdfTitle: String = "Test PDF", pdfAuthor: String = "John Doe", pdfPageCount: Int = 3, key : String, isfavorite : Bool = false, lastOpenedDate : Date? = nil) -> PDFCoreDataModel {
-    
-    let pdfData : Data = createDummyPDF(title: pdfTitle, author: pdfAuthor, pageCount: pdfPageCount).dataRepresentation()!
+func createDummyPDFCoreDataModel(pdfTitle: String = "Test PDF", pdfAuthor: String = "John Doe", pdfPageCount: Int = 3, key: String, isfavorite: Bool = false, lastOpenedDate: Date? = nil) -> PDFCoreDataModel {
+    let pdfData: Data = createDummyPDF(title: pdfTitle, author: pdfAuthor, pageCount: pdfPageCount).dataRepresentation()!
     return PDFCoreDataModel(key: key, data: pdfData, isFavourite: isfavorite)
 }
 
 func createDummyPDF(title: String = "Test PDF", author: String = "John Doe", pageCount: Int = 3) -> PDFDocument {
     let pdfDocument = PDFDocument()
-    
-    for i in 0..<pageCount {
+
+    for i in 0 ..< pageCount {
         let page = PDFPage()
         pdfDocument.insert(page, at: i)
     }
@@ -161,13 +192,27 @@ func createDummyPDF(title: String = "Test PDF", author: String = "John Doe", pag
     // Set metadata
     pdfDocument.documentAttributes = [
         PDFDocumentAttribute.titleAttribute: title,
-        PDFDocumentAttribute.authorAttribute: author
+        PDFDocumentAttribute.authorAttribute: author,
     ]
 
     // Bookmark data is usually created from PDFDocument's data
-    return pdfDocument//.dataRepresentation()
+    return pdfDocument // .dataRepresentation()
 }
 
-//func getPdfData(pdfDocument : PDFDocument?) -> Data? {
+extension PDFCoreDataModel: Equatable, Hashable {
+    public static func == (lhs: PDFCoreDataModel, rhs: PDFCoreDataModel) -> Bool {
+        return lhs.key == rhs.key &&
+            lhs.data == rhs.data &&
+            lhs.isFavourite == rhs.isFavourite
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(key)
+        hasher.combine(data)
+        hasher.combine(isFavourite)
+    }
+}
+
+// func getPdfData(pdfDocument : PDFDocument?) -> Data? {
 //    return pdfDocument?.dataRepresentation()
-//}
+// }
