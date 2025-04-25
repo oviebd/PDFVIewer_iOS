@@ -16,9 +16,8 @@ struct PDFFile: Identifiable {
     let name: String
     let url: URL
     let metadata: PDFMetadata
-    let pdfKey : String
+    let pdfKey: String
 }
-
 
 struct PDFMetadata {
     let image: UIImage?
@@ -27,27 +26,10 @@ struct PDFMetadata {
 }
 
 
-
 class PDFManager: ObservableObject {
     @Published var pdfFiles: [PDFFile] = []
-    
-    let manager = PdfCoreDataManager()
 
-//    func fetchPDFFiles(from folderURL: URL) {
-//        let fileManager = FileManager.default
-//
-//        do {
-//            let files = try fileManager.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil)
-//            let pdfs = files.filter { $0.pathExtension.lowercased() == "pdf" }
-//                .map { PDFFile(name: $0.lastPathComponent, url: $0, metadata: extractPDFMetadata(from: $0)) }
-//
-//            DispatchQueue.main.async {
-//                self.pdfFiles = pdfs
-//            }
-//        } catch {
-//            print("Error fetching PDFs: \(error)")
-//        }
-//    }
+    let manager = PdfCoreDataManager()
 
     func loadSelectedPDFFiles(urls: [URL]) {
         DispatchQueue.global(qos: .userInitiated).async {
@@ -56,7 +38,7 @@ class PDFManager: ObservableObject {
 
             DispatchQueue.main.async {
                 self.pdfFiles = pdfs
-                self.savePDFBookmarks(urls: urls)
+                //self.savePDFBookmarks(urls: urls)
             }
         }
     }
@@ -77,44 +59,60 @@ class PDFManager: ObservableObject {
         return PDFMetadata(image: image, author: author, title: title)
     }
 
-    func restorePDFsFromBookmarks() async {
-        guard let savedBookmarksDict = UserDefaults.standard.dictionary(forKey: "SavedPDFBookmarks") as? [String: Data] else {
-            return
-        }
-
-        var restoredPDFs: [PDFFile] = []
-
-        for (key, bookmarkData) in savedBookmarksDict {
-            var isStale = false
-            do {
-                let url = try URL(resolvingBookmarkData: bookmarkData, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
-                let metadata = extractPDFMetadata(from: url)
-                let pdfFile = PDFFile(name: url.lastPathComponent, url: url, metadata: metadata, pdfKey: key)
-                restoredPDFs.append(pdfFile)
-                
-                print("U>> restored key is -  \(key) - name - \(pdfFile.name) - title \(pdfFile.metadata.title)")
-//                if isStale {
-//                    print("⚠️ Bookmark for key \(key) is stale.")
+//    func restorePDFsFromBookmarks() async {
+//        guard let savedBookmarksDict = UserDefaults.standard.dictionary(forKey: "SavedPDFBookmarks") as? [String: Data] else {
+//            return
+//        }
+//
+//        var restoredPDFs: [PDFFile] = []
+//
+//        for (key, bookmarkData) in savedBookmarksDict {
+//            var isStale = false
+//            do {
+//                let url = try URL(resolvingBookmarkData: bookmarkData, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
+//                let metadata = extractPDFMetadata(from: url)
+//                let pdfFile = PDFFile(name: url.lastPathComponent, url: url, metadata: metadata, pdfKey: key)
+//                restoredPDFs.append(pdfFile)
+//
+//                print("U>> restored key is -  \(key) - name - \(pdfFile.name) - title \(pdfFile.metadata.title)")
+////                if isStale {
+////                    print("⚠️ Bookmark for key \(key) is stale.")
+////                }
+//            } catch {
+//                print("❌ Error restoring bookmark for key \(key): \(error)")
+//            }
+//        }
+//
+//        // ✅ Fix: assign to a `let` copy before calling `await`
+//        let finalPDFs = restoredPDFs
+//
+//        await MainActor.run {
+//            self.pdfFiles = finalPDFs
+//        }
+//    }
+//
+//    func savePDFBookmarksInDB(urls: [URL]) {
+//        // Step 1: Load existing dictionary of bookmarks
+//        var coreDataList: [PDFCoreDataModel] = getPDFCoreDataList(urls: urls)
+//
+//        dataLoader?.insertPDFDatas(pdfDatas: coreDataList)
+//            .sink(receiveCompletion: { completion in
+//                switch completion {
+//                case .finished:
+//                    print("Insert completed")
+//                case let .failure(error):
+//                    break
 //                }
-            } catch {
-                print("❌ Error restoring bookmark for key \(key): \(error)")
-            }
-        }
+//            }, receiveValue: { insertedPDFs in
+//                print("Inserted: \(insertedPDFs.count) new items")
+//
+//            })
+//            .store(in: &cancellables)
+//    }
 
-        // ✅ Fix: assign to a `let` copy before calling `await`
-        let finalPDFs = restoredPDFs
-
-        await MainActor.run {
-            self.pdfFiles = finalPDFs
-        }
-    }
-
-    func savePDFBookmarks(urls: [URL]) {
-        // Step 1: Load existing dictionary of bookmarks
+    func getPDFCoreDataList(urls: [URL]) -> [PDFCoreDataModel] {
         var coreDataList = [PDFCoreDataModel]()
-      //  var savedBookmarksDict = UserDefaults.standard.dictionary(forKey: "SavedPDFBookmarks") as? [String: Data] ?? [:]
 
-        // Step 2: Convert new URLs to bookmark data
         for url in urls {
             do {
                 let bookmark = try url.bookmarkData(
@@ -124,18 +122,13 @@ class PDFManager: ObservableObject {
                 )
 
                 let key = generatePDFKey(for: url)
-              //  savedBookmarksDict[key] = bookmark
                 coreDataList.append(PDFCoreDataModel(key: key, data: bookmark, isFavourite: false))
-
             } catch {
                 print("❌ Error creating bookmark for \(url): \(error)")
             }
         }
-        
-       // manager.addPdfBookmarkData(pdfDatas: coreDataList)
 
-        // Step 3: Save the updated dictionary to UserDefaults
-       // UserDefaults.standard.set(savedBookmarksDict, forKey: "SavedPDFBookmarks")
+        return coreDataList
     }
 
     func generatePDFKey(for url: URL) -> String {

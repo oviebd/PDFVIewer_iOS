@@ -13,6 +13,7 @@ struct PDFListView: View {
     @State private var showFolderPicker = false
     @State private var showFilePicker = false
     
+    @StateObject private var pdfDataVm = PDFDataVM()
 
     var body: some View {
         NavigationView {
@@ -26,16 +27,14 @@ struct PDFListView: View {
                     }
                     
                     Button("From Cache") {
-                        Task{
-                            await pdfManager.restorePDFsFromBookmarks()
-                        }
+                         pdfDataVm.fetchDataFromLocal()
                        
                     }
                 }
                 
                 .padding()
 
-                List(pdfManager.pdfFiles) { pdf in
+                List(pdfDataVm.pdfDataList) { pdf in
                     NavigationLink(destination: PDFViewerView(pdfFile: pdf)) {
                        // Text(pdf.name)
                         
@@ -78,7 +77,8 @@ struct PDFListView: View {
 //            }
             .sheet(isPresented: $showFilePicker) {
                 FileOrFolderPickerView(mode: .file) { urls in
-                    pdfManager.loadSelectedPDFFiles(urls: urls)
+                    pdfDataVm.importAndSavePDF(urls: urls)
+                    //pdfManager.loadSelectedPDFFiles(urls: urls)
                 }
             }
 //            .sheet(isPresented: $showPicker) {
