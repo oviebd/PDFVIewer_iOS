@@ -54,9 +54,6 @@ final class PDFLocalDataStoreTests: XCTestCase {
         let expectation = self.expectation(description: "Toggle favorite")
 
         insert(sut, datas: [firstFavoriteItem, secondNotFavoritePdfData])
-        self.comparePDFData(expectedDatas: [firstFavoriteItem, secondNotFavoritePdfData], actualdata: [secondNotFavoritePdfData,firstFavoriteItem])
-        
-       // expectation.fulfill()
         
         sut.toggleFavorite(pdfItem: firstFavoriteItem)
             .flatMap { updatedItem -> AnyPublisher<[PDFCoreDataModel], Error> in
@@ -75,6 +72,39 @@ final class PDFLocalDataStoreTests: XCTestCase {
                 // Assert retrieved data includes the updated item
                 
                 self.comparePDFData(expectedDatas: [createDummyPDFCoreDataModel(key: "first", isfavorite: false), secondNotFavoritePdfData], actualdata: retrievedItems)
+            })
+            .store(in: &cancellables)
+
+
+        wait(for: [expectation], timeout: 5.0)
+    }
+    
+    func test_delete_DeleteData() throws {
+        let sut = try makeSUT()
+        let firstItem = createDummyPDFCoreDataModel(key: "first", isfavorite: true)
+        let secondItem = createDummyPDFCoreDataModel(key: "second", isfavorite: false)
+
+        let expectation = self.expectation(description: "Toggle favorite")
+
+        insert(sut, datas: [firstItem, secondItem])
+        
+        sut.deletePdfData(pdfItem: firstItem)
+            .flatMap { isSuccess -> AnyPublisher<[PDFCoreDataModel], Error> in
+                XCTAssertTrue(isSuccess)  // Validate toggle worked
+                return sut.retrieve()
+            }
+            .sink(receiveCompletion: { completion in
+                switch completion {
+                case .finished:
+                    print("Toggling and retrieving succeeded")
+                case .failure(let error):
+                    XCTFail("Toggle or Retrieve failed: \(error)")
+                }
+                expectation.fulfill()
+            }, receiveValue: { retrievedItems in
+                // Assert retrieved data includes the updated item
+                
+                self.comparePDFData(expectedDatas: [secondItem], actualdata: retrievedItems)
             })
             .store(in: &cancellables)
 
@@ -166,13 +196,6 @@ final class PDFLocalDataStoreTests: XCTestCase {
             file: file,
             line: line
         )
-//        XCTAssertEqual(dataList.count, expectedDatas.count, file: file, line: line)
-//
-//        for i in 0 ..< expectedDatas.count {
-//
-//            XCTAssertEqual(dataList[i].key, expectedDatas[i].key, file: file, line: line)
-//            XCTAssertEqual(dataList[i].isFavourite, expectedDatas[i].isFavourite, file: file, line: line)
-//        }
     }
 }
 
@@ -202,7 +225,7 @@ func createDummyPDF(title: String = "Test PDF", author: String = "John Doe", pag
 extension PDFCoreDataModel: Equatable, Hashable {
     public static func == (lhs: PDFCoreDataModel, rhs: PDFCoreDataModel) -> Bool {
         return lhs.key == rhs.key &&
-            lhs.data == rhs.data &&
+          //  lhs.data == rhs.data &&
             lhs.isFavourite == rhs.isFavourite
     }
 

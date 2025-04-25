@@ -270,6 +270,25 @@ class PDFLocalDataStore {
             }
             .eraseToAnyPublisher()
     }
+    
+    public func delete(updatedData: PDFCoreDataModel) -> AnyPublisher<Bool, Error> {
+        filter(parameters: ["key": updatedData.key])
+            .tryMap { [weak self] entityList in
+                guard let self = self else {
+                    throw NSError(domain: "PDFLocalDataLoader", code: -1, userInfo: [NSLocalizedDescriptionKey: "Self was deallocated"])
+                }
+
+                guard let object = entityList.first else {
+                    throw NSError(domain: "PDFLocalDataLoader", code: -1, userInfo: [NSLocalizedDescriptionKey: "No entity found with matching key"])
+                }
+
+                context.delete(object)
+                try self.context.save()
+
+                return true
+            }
+            .eraseToAnyPublisher()
+    }
 
     public func filter(parameters: [String: Any]) -> AnyPublisher<[PDFEntity], Error> {
         return Future { [weak self] promise in

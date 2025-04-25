@@ -40,4 +40,16 @@ class PDFLocalDataLoader {
             }
             .eraseToAnyPublisher()
     }
+    
+    public func deletePdfData(pdfItem: PDFCoreDataModel) -> AnyPublisher<Bool, Error> {
+
+        return store.delete(updatedData: pdfItem)
+            .tryMap { isSuccess in
+                guard isSuccess else {
+                    throw NSError(domain: "deletePdfData", code: -1, userInfo: [NSLocalizedDescriptionKey: "Delete failed"])
+                }
+                return isSuccess
+            }
+            .eraseToAnyPublisher()
+    }
 }
