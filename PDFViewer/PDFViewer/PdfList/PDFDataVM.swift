@@ -10,7 +10,6 @@ import Foundation
 import PDFKit
 import CryptoKit
 
-@MainActor
 class PDFDataVM: ObservableObject {
    
     @Published var pdfDataList: [PDFFile] = []
@@ -44,6 +43,7 @@ class PDFDataVM: ObservableObject {
 
     func fetchDataFromLocal() {
         dataLoader?.retrieve()
+            .receive(on: DispatchQueue.main)
             .sink(receiveCompletion: { completion in
 
                 switch completion {
