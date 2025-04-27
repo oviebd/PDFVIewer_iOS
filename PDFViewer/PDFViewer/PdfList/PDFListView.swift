@@ -8,37 +8,37 @@
 import SwiftUI
 
 struct PDFListView: View {
-    @StateObject private var pdfManager = PDFManager()
-    @State private var selectedFolderURL: URL?
-    @State private var showFolderPicker = false
+    @StateObject private var viewModel: PDFListViewModel
+
     @State private var showFilePicker = false
-    
-    @StateObject private var pdfDataVm = PDFDataVM()
+
+    init() {
+        let store = try? PDFLocalDataStore()
+        let loader = store.map { PDFLocalDataLoader(store: $0) }
+        let repo = loader.map { PDFRepositoryImpl(loader: $0) }
+        _viewModel = StateObject(wrappedValue: PDFListViewModel(repository: repo!))
+    }
 
     var body: some View {
         NavigationView {
             VStack {
-                HStack{
-                    Button("Select Folder") {
-                        showFolderPicker.toggle()
-                    }
-                    Button("Select files") {
+                HStack {
+                    Button("Select Files") {
                         showFilePicker.toggle()
                     }
-                    
-                    Button("From Cache") {
-                         pdfDataVm.fetchDataFromLocal()
-                       
+                    Button("Load Cached PDFs") {
+                        viewModel.loadPDFs()
                     }
                 }
-                
                 .padding()
 
-                List(pdfDataVm.pdfDataList) { pdf in
+                if viewModel.isLoading {
+                    ProgressView()
+                }
+
+                List(viewModel.pdfFiles) { pdf in
                     NavigationLink(destination: PDFViewerView(pdfFile: pdf)) {
-                       // Text(pdf.name)
-                        
-                        HStack{
+                        HStack {
                             if let image = pdf.metadata.image {
                                 Image(uiImage: image)
                                     .resizable()
@@ -50,9 +50,7 @@ struct PDFListView: View {
                                     .frame(width: 50, height: 70)
                                     .cornerRadius(5)
                             }
-                            
-                            
-                            
+
                             VStack(alignment: .leading) {
                                 Text(pdf.metadata.title)
                                     .font(.headline)
@@ -61,32 +59,15 @@ struct PDFListView: View {
                                     .foregroundColor(.gray)
                             }
                         }
-                        
-                       
-
                     }
                 }
                 .navigationTitle("PDF Files")
             }
-//            .sheet(isPresented: $showFolderPicker) {
-//                FileOrFolderPickerView(mode: .folder) { urls in
-//                    if let folderURL = urls.first {
-//                        pdfManager.fetchPDFFiles(from: folderURL)
-//                    }
-//                }
-//            }
             .sheet(isPresented: $showFilePicker) {
                 FileOrFolderPickerView(mode: .file) { urls in
-                    pdfDataVm.importAndSavePDF(urls: urls)
-                    //pdfManager.loadSelectedPDFFiles(urls: urls)
+                    viewModel.importPDFs(urls: urls)
                 }
             }
-//            .sheet(isPresented: $showPicker) {
-//                FolderPickerView { folderURL in
-//                    self.selectedFolderURL = folderURL
-//                    pdfManager.fetchPDFFiles(from: folderURL)
-//                }
-//            }
         }
     }
 }
