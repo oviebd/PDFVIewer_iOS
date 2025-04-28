@@ -8,15 +8,15 @@
 import SwiftUI
 
 struct PDFListView: View {
-    @StateObject private var viewModel: PDFListViewModel
-
+    
+    @StateObject private var viewModel : PDFListViewModel
     @State private var showFilePicker = false
 
     init() {
         let store = try? PDFLocalDataStore()
-        let loader = store.map { PDFLocalDataLoader(store: $0) }
-        let repo = loader.map { PDFRepositoryImpl(loader: $0) }
-        _viewModel = StateObject(wrappedValue: PDFListViewModel(repository: repo!))
+      //  let loader = store.map { PDFLocalDataLoader(store: $0) }
+        let repo = PDFRepositoryImpl(store: store!) //loader.map { PDFRepositoryImpl(store: store!) }
+        _viewModel = StateObject(wrappedValue: PDFListViewModel(repository: repo))
     }
 
     var body: some View {
@@ -36,7 +36,7 @@ struct PDFListView: View {
                     ProgressView()
                 }
 
-                List(viewModel.pdfFiles) { pdf in
+                List(viewModel.pdfModels) { pdf in
                     NavigationLink(destination: PDFViewerView(pdfFile: pdf)) {
                         HStack {
                             if let image = pdf.metadata.image {
