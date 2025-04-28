@@ -18,7 +18,6 @@ struct PDFCoreDataModel {
 }
 
 class PDFLocalDataStore {
-    // static let instance = PDFDataStore()
 
     public struct ModelNotFound: Error {
         public let modelName: String
@@ -28,20 +27,8 @@ class PDFLocalDataStore {
         public let description: String
     }
 
-    public static let modelName = "PDFDataContainer"
-    public static let model = NSManagedObjectModel(name: modelName, in: Bundle(for: PDFLocalDataStore.self))
-
-    public typealias InsertionResult = Result<[PDFCoreDataModel]?, Error>
-    public typealias InsertionCompletion = (InsertionResult) -> Void
-
-    public typealias RetrievalResult = Result<[PDFCoreDataModel]?, Error>
-    public typealias RetrievalCompletion = (RetrievalResult) -> Void
-
-    public typealias FilterResultEntity = Result<[PDFEntity]?, Error>
-    public typealias FilterCompletionEntity = (FilterResultEntity) -> Void
-
-    public typealias SingleRetrievalResult = Result<PDFCoreDataModel?, Error>
-    public typealias SingleRetrievalCompletion = (SingleRetrievalResult) -> Void
+    static let modelName = "PDFDataContainer"
+    static let model = NSManagedObjectModel(name: modelName, in: Bundle(for: PDFLocalDataStore.self))
 
     private let container: NSPersistentContainer
     let context: NSManagedObjectContext
@@ -52,157 +39,93 @@ class PDFLocalDataStore {
             guard let model = PDFLocalDataStore.model else {
                 throw ModelNotFound(modelName: PDFLocalDataStore.modelName)
             }
-
-            container = try NSPersistentContainer.load(
-                name: PDFLocalDataStore.modelName,
-                model: model,
-                url: storeURL
-            )
+            container = try NSPersistentContainer.load(name: Self.modelName, model: model, url: storeURL)
             debugPrint("DB>> Stored DB in \(storeURL.absoluteString)")
-            context = container.newBackgroundContext()
-
         } else {
-            container = NSPersistentContainer(name: PDFLocalDataStore.modelName)
+            container = NSPersistentContainer(name: Self.modelName)
             container.loadPersistentStores { _, error in
                 if let error = error {
                     debugPrint("Error Loading Core Data - \(error)")
                 }
             }
-            context = container.newBackgroundContext()
-
-            whereIsMySQLite()
         }
+        context = container.newBackgroundContext()
+        whereIsMySQLite()
     }
 
-    func save() -> Bool {
-        do {
+    deinit { cleanUpReferencesToPersistentStores() }
+
+    func insert(pdfDatas: [PDFCoreDataModel]) -> AnyPublisher<[PDFCoreDataModel], Error> {
+        perform { context in
+            let fetchRequest: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
+            let existingKeys = try context.fetch(fetchRequest).compactMap(\.key)
+
+            let newPDFs = pdfDatas.filter { !existingKeys.contains($0.key) }
+            newPDFs.forEach { model in
+                let entity = PDFEntity(context: context)
+                entity.key = model.key
+                entity.bookmarkData = model.data
+                entity.isFavourite = model.isFavourite
+            }
             try context.save()
-            debugPrint("Save SuccessFully")
-            return true
-
-        } catch {
-            debugPrint("Error Saving Corae Data - \(error.localizedDescription)")
-            return false
+            return newPDFs
         }
     }
 
-    public func insert(pdfDatas: [PDFCoreDataModel]) -> AnyPublisher<[PDFCoreDataModel], Error> {
-        return Future { [weak self] promise in
-            self?.perform { context in
-                guard let self = self else { return }
-
-                do {
-                    let fetchRequest: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
-                    var existingKeys = try context.fetch(fetchRequest).compactMap { $0.key }
-
-                    let newPDFs = pdfDatas.filter { !existingKeys.contains($0.key) }
-
-                    for pdf in newPDFs {
-                        let key = pdf.key
-                        if existingKeys.contains(key) { continue }
-
-                        let newData = PDFEntity(context: self.context)
-                        newData.key = key
-                        newData.bookmarkData = pdf.data
-                        newData.isFavourite = pdf.isFavourite
-                        existingKeys.append(key)
-                    }
-
-                    try context.save()
-                    promise(.success(newPDFs))
-                } catch {
-                    context.rollback()
-                    promise(.failure(error))
-                }
-            }
+    func retrieve() -> AnyPublisher<[PDFCoreDataModel], Error> {
+        perform { context in
+            let request: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
+            let results = try context.fetch(request)
+            return results.map { PDFCoreDataModel(key: $0.key ?? "", data: $0.bookmarkData ?? Data(), isFavourite: $0.isFavourite) }
         }
-        .eraseToAnyPublisher()
     }
 
-    public func retrieve() -> AnyPublisher<[PDFCoreDataModel], Error> {
-        return Future { [weak self] promise in
-            self?.perform { context in
-                do {
-                    let fetchRequest: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
-                    let results = try context.fetch(fetchRequest)
-
-                    let models = results.map {
-                        PDFCoreDataModel(
-                            key: $0.key ?? "",
-                            data: $0.bookmarkData ?? Data(),
-                            isFavourite: $0.isFavourite
-                        )
-                    }
-
-                    promise(.success(models))
-                } catch {
-                    promise(.failure(error))
-                }
-            }
-        }
-        .eraseToAnyPublisher()
-    }
-
-
-    public func update(updatedData: PDFCoreDataModel) -> AnyPublisher<Bool, Error> {
+    func update(updatedData: PDFCoreDataModel) -> AnyPublisher<Bool, Error> {
         filter(parameters: ["key": updatedData.key])
-            .tryMap { [weak self] entityList in
-                guard let self = self else {
-                    throw NSError(domain: "PDFLocalDataLoader", code: -1, userInfo: [NSLocalizedDescriptionKey: "Self was deallocated"])
-                }
-
-                guard let object = entityList.first else {
-                    throw NSError(domain: "PDFLocalDataLoader", code: -1, userInfo: [NSLocalizedDescriptionKey: "No entity found with matching key"])
-                }
-
+            .tryMap { [weak self] entities in
+                guard let self, let object = entities.first else { throw NSError(domain: "UpdateError", code: 404) }
                 object.key = updatedData.key
                 object.bookmarkData = updatedData.data
                 object.isFavourite = updatedData.isFavourite
-
                 try self.context.save()
-
                 return true
             }
             .eraseToAnyPublisher()
     }
-    
-    public func delete(updatedData: PDFCoreDataModel) -> AnyPublisher<Bool, Error> {
+
+    func delete(updatedData: PDFCoreDataModel) -> AnyPublisher<Bool, Error> {
         filter(parameters: ["key": updatedData.key])
-            .tryMap { [weak self] entityList in
-                guard let self = self else {
-                    throw NSError(domain: "PDFLocalDataLoader", code: -1, userInfo: [NSLocalizedDescriptionKey: "Self was deallocated"])
-                }
-
-                guard let object = entityList.first else {
-                    throw NSError(domain: "PDFLocalDataLoader", code: -1, userInfo: [NSLocalizedDescriptionKey: "No entity found with matching key"])
-                }
-
+            .tryMap { [weak self] entities in
+                guard let self, let object = entities.first else { throw NSError(domain: "DeleteError", code: 404) }
                 context.delete(object)
                 try self.context.save()
-
                 return true
             }
             .eraseToAnyPublisher()
     }
 
-    public func filter(parameters: [String: Any]) -> AnyPublisher<[PDFEntity], Error> {
-        return Future { [weak self] promise in
-            self?.perform { context in
-                do {
-                    let request: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
-                    request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates:
-                        parameters.map { NSPredicate(format: "%K == %@", $0.key, "\($0.value)") }
-                    )
-                    request.fetchLimit = 1
+    func filter(parameters: [String: Any]) -> AnyPublisher<[PDFEntity], Error> {
+        perform { context in
+            let request: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates:
+                parameters.map { NSPredicate(format: "%K == %@", $0.key, "\($0.value)") }
+            )
+            request.fetchLimit = 1
+            return try context.fetch(request)
+        }
+    }
 
-                    let results = try context.fetch(request)
-                    promise(.success(results))
-                } catch {
-                    promise(.failure(error))
-                }
+    func deleteAllRecordsBatch(for entityName: String) {
+        context.perform {
+            let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
+            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+            do {
+                try self.context.execute(deleteRequest)
+                try self.context.save()
+            } catch {
+                debugPrint("Failed to batch delete \(entityName): \(error.localizedDescription)")
             }
         }
-        .eraseToAnyPublisher()
     }
 
     private func perform(_ action: @escaping (NSManagedObjectContext) -> Void) {
@@ -218,37 +141,30 @@ class PDFLocalDataStore {
         }
     }
 
-    deinit {
-        cleanUpReferencesToPersistentStores()
+    // MARK: - Private Helpers
+
+    private func perform<T>(_ action: @escaping (NSManagedObjectContext) throws -> T) -> AnyPublisher<T, Error> {
+        Future { [weak self] promise in
+            guard let self = self else {
+                promise(.failure(NSError(domain: "PDFLocalDataStore", code: -1, userInfo: [NSLocalizedDescriptionKey: "Self deallocated"])))
+                return
+            }
+
+            self.context.perform {
+                do {
+                    let result = try action(self.context)
+                    promise(.success(result))
+                } catch {
+                    promise(.failure(error))
+                }
+            }
+        }
+        .eraseToAnyPublisher()
     }
 
     private func whereIsMySQLite() {
-        let path = NSPersistentContainer
-            .defaultDirectoryURL()
-            .absoluteString
-            .replacingOccurrences(of: "file://", with: "")
-            .removingPercentEncoding
-
-        debugPrint("D>> \(String(describing: path))")
-    }
-
-//
-//    func deleteFullDB(){
-//        deleteAllRecordsBatch(for: Constants.CORE_DATA.CurrencyEntity)
-//        deleteAllRecordsBatch(for: Constants.CORE_DATA.CategoryEntity)
-//        deleteAllRecordsBatch(for: Constants.CORE_DATA.AccountEntity)
-//        deleteAllRecordsBatch(for: Constants.CORE_DATA.RecordEntity)
-//    }
-
-    private func deleteAllRecordsBatch(for entityName: String) {
-        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: entityName)
-        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-
-        do {
-            try context.execute(deleteRequest)
-            try context.save() // Save the context to persist changes
-        } catch let error {
-            print("Failed to batch delete all records for \(entityName): \(error.localizedDescription)")
+        if let path = NSPersistentContainer.defaultDirectoryURL().path.removingPercentEncoding {
+            debugPrint("DB Location: \(path)")
         }
     }
 }

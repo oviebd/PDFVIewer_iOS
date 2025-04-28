@@ -64,7 +64,7 @@ struct PDFListView: View {
                 .navigationTitle("PDF Files")
             }
             .sheet(isPresented: $showFilePicker) {
-                FileOrFolderPickerView(mode: .file) { urls in
+                DocumentPickerRepresentable(mode: .file) { urls in
                     viewModel.importPDFs(urls: urls)
                 }
             }

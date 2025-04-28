@@ -8,7 +8,7 @@
 import Foundation
 import CoreData
 
-class PdfCoreDataManager {
+//class PdfCoreDataManager {
     
     
 //    let manager = CoreDataManager(storeURL: nil)
@@ -99,7 +99,7 @@ class PdfCoreDataManager {
 //    }
 
     
-}
+//}
 
 //private extension PdfCoreDataManager {
 //    func toRecipe() -> Recipe {
