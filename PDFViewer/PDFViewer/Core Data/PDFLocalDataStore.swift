@@ -15,20 +15,19 @@ struct PDFCoreDataModel {
     var isFavourite: Bool
     var lastReadTime: Date?
     var lastReadPageNumber: Int?
-    
+
     func togglingFavorite() -> PDFCoreDataModel {
-            PDFCoreDataModel(
-                key: key,
-                data: data,
-                isFavourite: !isFavourite,
-                lastReadTime: lastReadTime,
-                lastReadPageNumber: lastReadPageNumber
-            )
-        }
+        PDFCoreDataModel(
+            key: key,
+            data: data,
+            isFavourite: !isFavourite,
+            lastReadTime: lastReadTime,
+            lastReadPageNumber: lastReadPageNumber
+        )
+    }
 }
 
 class PDFLocalDataStore {
-
     public struct ModelNotFound: Error {
         public let modelName: String
     }

@@ -15,7 +15,7 @@ struct PDFListView: View {
     init() {
         let store = try? PDFLocalDataStore()
       //  let loader = store.map { PDFLocalDataLoader(store: $0) }
-        let repo = PDFRepositoryImpl(store: store!) //loader.map { PDFRepositoryImpl(store: store!) }
+        let repo = PDFLocalRepositoryImpl(store: store!) //loader.map { PDFRepositoryImpl(store: store!) }
         _viewModel = StateObject(wrappedValue: PDFListViewModel(repository: repo))
     }
 
