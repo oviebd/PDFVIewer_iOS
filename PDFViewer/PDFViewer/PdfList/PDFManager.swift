@@ -15,14 +15,26 @@ struct PDFFile: Identifiable {
     let id = UUID()
     let name: String
     let url: URL
+    let data : Data?
     let metadata: PDFMetadata
     let pdfKey: String
+    let isFavorite : Bool
 }
 
 struct PDFMetadata {
     let image: UIImage?
     let author: String
     let title: String
+}
+
+
+extension PDFFile {
+    
+    func toCoreDataModel () ->  PDFCoreDataModel{
+        let result = PDFCoreDataModel(key: pdfKey, data: data ?? Data(), isFavourite: isFavorite)
+        return result
+    }
+    
 }
 
 extension PDFFile {
@@ -32,11 +44,12 @@ extension PDFFile {
         author: String = "John Doe",
         title: String = "Mock Title",
         image: UIImage? = nil,
-        pdfKey: String = UUID().uuidString
+        pdfKey: String = UUID().uuidString,
+        isFavorite : Bool
     ) -> PDFFile {
         let fallbackImage = image ?? UIImage() // Safe fallback
         let metadata = PDFMetadata(image: fallbackImage, author: author, title: title)
-        return PDFFile(name: name, url: url, metadata: metadata, pdfKey: pdfKey)
+        return PDFFile(name: name, url: url, data: nil, metadata: metadata, pdfKey: pdfKey, isFavorite: isFavorite)
     }
 
     static func mockList(count: Int) -> [PDFFile] {
@@ -46,7 +59,8 @@ extension PDFFile {
                 url: URL(fileURLWithPath: "/tmp/sample\(index).pdf"),
                 author: "Author \(index)",
                 title: "Title \(index)",
-                pdfKey: "mock-key-\(index)"
+                pdfKey: "mock-key-\(index)",
+                isFavorite: false
             )
         }
     }

@@ -31,7 +31,8 @@ final class PDFLocalRepositoryImpl: PDFRepositoryProtocol {
                     do {
                         var isStale = false
                         let url = try URL(resolvingBookmarkData: model.data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
-                        return Self.mapURLtoPDFFile(url: url, key: model.key)
+                        
+                        return Self.maptoPDFFile(url: url, coreDataModel: model)
                     } catch {
                         return nil
                     }
@@ -47,7 +48,7 @@ final class PDFLocalRepositoryImpl: PDFRepositoryProtocol {
                     do {
                         var isStale = false
                         let url = try URL(resolvingBookmarkData: model.data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
-                        return Self.mapURLtoPDFFile(url: url, key: model.key)
+                        return Self.maptoPDFFile(url: url,coreDataModel: model)
                     } catch {
                         return nil
                     }
@@ -62,7 +63,7 @@ final class PDFLocalRepositoryImpl: PDFRepositoryProtocol {
             .tryMap { _ in
                 var isStale = false
                 let url = try URL(resolvingBookmarkData: updated.data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
-                return Self.mapURLtoPDFFile(url: url, key: updated.key)
+                return Self.maptoPDFFile(url: url, coreDataModel: updated)
                 //  let url = try URL(resolvingBookmarkData: updated.data, options: [], relativeTo: nil, bookmarkDataIsStale:false)
             } // { _ in updated }
             .eraseToAnyPublisher()
@@ -72,9 +73,9 @@ final class PDFLocalRepositoryImpl: PDFRepositoryProtocol {
         store.delete(updatedData: pdfItem)
     }
 
-    private static func mapURLtoPDFFile(url: URL, key: String) -> PDFFile {
+    private static func maptoPDFFile(url: URL, coreDataModel : PDFCoreDataModel) -> PDFFile {
         guard let document = PDFDocument(url: url) else {
-            return PDFFile(name: url.lastPathComponent, url: url, metadata: PDFMetadata(image: nil, author: "Unknown", title: url.lastPathComponent), pdfKey: key)
+            return PDFFile(name: url.lastPathComponent, url: url, data: coreDataModel.data, metadata: PDFMetadata(image: nil, author: "Unknown", title: url.lastPathComponent), pdfKey: coreDataModel.key, isFavorite: false)
         }
 
         let page = document.page(at: 0)
@@ -82,6 +83,6 @@ final class PDFLocalRepositoryImpl: PDFRepositoryProtocol {
         let author = document.documentAttributes?[PDFDocumentAttribute.authorAttribute] as? String ?? "Unknown"
         let title = document.documentAttributes?[PDFDocumentAttribute.titleAttribute] as? String ?? url.lastPathComponent
 
-        return PDFFile(name: url.lastPathComponent, url: url, metadata: PDFMetadata(image: image, author: author, title: title), pdfKey: key)
+        return PDFFile(name: url.lastPathComponent, url: url, data: coreDataModel.data, metadata: PDFMetadata(image: image, author: author, title: title), pdfKey: coreDataModel.key, isFavorite: coreDataModel.isFavourite)
     }
 }

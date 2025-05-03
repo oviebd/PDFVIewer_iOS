@@ -12,11 +12,11 @@ let sampleUrl: URL = Bundle.main.url(forResource: "sample1", withExtension: "pdf
 
 let samplePDFFile = PDFFile(
     name: "Sample Document",
-    url: URL(fileURLWithPath: "/path/to/sample.pdf"),
+    url: URL(fileURLWithPath: "/path/to/sample.pdf"), data: nil,
     metadata: PDFMetadata(
         image: nil, author: "Sample author", title: "Sample title"
     ),
-    pdfKey: "sample_pdf_001"
+    pdfKey: "sample_pdf_001", isFavorite: false
 )
 
 struct PDFViewerView: View {

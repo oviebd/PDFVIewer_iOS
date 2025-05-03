@@ -39,8 +39,11 @@ final class PDFListViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-    func toggleFavorite(for model: PDFCoreDataModel) {
-        repository.toggleFavorite(pdfItem: model)
+    func toggleFavorite(for model: PDFFile) {
+        
+        let coreDataModel = model.toCoreDataModel()
+        
+        repository.toggleFavorite(pdfItem: coreDataModel)
             .receive(on: DispatchQueue.main)
             .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] updatedModel in
                 if let index = self?.pdfModels.firstIndex(where: { $0.pdfKey == updatedModel.pdfKey }) {
