@@ -39,16 +39,16 @@ final class PDFListViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-//    func toggleFavorite(for model: PDFCoreDataModel) {
-//        repository.toggleFavorite(pdfItem: model)
-//            .receive(on: DispatchQueue.main)
-//            .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] updatedModel in
-//                if let index = self?.pdfModels.firstIndex(where: { $0.key == updatedModel.key }) {
-//                    self?.pdfModels[index] = updatedModel
-//                }
-//            })
-//            .store(in: &cancellables)
-//    }
+    func toggleFavorite(for model: PDFCoreDataModel) {
+        repository.toggleFavorite(pdfItem: model)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] updatedModel in
+                if let index = self?.pdfModels.firstIndex(where: { $0.pdfKey == updatedModel.pdfKey }) {
+                    self?.pdfModels[index] = updatedModel
+                }
+            })
+            .store(in: &cancellables)
+    }
 
     func importPDFs(urls: [URL]) -> AnyPublisher<Void, Error> {
         let pdfCoreDataList = urls.compactMap { url -> PDFCoreDataModel? in

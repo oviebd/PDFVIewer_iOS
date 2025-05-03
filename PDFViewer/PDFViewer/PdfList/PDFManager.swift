@@ -5,11 +5,11 @@
 //  Created by Habibur Rahman on 4/4/25.
 //
 
-//import CryptoKit
-//import Foundation
-//import PDFKit
+// import CryptoKit
+// import Foundation
+// import PDFKit
 import SwiftUI
-//import UniformTypeIdentifiers
+// import UniformTypeIdentifiers
 //
 struct PDFFile: Identifiable {
     let id = UUID()
@@ -24,9 +24,37 @@ struct PDFMetadata {
     let author: String
     let title: String
 }
+
+extension PDFFile {
+    static func mock(
+        name: String = "Sample PDF",
+        url: URL = URL(fileURLWithPath: "/tmp/sample.pdf"),
+        author: String = "John Doe",
+        title: String = "Mock Title",
+        image: UIImage? = nil,
+        pdfKey: String = UUID().uuidString
+    ) -> PDFFile {
+        let fallbackImage = image ?? UIImage() // Safe fallback
+        let metadata = PDFMetadata(image: fallbackImage, author: author, title: title)
+        return PDFFile(name: name, url: url, metadata: metadata, pdfKey: pdfKey)
+    }
+
+    static func mockList(count: Int) -> [PDFFile] {
+        return (1 ... count).map { index in
+            PDFFile.mock(
+                name: "Sample PDF \(index)",
+                url: URL(fileURLWithPath: "/tmp/sample\(index).pdf"),
+                author: "Author \(index)",
+                title: "Title \(index)",
+                pdfKey: "mock-key-\(index)"
+            )
+        }
+    }
+}
+
 //
 //
-//class PDFManager: ObservableObject {
+// class PDFManager: ObservableObject {
 //    @Published var pdfFiles: [PDFFile] = []
 //
 //    let manager = PdfCoreDataManager()
@@ -147,4 +175,4 @@ struct PDFMetadata {
 //            return UUID().uuidString // fallback
 //        }
 //    }
-//}
+// }
