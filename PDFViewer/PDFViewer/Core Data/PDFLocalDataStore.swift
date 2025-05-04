@@ -9,23 +9,23 @@ import Combine
 import CoreData
 import Foundation
 
-struct PDFCoreDataModel {
-    var key: String
-    var data: Data
-    var isFavourite: Bool
-    var lastReadTime: Date?
-    var lastReadPageNumber: Int?
-
-    func togglingFavorite() -> PDFCoreDataModel {
-        PDFCoreDataModel(
-            key: key,
-            data: data,
-            isFavourite: !isFavourite,
-            lastReadTime: lastReadTime,
-            lastReadPageNumber: lastReadPageNumber
-        )
-    }
-}
+//struct PDFCoreDataModel {
+//    var key: String
+//    var data: Data
+//    var isFavourite: Bool
+//    var lastReadTime: Date?
+//    var lastReadPageNumber: Int?
+//
+//    func togglingFavorite() -> PDFCoreDataModel {
+//        PDFCoreDataModel(
+//            key: key,
+//            data: data,
+//            isFavourite: !isFavourite,
+//            lastReadTime: lastReadTime,
+//            lastReadPageNumber: lastReadPageNumber
+//        )
+//    }
+//}
 
 class PDFLocalDataStore {
     public struct ModelNotFound: Error {
