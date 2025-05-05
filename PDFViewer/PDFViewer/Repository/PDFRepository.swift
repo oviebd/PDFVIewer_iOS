@@ -11,10 +11,10 @@ import Foundation
 import PDFKit
 
 protocol PDFRepositoryProtocol {
-    func insert(pdfDatas: [PDFCoreDataModel]) -> AnyPublisher<[PDFFile], Error>
-    func retrieve() -> AnyPublisher<[PDFFile], Error>
-    func toggleFavorite(pdfItem: PDFCoreDataModel) -> AnyPublisher<PDFFile, Error>
-    func delete(pdfItem: PDFCoreDataModel) -> AnyPublisher<Bool, Error>
+    func insert(pdfDatas: [PDFModelData]) -> AnyPublisher<Bool, Error>
+    func retrieve() -> AnyPublisher<[PDFModelData], Error>
+    // func toggleFavorite(pdfItem: PDFModelData) -> AnyPublisher<PDFModelData, Error>
+    // func delete(pdfKey: String) -> AnyPublisher<Bool, Error>
 }
 
 final class PDFLocalRepositoryImpl: PDFRepositoryProtocol {
@@ -24,65 +24,39 @@ final class PDFLocalRepositoryImpl: PDFRepositoryProtocol {
         self.store = store
     }
 
-    func insert(pdfDatas: [PDFCoreDataModel]) -> AnyPublisher<[PDFFile], Error> {
-        store.insert(pdfDatas: pdfDatas)
-            .tryMap { coreDataList in
-                coreDataList.compactMap { model in
-                    do {
-                        var isStale = false
-                        let url = try URL(resolvingBookmarkData: model.data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
-                        
-                        return Self.maptoPDFFile(url: url, coreDataModel: model)
-                    } catch {
-                        return nil
-                    }
-                }
-            }
-            .eraseToAnyPublisher()
-    }
-
-    func retrieve() -> AnyPublisher<[PDFFile], Error> {
-        store.retrieve()
-            .tryMap { coreDataList in
-                coreDataList.compactMap { model in
-                    do {
-                        var isStale = false
-                        let url = try URL(resolvingBookmarkData: model.data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
-                        return Self.maptoPDFFile(url: url,coreDataModel: model)
-                    } catch {
-                        return nil
-                    }
-                }
-            }
-            .eraseToAnyPublisher()
-    }
-
-    func toggleFavorite(pdfItem: PDFCoreDataModel) -> AnyPublisher<PDFFile, Error> {
-        let updated = pdfItem.togglingFavorite()
-        return store.update(updatedData: updated)
-            .tryMap { _ in
-                var isStale = false
-                let url = try URL(resolvingBookmarkData: updated.data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
-                return Self.maptoPDFFile(url: url, coreDataModel: updated)
-                //  let url = try URL(resolvingBookmarkData: updated.data, options: [], relativeTo: nil, bookmarkDataIsStale:false)
-            } // { _ in updated }
-            .eraseToAnyPublisher()
-    }
-
-    func delete(pdfItem: PDFCoreDataModel) -> AnyPublisher<Bool, Error> {
-        store.delete(updatedData: pdfItem)
-    }
-
-    private static func maptoPDFFile(url: URL, coreDataModel : PDFCoreDataModel) -> PDFFile {
-        guard let document = PDFDocument(url: url) else {
-            return PDFFile(name: url.lastPathComponent, url: url, data: coreDataModel.data, metadata: PDFMetadata(image: nil, author: "Unknown", title: url.lastPathComponent), pdfKey: coreDataModel.key, isFavorite: false)
+    func insert(pdfDatas: [PDFModelData]) -> AnyPublisher<Bool, Error> {
+        var coreDataModels = [PDFCoreDataModel]()
+        for pdfData in pdfDatas {
+            let coreDataModel = pdfData.toCoereDataModel()
+            coreDataModels.append(coreDataModel)
         }
 
-        let page = document.page(at: 0)
-        let image = page?.thumbnail(of: CGSize(width: 100, height: 140), for: .cropBox)
-        let author = document.documentAttributes?[PDFDocumentAttribute.authorAttribute] as? String ?? "Unknown"
-        let title = document.documentAttributes?[PDFDocumentAttribute.titleAttribute] as? String ?? url.lastPathComponent
-
-        return PDFFile(name: url.lastPathComponent, url: url, data: coreDataModel.data, metadata: PDFMetadata(image: image, author: author, title: title), pdfKey: coreDataModel.key, isFavorite: coreDataModel.isFavourite)
+        return store.insert(pdfDatas: coreDataModels)
     }
+
+    func retrieve() -> AnyPublisher<[PDFModelData], Error> {
+        store.retrieve()
+            .tryMap { pdfCoreDataList in
+                pdfCoreDataList.compactMap { singlePDfCoreData in
+                    singlePDfCoreData.toPDfModelData()
+                }
+            }
+            .eraseToAnyPublisher()
+    }
+
+//    func toggleFavorite(pdfItem: PDFCoreDataModel) -> AnyPublisher<PDFFile, Error> {
+//        let updated = pdfItem.togglingFavorite()
+//        return store.update(updatedData: updated)
+//            .tryMap { _ in
+//                var isStale = false
+//                let url = try URL(resolvingBookmarkData: updated.data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
+//                return Self.maptoPDFFile(url: url, coreDataModel: updated)
+//                //  let url = try URL(resolvingBookmarkData: updated.data, options: [], relativeTo: nil, bookmarkDataIsStale:false)
+//            } // { _ in updated }
+//            .eraseToAnyPublisher()
+//    }
+//
+//    func delete(pdfItem: PDFCoreDataModel) -> AnyPublisher<Bool, Error> {
+//        store.delete(updatedData: pdfItem)
+//    }
 }

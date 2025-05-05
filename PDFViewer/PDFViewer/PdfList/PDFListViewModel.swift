@@ -10,7 +10,7 @@ import CryptoKit
 import Foundation
 
 final class PDFListViewModel: ObservableObject {
-    @Published var pdfModels: [PDFFile] = []
+    @Published var pdfModels: [PDFModelData] = []
 
     private var repository: PDFRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
@@ -39,26 +39,29 @@ final class PDFListViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-    func toggleFavorite(for model: PDFFile) {
-        
-        let coreDataModel = model.toCoreDataModel()
-        
-        repository.toggleFavorite(pdfItem: coreDataModel)
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] updatedModel in
-                if let index = self?.pdfModels.firstIndex(where: { $0.pdfKey == updatedModel.pdfKey }) {
-                    self?.pdfModels[index] = updatedModel
-                }
-            })
-            .store(in: &cancellables)
-    }
+//    func toggleFavorite(for model: PDFModelData) {
+//        
+//       let coreDataModel = model.toCoreDataModel()
+//        
+//        repository.toggleFavorite(pdfItem: coreDataModel)
+//            .receive(on: DispatchQueue.main)
+//            .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] updatedModel in
+//                if let index = self?.pdfModels.firstIndex(where: { $0.pdfKey == updatedModel.pdfKey }) {
+//                    self?.pdfModels[index] = updatedModel
+//                }
+//            })
+//            .store(in: &cancellables)
+//    }
 
     func importPDFs(urls: [URL]) -> AnyPublisher<Void, Error> {
-        let pdfCoreDataList = urls.compactMap { url -> PDFCoreDataModel? in
+        let pdfCoreDataList = urls.compactMap { url -> PDFModelData? in
             do {
                 let bookmark = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
                 let key = Self.generatePDFKey(for: url)
-                return PDFCoreDataModel(key: key, data: bookmark, isFavourite: false)
+                
+                return PDFModelData(key: key, bookmarkData: bookmark, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
+                
+               // return PDFCoreDataModel(key: key, data: bookmark, isFavourite: false)
             } catch {
                 return nil
             }

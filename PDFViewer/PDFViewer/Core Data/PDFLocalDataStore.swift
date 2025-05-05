@@ -64,7 +64,7 @@ class PDFLocalDataStore {
 
     deinit { cleanUpReferencesToPersistentStores() }
 
-    func insert(pdfDatas: [PDFCoreDataModel]) -> AnyPublisher<[PDFCoreDataModel], Error> {
+    func insert(pdfDatas: [PDFCoreDataModel]) -> AnyPublisher<Bool, Error> {
         perform { context in
             let fetchRequest: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
             let existingKeys = try context.fetch(fetchRequest).compactMap(\.key)
@@ -73,11 +73,15 @@ class PDFLocalDataStore {
             newPDFs.forEach { model in
                 let entity = PDFEntity(context: context)
                 entity.key = model.key
-                entity.bookmarkData = model.data
+                entity.bookmarkData = model.bookmarkData
                 entity.isFavourite = model.isFavourite
             }
-            try context.save()
-            return newPDFs
+            do {
+                try context.save()
+                return true
+            }catch{
+                return false
+            }
         }
     }
 
@@ -85,25 +89,31 @@ class PDFLocalDataStore {
         perform { context in
             let request: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
             let results = try context.fetch(request)
-            return results.map { PDFCoreDataModel(key: $0.key ?? "", data: $0.bookmarkData ?? Data(), isFavourite: $0.isFavourite) }
+            return results.map { entityData in
+                entityData.toCoreDataModel()
+            }
         }
     }
 
-    func update(updatedData: PDFCoreDataModel) -> AnyPublisher<Bool, Error> {
+    func update(updatedData: PDFCoreDataModel) -> AnyPublisher<PDFCoreDataModel, Error> {
         filter(parameters: ["key": updatedData.key])
             .tryMap { [weak self] entities in
-                guard let self, let object = entities.first else { throw NSError(domain: "UpdateError", code: 404) }
-                object.key = updatedData.key
-                object.bookmarkData = updatedData.data
-                object.isFavourite = updatedData.isFavourite
-                try self.context.save()
-                return true
+                guard let self,  let _ = entities.first else { throw NSError(domain: "UpdateError", code: 404) }
+               
+                let entityData = updatedData.toPDFEntity()
+
+                do {
+                    try context.save()
+                    return updatedData
+                }catch{
+                    throw error
+                }
             }
             .eraseToAnyPublisher()
     }
-
-    func delete(updatedData: PDFCoreDataModel) -> AnyPublisher<Bool, Error> {
-        filter(parameters: ["key": updatedData.key])
+//
+    func delete(pdfKey: String) -> AnyPublisher<Bool, Error> {
+        filter(parameters: ["key": pdfKey])
             .tryMap { [weak self] entities in
                 guard let self, let object = entities.first else { throw NSError(domain: "DeleteError", code: 404) }
                 context.delete(object)
@@ -124,24 +134,24 @@ class PDFLocalDataStore {
         }
     }
 
-    func deleteAllRecordsBatch(for entityName: String) {
-        context.perform {
-            let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
-            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-            do {
-                try self.context.execute(deleteRequest)
-                try self.context.save()
-            } catch {
-                debugPrint("Failed to batch delete \(entityName): \(error.localizedDescription)")
-            }
-        }
-    }
+//    func deleteAllRecordsBatch(for entityName: String) {
+//        context.perform {
+//            let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
+//            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+//            do {
+//                try self.context.execute(deleteRequest)
+//                try self.context.save()
+//            } catch {
+//                debugPrint("Failed to batch delete \(entityName): \(error.localizedDescription)")
+//            }
+//        }
+//    }
 
-    private func perform(_ action: @escaping (NSManagedObjectContext) -> Void) {
-        context.perform { [context] in
-            action(context)
-        }
-    }
+//    private func perform(_ action: @escaping (NSManagedObjectContext) -> Void) {
+//        context.perform { [context] in
+//            action(context)
+//        }
+//    }
 
     private func cleanUpReferencesToPersistentStores() {
         context.performAndWait {
@@ -187,5 +197,13 @@ extension PDFEntity {
     static func getInstance(in context: NSManagedObjectContext) throws -> PDFEntity {
         let instance = try find(in: context)
         return instance ?? PDFEntity(context: context)
+    }
+    
+    func toCoreDataModel() -> PDFCoreDataModel {
+        return PDFCoreDataModel(key: key ?? "",
+                                bookmarkData: bookmarkData,
+                                isFavourite: isFavourite,
+                                lastOpenPage: Int(lastOpenedPage),
+                                lastOpenTime: lastOpenTime)
     }
 }

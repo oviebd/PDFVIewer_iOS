@@ -8,16 +8,7 @@
 import PDFKit
 import SwiftUI
 
-let sampleUrl: URL = Bundle.main.url(forResource: "sample1", withExtension: "pdf")!
 
-let samplePDFFile = PDFFile(
-    name: "Sample Document",
-    url: URL(fileURLWithPath: "/path/to/sample.pdf"), data: nil,
-    metadata: PDFMetadata(
-        image: nil, author: "Sample author", title: "Sample title"
-    ),
-    pdfKey: "sample_pdf_001", isFavorite: false
-)
 
 struct PDFViewerView: View {
     @State private var currentPDF: URL
@@ -28,8 +19,8 @@ struct PDFViewerView: View {
     @State private var zoomScale: CGFloat = 1.0
     @State private var actions = PDFKitViewActions()
 
-    init(pdfFile: PDFFile) {
-        currentPDF = pdfFile.url // pdfUrl
+    init(pdfFile: PDFModelData) {
+        currentPDF = URL(string: pdfFile.urlPath ?? "")!  // pdfUrl
 //        if let startURL = Bundle.main.url(forResource: "sample1", withExtension: "pdf") {
 //            _currentPDF = State(initialValue: startURL)
 //        } else {
@@ -121,5 +112,5 @@ struct PDFViewerView: View {
 }
 
 #Preview {
-    PDFViewerView(pdfFile: samplePDFFile)
+    PDFViewerView(pdfFile: samplePDFModelData)
 }

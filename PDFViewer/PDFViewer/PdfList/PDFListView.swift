@@ -8,14 +8,12 @@
 import SwiftUI
 
 struct PDFListView: View {
-    
-    @StateObject private var viewModel : PDFListViewModel
+    @StateObject private var viewModel: PDFListViewModel
     @State private var showFilePicker = false
 
     init() {
         let store = try? PDFLocalDataStore()
-      //  let loader = store.map { PDFLocalDataLoader(store: $0) }
-        let repo = PDFLocalRepositoryImpl(store: store!) //loader.map { PDFRepositoryImpl(store: store!) }
+        let repo = PDFLocalRepositoryImpl(store: store!)
         _viewModel = StateObject(wrappedValue: PDFListViewModel(repository: repo))
     }
 
@@ -36,10 +34,10 @@ struct PDFListView: View {
                     ProgressView()
                 }
 
-                List(viewModel.pdfModels) { pdf in
+                List(viewModel.pdfModels, id: \.id) { pdf in
                     NavigationLink(destination: PDFViewerView(pdfFile: pdf)) {
                         HStack {
-                            if let image = pdf.metadata.image {
+                            if let image = pdf.thumbImage {
                                 Image(uiImage: image)
                                     .resizable()
                                     .frame(width: 50, height: 70)
@@ -52,9 +50,9 @@ struct PDFListView: View {
                             }
 
                             VStack(alignment: .leading) {
-                                Text(pdf.metadata.title)
+                                Text(pdf.title ?? "Untitled")
                                     .font(.headline)
-                                Text("Author: \(pdf.metadata.author)")
+                                Text("Author: \(pdf.author ?? "Unknown")")
                                     .font(.subheadline)
                                     .foregroundColor(.gray)
                             }

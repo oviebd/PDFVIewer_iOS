@@ -11,60 +11,60 @@
 import SwiftUI
 // import UniformTypeIdentifiers
 //
-struct PDFFile: Identifiable {
-    let id = UUID()
-    let name: String
-    let url: URL
-    let data : Data?
-    let metadata: PDFMetadata
-    let pdfKey: String
-    let isFavorite : Bool
-}
+//struct PDFFile: Identifiable {
+//    let id = UUID()
+//    let name: String
+//    let url: URL
+//    let data : Data?
+//    let metadata: PDFMetadata
+//    let pdfKey: String
+//    let isFavorite : Bool
+//}
+//
+//struct PDFMetadata {
+//    let image: UIImage?
+//    let author: String
+//    let title: String
+//}
 
-struct PDFMetadata {
-    let image: UIImage?
-    let author: String
-    let title: String
-}
 
+//extension PDFFile {
+//    
+//    func toCoreDataModel () ->  PDFCoreDataModel{
+//        let result = PDFCoreDataModel(key: pdfKey, data: data ?? Data(), isFavourite: isFavorite)
+//        return result
+//    }
+//    
+//}
 
-extension PDFFile {
-    
-    func toCoreDataModel () ->  PDFCoreDataModel{
-        let result = PDFCoreDataModel(key: pdfKey, data: data ?? Data(), isFavourite: isFavorite)
-        return result
-    }
-    
-}
-
-extension PDFFile {
-    static func mock(
-        name: String = "Sample PDF",
-        url: URL = URL(fileURLWithPath: "/tmp/sample.pdf"),
-        author: String = "John Doe",
-        title: String = "Mock Title",
-        image: UIImage? = nil,
-        pdfKey: String = UUID().uuidString,
-        isFavorite : Bool
-    ) -> PDFFile {
-        let fallbackImage = image ?? UIImage() // Safe fallback
-        let metadata = PDFMetadata(image: fallbackImage, author: author, title: title)
-        return PDFFile(name: name, url: url, data: nil, metadata: metadata, pdfKey: pdfKey, isFavorite: isFavorite)
-    }
-
-    static func mockList(count: Int) -> [PDFFile] {
-        return (1 ... count).map { index in
-            PDFFile.mock(
-                name: "Sample PDF \(index)",
-                url: URL(fileURLWithPath: "/tmp/sample\(index).pdf"),
-                author: "Author \(index)",
-                title: "Title \(index)",
-                pdfKey: "mock-key-\(index)",
-                isFavorite: false
-            )
-        }
-    }
-}
+//extension PDFFile {
+//    static func mock(
+//        name: String = "Sample PDF",
+//        url: URL = URL(fileURLWithPath: "/tmp/sample.pdf"),
+//        author: String = "John Doe",
+//        title: String = "Mock Title",
+//        image: UIImage? = nil,
+//        pdfKey: String = UUID().uuidString,
+//        isFavorite : Bool
+//    ) -> PDFFile {
+//        let fallbackImage = image ?? UIImage() // Safe fallback
+//        let metadata = PDFMetadata(image: fallbackImage, author: author, title: title)
+//        return PDFFile(name: name, url: url, data: nil, metadata: metadata, pdfKey: pdfKey, isFavorite: isFavorite)
+//    }
+//
+//    static func mockList(count: Int) -> [PDFFile] {
+//        return (1 ... count).map { index in
+//            PDFFile.mock(
+//                name: "Sample PDF \(index)",
+//                url: URL(fileURLWithPath: "/tmp/sample\(index).pdf"),
+//                author: "Author \(index)",
+//                title: "Title \(index)",
+//                pdfKey: "mock-key-\(index)",
+//                isFavorite: false
+//            )
+//        }
+//    }
+//}
 
 //
 //
