@@ -13,11 +13,12 @@ import PDFKit
 protocol PDFRepositoryProtocol {
     func insert(pdfDatas: [PDFModelData]) -> AnyPublisher<Bool, Error>
     func retrieve() -> AnyPublisher<[PDFModelData], Error>
-    // func toggleFavorite(pdfItem: PDFModelData) -> AnyPublisher<PDFModelData, Error>
-    // func delete(pdfKey: String) -> AnyPublisher<Bool, Error>
+    func update(updatedPdfData: PDFModelData) -> AnyPublisher<PDFModelData, Error>
+    func delete(pdfKey: String) -> AnyPublisher<Bool, Error>
 }
 
 final class PDFLocalRepositoryImpl: PDFRepositoryProtocol {
+    
     private let store: PDFLocalDataStore
 
     init(store: PDFLocalDataStore) {
@@ -43,7 +44,18 @@ final class PDFLocalRepositoryImpl: PDFRepositoryProtocol {
             }
             .eraseToAnyPublisher()
     }
+    
+    func delete(pdfKey: String) -> AnyPublisher<Bool, any Error> {
+        store.delete(pdfKey: pdfKey)
+    }
 
+    func update(updatedPdfData: PDFModelData) -> AnyPublisher<PDFModelData, any Error> {
+        store.update(updatedData: updatedPdfData.toCoereDataModel())
+            .tryMap {
+                $0.toPDfModelData()
+            }.eraseToAnyPublisher()
+    }
+    
 //    func toggleFavorite(pdfItem: PDFCoreDataModel) -> AnyPublisher<PDFFile, Error> {
 //        let updated = pdfItem.togglingFavorite()
 //        return store.update(updatedData: updated)

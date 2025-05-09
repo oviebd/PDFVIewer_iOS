@@ -46,78 +46,51 @@ final class PDFLocalDataStoreTests: XCTestCase {
         expect(sut, toRetrieve: [firstPdfData, secondPdfData])
     }
 
-//    func test_favorite_UpdateFavoriteData() throws {
-//        let sut = try makeSUT()
-//        let firstFavoriteItem = createDummyPDFCoreDataModel(key: "first", isfavorite: true)
-//        let secondNotFavoritePdfData = createDummyPDFCoreDataModel(key: "second", isfavorite: false)
-//
-//        let expectation = self.expectation(description: "Toggle favorite")
-//
-//        insert(sut, datas: [firstFavoriteItem, secondNotFavoritePdfData])
-//        
-//        sut.toggleFavorite(pdfItem: firstFavoriteItem)
-//            .flatMap { updatedItem -> AnyPublisher<[PDFCoreDataModel], Error> in
-//                XCTAssertFalse(updatedItem.isFavourite)  // Validate toggle worked
-//                return sut.retrieve()
-//            }
-//            .sink(receiveCompletion: { completion in
-//                switch completion {
-//                case .finished:
-//                    print("Toggling and retrieving succeeded")
-//                case .failure(let error):
-//                    XCTFail("Toggle or Retrieve failed: \(error)")
-//                }
-//                expectation.fulfill()
-//            }, receiveValue: { retrievedItems in
-//                // Assert retrieved data includes the updated item
-//                
-//                self.comparePDFData(expectedDatas: [createDummyPDFCoreDataModel(key: "first", isfavorite: false), secondNotFavoritePdfData], actualdata: retrievedItems)
-//            })
-//            .store(in: &cancellables)
-//
-//
-//        wait(for: [expectation], timeout: 5.0)
-//    }
+    func test_update_Success() throws {
+        let sut = try makeSUT()
+        let firstItem = createDummyPDFCoreDataModel(key: "first", isfavorite: true)
+        let secondItem = createDummyPDFCoreDataModel(key: "second", isfavorite: false)
+        let firstUpdatedItem = firstItem
+        firstUpdatedItem.isFavourite = false
+    
+        
+
+        insertAndAssert(
+            sut: sut,
+            insertItems: [firstItem, secondItem],
+            expectedItems: [firstUpdatedItem, secondItem]
+        ) {
+            sut.update(updatedData: firstUpdatedItem)
+                .flatMap { updatedData -> AnyPublisher<[PDFCoreDataModel], Error> in
+                    XCTAssertFalse(updatedData.isFavourite)
+                    return sut.retrieve()
+                }
+                .eraseToAnyPublisher()
+        }
+    }
     
     func test_delete_DeleteData() throws {
         let sut = try makeSUT()
         let firstItem = createDummyPDFCoreDataModel(key: "first", isfavorite: true)
         let secondItem = createDummyPDFCoreDataModel(key: "second", isfavorite: false)
-
-        let expectation = self.expectation(description: "Toggle favorite")
-
-        insert(sut, datas: [firstItem, secondItem])
         
-        sut.delete(updatedData: firstItem)
-            .flatMap { isSuccess -> AnyPublisher<[PDFCoreDataModel], Error> in
-                XCTAssertTrue(isSuccess)  // Validate toggle worked
-                return sut.retrieve()
-            }
-            .sink(receiveCompletion: { completion in
-                switch completion {
-                case .finished:
-                    print("Toggling and retrieving succeeded")
-                case .failure(let error):
-                    XCTFail("Toggle or Retrieve failed: \(error)")
+        insertAndAssert(
+            sut: sut,
+            insertItems: [firstItem, secondItem],
+            expectedItems: [secondItem]
+        ) {
+            sut.delete(pdfKey: firstItem.key)
+                .flatMap { isSuccess -> AnyPublisher<[PDFCoreDataModel], Error> in
+                    XCTAssertTrue(isSuccess)
+                    return sut.retrieve()
                 }
-                expectation.fulfill()
-            }, receiveValue: { retrievedItems in
-                // Assert retrieved data includes the updated item
-                
-                self.comparePDFData(expectedDatas: [secondItem], actualdata: retrievedItems)
-            })
-            .store(in: &cancellables)
-
-
-        wait(for: [expectation], timeout: 5.0)
+                .eraseToAnyPublisher()
+        }
     }
 
     // Helpers
     private func makeSUT(file: StaticString = #filePath, line: UInt = #line) throws -> PDFLocalDataStore {
         let sut = try PDFLocalDataStore(storeURL: inMemoryStoreURL())
-//        let sut = PDFLocalDataLoader(store: store)
-//
-//        trackForMemoryLeaks(store, file: file, line: line)
         trackForMemoryLeaks(sut, file: file, line: line)
         return sut
     }
@@ -125,6 +98,32 @@ final class PDFLocalDataStoreTests: XCTestCase {
     private func inMemoryStoreURL() -> URL {
         URL(fileURLWithPath: "/dev/null")
             .appendingPathComponent("\(type(of: self)).store")
+    }
+    
+    private func insertAndAssert(
+        sut: PDFLocalDataStore,
+        insertItems: [PDFCoreDataModel],
+        expectedItems: [PDFCoreDataModel],
+        action: @escaping () -> AnyPublisher<[PDFCoreDataModel], Error>,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let expectation = self.expectation(description: "Action expectation")
+        
+        insert(sut, datas: insertItems)
+
+        action()
+            .sink(receiveCompletion: { completion in
+                if case let .failure(error) = completion {
+                    XCTFail("Operation failed: \(error)", file: file, line: line)
+                }
+                expectation.fulfill()
+            }, receiveValue: { retrievedItems in
+                self.comparePDFDCoreDataModel(expectedDatas: expectedItems, actualdata: retrievedItems)
+            })
+            .store(in: &cancellables)
+
+        wait(for: [expectation], timeout: 5.0)
     }
 
     func insert(_ sut: PDFLocalDataStore, datas: [PDFCoreDataModel], file: StaticString = #filePath, line: UInt = #line) {
@@ -141,8 +140,8 @@ final class PDFLocalDataStoreTests: XCTestCase {
                     XCTFail("Insertion failed with error: \(error)")
                 }
                 exp.fulfill()
-            }, receiveValue: { insertedPDFs in
-                print("Inserted: \(insertedPDFs.count) new items")
+            }, receiveValue: { isSuccess in
+                print("Inserted: \(isSuccess) new items")
 
             })
             .store(in: &cancellables)
@@ -177,7 +176,7 @@ final class PDFLocalDataStoreTests: XCTestCase {
                 }
                 exp.fulfill()
             }, receiveValue: { datas in
-                self.comparePDFData(expectedDatas: expectedDatas, actualdata: datas, file: file, line: line)
+                self.comparePDFDCoreDataModel(expectedDatas: expectedDatas, actualdata: datas, file: file, line: line)
                 //   print("retr: \(insertedPDFs.count) new items")
 
             })
@@ -186,7 +185,7 @@ final class PDFLocalDataStoreTests: XCTestCase {
         wait(for: [exp], timeout: 1.0)
     }
 
-    func comparePDFData(expectedDatas: [PDFCoreDataModel], actualdata: [PDFCoreDataModel], file: StaticString = #file, line: UInt = #line) {
+    func comparePDFDCoreDataModel(expectedDatas: [PDFCoreDataModel], actualdata: [PDFCoreDataModel], file: StaticString = #file, line: UInt = #line) {
       
 
         XCTAssertEqual(
@@ -199,42 +198,6 @@ final class PDFLocalDataStoreTests: XCTestCase {
     }
 }
 
-func createDummyPDFCoreDataModel(pdfTitle: String = "Test PDF", pdfAuthor: String = "John Doe", pdfPageCount: Int = 3, key: String, isfavorite: Bool = false, lastOpenedDate: Date? = nil) -> PDFCoreDataModel {
-    let pdfData: Data = createDummyPDF(title: pdfTitle, author: pdfAuthor, pageCount: pdfPageCount).dataRepresentation()!
-    return PDFCoreDataModel(key: key, data: pdfData, isFavourite: isfavorite)
-}
-
-func createDummyPDF(title: String = "Test PDF", author: String = "John Doe", pageCount: Int = 3) -> PDFDocument {
-    let pdfDocument = PDFDocument()
-
-    for i in 0 ..< pageCount {
-        let page = PDFPage()
-        pdfDocument.insert(page, at: i)
-    }
-
-    // Set metadata
-    pdfDocument.documentAttributes = [
-        PDFDocumentAttribute.titleAttribute: title,
-        PDFDocumentAttribute.authorAttribute: author,
-    ]
-
-    // Bookmark data is usually created from PDFDocument's data
-    return pdfDocument // .dataRepresentation()
-}
-
-extension PDFCoreDataModel: Equatable, Hashable {
-    public static func == (lhs: PDFCoreDataModel, rhs: PDFCoreDataModel) -> Bool {
-        return lhs.key == rhs.key &&
-          //  lhs.data == rhs.data &&
-            lhs.isFavourite == rhs.isFavourite
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(key)
-        hasher.combine(data)
-        hasher.combine(isFavourite)
-    }
-}
 
 // func getPdfData(pdfDocument : PDFDocument?) -> Data? {
 //    return pdfDocument?.dataRepresentation()

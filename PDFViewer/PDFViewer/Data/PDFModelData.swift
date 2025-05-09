@@ -15,9 +15,9 @@ class PDFModelData : Identifiable {
     var title : String? = nil
     var author : String? = nil
     let bookmarkData : Data?
-    let isFavorite : Bool
-    let lastOpenedPage : Int
-    let lastOpenTime : Date?
+    var isFavorite : Bool
+    var lastOpenedPage : Int
+    var lastOpenTime : Date?
     
     var thumbImage : UIImage? = nil
     var totalPageCount : Int = 0

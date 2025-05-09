@@ -31,19 +31,20 @@ final class PDFLocalRepositoryImplTests: XCTestCase {
     }
 
     func test_InsertSuccess() {
-        let sampleModel = makeSamplePDFModelData()
+        let sampleModel = createDummyPDFModelData(key: "test_1", isFavorite: true)
         store.insertResult = .success(true)
 
         let expectation = self.expectation(description: "Insert")
 
         repository.insert(pdfDatas: [sampleModel])
-            .sink(receiveCompletion: {  completion in
-                switch completion {
-                case .finished:
-                    break // success
-                case .failure(let error):
-                    XCTFail("Insertion failed with error: \(error)")
-                }},
+            .sink(receiveCompletion: { completion in
+                      switch completion {
+                      case .finished:
+                          break // success
+                      case let .failure(error):
+                          XCTFail("Insertion failed with error: \(error)")
+                      }
+                  },
                   receiveValue: { result in
                       XCTAssertEqual(result, true)
                       expectation.fulfill()
@@ -54,7 +55,7 @@ final class PDFLocalRepositoryImplTests: XCTestCase {
     }
 
     func test_RetrieveSuccess() {
-        let sampleModel = makeSamplePDFCoreDataModel()
+        let sampleModel = createDummyPDFCoreDataModel(key: "test_1")
         store.retrieveResult = .success([sampleModel])
 
         let expectation = self.expectation(description: "Retrieve")
@@ -62,7 +63,7 @@ final class PDFLocalRepositoryImplTests: XCTestCase {
         repository.retrieve()
             .sink(receiveCompletion: { _ in },
                   receiveValue: { result in
-                XCTAssertEqual(result.first?.key, sampleModel.key)
+                      XCTAssertEqual(result.first?.key, sampleModel.key)
                       expectation.fulfill()
                   })
             .store(in: &cancellables)
@@ -70,33 +71,35 @@ final class PDFLocalRepositoryImplTests: XCTestCase {
         wait(for: [expectation], timeout: 1)
     }
 
-//    func testToggleFavoriteSuccess() {
-//        let sampleModel = makeSamplePDFCoreDataModel()
-//        store.updateResult = .success(true)
-//
-//        let expectation = self.expectation(description: "ToggleFavorite")
-//
-//        repository.toggleFavorite(pdfItem: sampleModel)
-//            .sink(receiveCompletion: { _ in },
-//                  receiveValue: { result in
-//                      XCTAssertEqual(result.pdfKey, sampleModel.key)
-//                      expectation.fulfill()
-//                  })
-//            .store(in: &cancellables)
-//
-//        wait(for: [expectation], timeout: 1)
-//    }
+    func test_update_Success() {
+        let sampleModel = createDummyPDFModelData(key: "key_1", isFavorite: false)
+        let updatedData = sampleModel
+        updatedData.isFavorite = true
 
-    func testDeleteSuccess() {
-        let sampleModel = makeSamplePDFCoreDataModel()
-        store.deleteResult = .success(true)
+        store.updateResult = .success(updatedData.toCoereDataModel())
 
-        let expectation = self.expectation(description: "Delete")
+        let expectation = self.expectation(description: "update Fav Data")
 
-        repository.delete(pdfItem: sampleModel)
+        repository.update(updatedPdfData: updatedData)
             .sink(receiveCompletion: { _ in },
                   receiveValue: { result in
-                      XCTAssertTrue(result)
+                      XCTAssertEqual(result.key, sampleModel.key)
+                      XCTAssertEqual(result.isFavorite, updatedData.isFavorite)
+                      expectation.fulfill()
+                  })
+            .store(in: &cancellables)
+
+        wait(for: [expectation], timeout: 1)
+    }
+
+    func testDeleteSuccess() {
+        store.deleteResult = .success(true)
+        let expectation = self.expectation(description: "Delete")
+
+        repository.delete(pdfKey: "test_1")
+            .sink(receiveCompletion: { _ in },
+                  receiveValue: { isSuccess in
+                      XCTAssertTrue(isSuccess)
                       expectation.fulfill()
                   })
             .store(in: &cancellables)
@@ -105,18 +108,12 @@ final class PDFLocalRepositoryImplTests: XCTestCase {
     }
 
     // Helpers
-    func makeSamplePDFCoreDataModel() -> PDFCoreDataModel {
-        let dummyURL = URL(fileURLWithPath: "/dev/null")
-        let bookmarkData = try! dummyURL.bookmarkData()
-        return PDFCoreDataModel(key: "testKey", bookmarkData: bookmarkData, isFavourite: false, lastOpenPage: 0, lastOpenTime: nil)
-        // return PDFCoreDataModel(key: "testKey", data: bookmarkData, isFavourite: false)
-    }
 
-    func makeSamplePDFModelData() -> PDFModelData {
+    func createDummyPDFModelData(key: String, isFavorite: Bool) -> PDFModelData {
         let dummyURL = URL(fileURLWithPath: "/dev/null")
         let bookmarkData = try! dummyURL.bookmarkData()
         // return PDFCoreDataModel(key: "testKey", bookmarkData: bookmarkData, isFavourite: false, lastOpenPage: 0, lastOpenTime: nil)
-        return PDFModelData(key: "test Key", bookmarkData: bookmarkData, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
+        return PDFModelData(key: key, bookmarkData: bookmarkData, isFavorite: isFavorite, lastOpenedPage: 0, lastOpenTime: nil)
     }
 }
 

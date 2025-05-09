@@ -9,24 +9,6 @@ import Combine
 import CoreData
 import Foundation
 
-//struct PDFCoreDataModel {
-//    var key: String
-//    var data: Data
-//    var isFavourite: Bool
-//    var lastReadTime: Date?
-//    var lastReadPageNumber: Int?
-//
-//    func togglingFavorite() -> PDFCoreDataModel {
-//        PDFCoreDataModel(
-//            key: key,
-//            data: data,
-//            isFavourite: !isFavourite,
-//            lastReadTime: lastReadTime,
-//            lastReadPageNumber: lastReadPageNumber
-//        )
-//    }
-//}
-
 class PDFLocalDataStore {
     public struct ModelNotFound: Error {
         public let modelName: String
@@ -98,9 +80,9 @@ class PDFLocalDataStore {
     func update(updatedData: PDFCoreDataModel) -> AnyPublisher<PDFCoreDataModel, Error> {
         filter(parameters: ["key": updatedData.key])
             .tryMap { [weak self] entities in
-                guard let self,  let _ = entities.first else { throw NSError(domain: "UpdateError", code: 404) }
+                guard let self,  let singleEntity = entities.first else { throw NSError(domain: "UpdateError", code: 404) }
                
-                let entityData = updatedData.toPDFEntity()
+                singleEntity.convertFromCoreDataModel(coreData: updatedData)
 
                 do {
                     try context.save()

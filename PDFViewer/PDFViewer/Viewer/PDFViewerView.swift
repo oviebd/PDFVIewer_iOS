@@ -20,12 +20,12 @@ struct PDFViewerView: View {
     @State private var actions = PDFKitViewActions()
 
     init(pdfFile: PDFModelData) {
-        currentPDF = URL(string: pdfFile.urlPath ?? "")!  // pdfUrl
-//        if let startURL = Bundle.main.url(forResource: "sample1", withExtension: "pdf") {
-//            _currentPDF = State(initialValue: startURL)
-//        } else {
-//            _currentPDF = State(initialValue: URL(fileURLWithPath: ""))
-//        }
+       // currentPDF = URL(string: pdfFile.urlPath ?? "")!  // pdfUrl
+        if let startURL = Bundle.main.url(forResource: "sample1", withExtension: "pdf") {
+            _currentPDF = State(initialValue: startURL)
+        } else {
+            _currentPDF = State(initialValue: URL(fileURLWithPath: ""))
+        }
     }
 
     var body: some View {

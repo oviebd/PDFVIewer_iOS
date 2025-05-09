@@ -10,7 +10,7 @@ import Foundation
 class PDFCoreDataModel {
     let key: String
     let bookmarkData: Data?
-    let isFavourite: Bool
+    var isFavourite: Bool
     let lastOpenedPage: Int
     let lastOpenTime: Date?
 
