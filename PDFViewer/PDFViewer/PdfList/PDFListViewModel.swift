@@ -20,48 +20,70 @@ final class PDFListViewModel: ObservableObject {
 
     init(repository: PDFRepositoryProtocol) {
         self.repository = repository
-        loadPDFs()
+        // loadPDFs()
     }
 
-    func loadPDFs() {
+//    func loadPDFs() {
+//        isLoading = true
+//        repository.retrieve()
+//            .receive(on: DispatchQueue.main)
+//            .sink(receiveCompletion: { [weak self] completion in
+//                self?.isLoading = false
+//                if case let .failure(error) = completion {
+//                    print("Error: \(error.localizedDescription)")
+//                    self?.errorMessage = error.localizedDescription
+//                }
+//            }, receiveValue: { [weak self] models in
+//                self?.pdfModels = models
+//            })
+//            .store(in: &cancellables)
+//    }
+
+    func loadPDFs() -> AnyPublisher<[PDFModelData], Error> {
         isLoading = true
-        repository.retrieve()
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { [weak self] completion in
+        return repository.retrieve()
+            .handleEvents(receiveOutput: { [weak self] models in
+                self?.pdfModels = models
+            }, receiveCompletion: { [weak self] completion in
                 self?.isLoading = false
                 if case let .failure(error) = completion {
-                    print("Error: \(error.localizedDescription)")
                     self?.errorMessage = error.localizedDescription
                 }
-            }, receiveValue: { [weak self] models in
-                self?.pdfModels = models
+            })
+            .eraseToAnyPublisher()
+    }
+    
+    func loadPDFsAndForget() {
+        loadPDFs()
+            .sink(receiveCompletion: { _ in }, receiveValue: { _ in })
+            .store(in: &cancellables)
+    }
+
+    func toggleFavorite(for model: PDFModelData) {
+        model.toggleFavorite()
+        repository.update(updatedPdfData: model)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] updatedModel in
+                self?.UpdatePdfList(updatedModel: updatedModel)
             })
             .store(in: &cancellables)
     }
 
-//    func toggleFavorite(for model: PDFModelData) {
-//        
-//       let coreDataModel = model.toCoreDataModel()
-//        
-//        repository.toggleFavorite(pdfItem: coreDataModel)
-//            .receive(on: DispatchQueue.main)
-//            .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] updatedModel in
-//                if let index = self?.pdfModels.firstIndex(where: { $0.pdfKey == updatedModel.pdfKey }) {
-//                    self?.pdfModels[index] = updatedModel
-//                }
-//            })
-//            .store(in: &cancellables)
-//    }
+    func UpdatePdfList(updatedModel : PDFModelData){
+        if let index = pdfModels.firstIndex(where: { $0.key == updatedModel.key }) {
+            pdfModels[index] = updatedModel
+        }
+    }
 
     func importPDFs(urls: [URL]) -> AnyPublisher<Void, Error> {
         let pdfCoreDataList = urls.compactMap { url -> PDFModelData? in
             do {
                 let bookmark = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
                 let key = Self.generatePDFKey(for: url)
-                
+
                 return PDFModelData(key: key, bookmarkData: bookmark, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
-                
-               // return PDFCoreDataModel(key: key, data: bookmark, isFavourite: false)
+
+                // return PDFCoreDataModel(key: key, data: bookmark, isFavourite: false)
             } catch {
                 return nil
             }
@@ -83,5 +105,11 @@ final class PDFListViewModel: ObservableObject {
         } catch {
             return UUID().uuidString
         }
+    }
+}
+
+extension PDFModelData {
+    func toggleFavorite() {
+        return isFavorite.toggle()
     }
 }

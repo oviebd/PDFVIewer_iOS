@@ -25,7 +25,7 @@ struct PDFListView: View {
                         showFilePicker.toggle()
                     }
                     Button("Load Cached PDFs") {
-                        viewModel.loadPDFs()
+                        viewModel.loadPDFsAndForget()
                     }
                 }
                 .padding()
@@ -61,9 +61,18 @@ struct PDFListView: View {
                 }
                 .navigationTitle("PDF Files")
             }
+            .onAppear{
+                viewModel.loadPDFsAndForget()
+            }
             .sheet(isPresented: $showFilePicker) {
                 DocumentPickerRepresentable(mode: .file) { urls in
                     viewModel.importPDFs(urls: urls)
+                        .sink { _ in
+                            
+                        } receiveValue: { _ in
+                            viewModel.loadPDFsAndForget()
+                        }
+
                 }
             }
         }

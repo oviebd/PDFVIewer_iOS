@@ -9,8 +9,6 @@ import Foundation
 @testable import PDFViewer
 import PDFKit
 
-
-
 func createDummyPDFCoreDataModel(pdfTitle: String = "Test PDF", pdfAuthor: String = "John Doe", pdfPageCount: Int = 3, key: String, isfavorite: Bool = false, lastOpenedDate: Date? = nil) -> PDFCoreDataModel {
     let pdfData: Data = createDummyPDFDocument(title: pdfTitle, author: pdfAuthor, pageCount: pdfPageCount).dataRepresentation()!
     return PDFCoreDataModel(key: key, bookmarkData: pdfData, isFavourite: isfavorite, lastOpenPage: 0, lastOpenTime: lastOpenedDate)
