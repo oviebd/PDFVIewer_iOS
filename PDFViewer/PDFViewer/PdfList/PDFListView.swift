@@ -66,12 +66,7 @@ struct PDFListView: View {
             }
             .sheet(isPresented: $showFilePicker) {
                 DocumentPickerRepresentable(mode: .file) { urls in
-                    viewModel.importPDFs(urls: urls)
-                        .sink { _ in
-                            
-                        } receiveValue: { _ in
-                            viewModel.loadPDFsAndForget()
-                        }
+                    viewModel.importPDFsAndForget(urls: urls)
 
                 }
             }

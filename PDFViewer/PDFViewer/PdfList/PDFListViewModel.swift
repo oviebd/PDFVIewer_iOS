@@ -9,6 +9,7 @@ import Combine
 import CryptoKit
 import Foundation
 
+@MainActor
 final class PDFListViewModel: ObservableObject {
     @Published var pdfModels: [PDFModelData] = []
 
@@ -20,28 +21,14 @@ final class PDFListViewModel: ObservableObject {
 
     init(repository: PDFRepositoryProtocol) {
         self.repository = repository
-        // loadPDFs()
     }
 
-//    func loadPDFs() {
-//        isLoading = true
-//        repository.retrieve()
-//            .receive(on: DispatchQueue.main)
-//            .sink(receiveCompletion: { [weak self] completion in
-//                self?.isLoading = false
-//                if case let .failure(error) = completion {
-//                    print("Error: \(error.localizedDescription)")
-//                    self?.errorMessage = error.localizedDescription
-//                }
-//            }, receiveValue: { [weak self] models in
-//                self?.pdfModels = models
-//            })
-//            .store(in: &cancellables)
-//    }
-
     func loadPDFs() -> AnyPublisher<[PDFModelData], Error> {
+
         isLoading = true
+
         return repository.retrieve()
+            .receive(on: DispatchQueue.main)
             .handleEvents(receiveOutput: { [weak self] models in
                 self?.pdfModels = models
             }, receiveCompletion: { [weak self] completion in
@@ -52,7 +39,7 @@ final class PDFListViewModel: ObservableObject {
             })
             .eraseToAnyPublisher()
     }
-    
+
     func loadPDFsAndForget() {
         loadPDFs()
             .sink(receiveCompletion: { _ in }, receiveValue: { _ in })
@@ -69,7 +56,7 @@ final class PDFListViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-    func UpdatePdfList(updatedModel : PDFModelData){
+    private func UpdatePdfList(updatedModel: PDFModelData) {
         if let index = pdfModels.firstIndex(where: { $0.key == updatedModel.key }) {
             pdfModels[index] = updatedModel
         }
@@ -82,16 +69,27 @@ final class PDFListViewModel: ObservableObject {
                 let key = Self.generatePDFKey(for: url)
 
                 return PDFModelData(key: key, bookmarkData: bookmark, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
-
-                // return PDFCoreDataModel(key: key, data: bookmark, isFavourite: false)
             } catch {
                 return nil
             }
         }
 
         return repository.insert(pdfDatas: pdfCoreDataList)
-            .map { _ in () }
+            .receive(on: DispatchQueue.main)
+            .flatMap { [weak self] _ -> AnyPublisher<[PDFModelData], Error> in
+                guard let self = self else {
+                    return Fail(error: URLError(.badServerResponse)).eraseToAnyPublisher()
+                }
+                return self.loadPDFs()
+            }
+            .map { _ in () } // return Void instead of model list
             .eraseToAnyPublisher()
+    }
+
+    func importPDFsAndForget(urls: [URL]) {
+        importPDFs(urls: urls)
+            .sink(receiveCompletion: { _ in }, receiveValue: { _ in })
+            .store(in: &cancellables)
     }
 
     private static func generatePDFKey(for url: URL) -> String {
