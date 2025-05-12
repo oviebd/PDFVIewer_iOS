@@ -18,9 +18,8 @@ struct PDFListView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack {
-
                 if viewModel.isLoading {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -34,7 +33,6 @@ struct PDFListView: View {
                         }
                         .onDelete { indexSet in
                             viewModel.deletePdf(indexSet: indexSet)
-                           
                         }
                     }
                     .listStyle(.plain)
@@ -79,45 +77,5 @@ struct ImportButton: View {
                 .shadow(radius: 2)
         }
         .accessibilityLabel("Import PDF Files")
-    }
-}
-
-struct PDFListItemView: View {
-    let pdf: PDFModelData
-    let toggleFavorite: () -> Void
-
-    var body: some View {
-        NavigationLink(destination: PDFViewerView(pdfFile: pdf)) {
-            HStack {
-                if let image = pdf.thumbImage {
-                    Image(uiImage: image)
-                        .resizable()
-                        .frame(width: 50, height: 70)
-                        .cornerRadius(5)
-                } else {
-                    Image(systemName: "doc.text")
-                        .resizable()
-                        .frame(width: 50, height: 70)
-                        .cornerRadius(5)
-                }
-
-                VStack(alignment: .leading) {
-                    Text(pdf.title ?? "Untitled")
-                        .font(.headline)
-                    Text("Author: \(pdf.author ?? "Unknown")")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                }
-
-                Spacer()
-
-                Button(action: toggleFavorite) {
-                    Image(systemName: pdf.isFavorite ? "star.fill" : "star")
-                        .foregroundColor(pdf.isFavorite ? .yellow : .gray)
-                }
-                .buttonStyle(BorderlessButtonStyle())
-            }
-            .padding(.vertical, 5)
-        }
     }
 }
