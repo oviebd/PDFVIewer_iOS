@@ -9,7 +9,6 @@ import Combine
 import CryptoKit
 import Foundation
 
-@MainActor
 final class PDFListViewModel: ObservableObject {
     @Published var pdfModels: [PDFModelData] = []
 
@@ -24,7 +23,6 @@ final class PDFListViewModel: ObservableObject {
     }
 
     func loadPDFs() -> AnyPublisher<[PDFModelData], Error> {
-
         isLoading = true
 
         return repository.retrieve()
@@ -90,6 +88,22 @@ final class PDFListViewModel: ObservableObject {
         importPDFs(urls: urls)
             .sink(receiveCompletion: { _ in }, receiveValue: { _ in })
             .store(in: &cancellables)
+    }
+
+    func deletePdf(indexSet: IndexSet) {
+        if let index = indexSet.first {
+            let pdfToDelete = pdfModels[index]
+
+            repository.delete(pdfKey: pdfToDelete.key)
+                .receive(on: DispatchQueue.main)
+                .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] isSuccess in
+
+                    if isSuccess {
+                        self?.pdfModels.remove(at: index)
+                    }
+                })
+                .store(in: &cancellables)
+        }
     }
 
     private static func generatePDFKey(for url: URL) -> String {
