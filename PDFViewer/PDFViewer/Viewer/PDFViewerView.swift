@@ -18,11 +18,11 @@ struct PDFViewerView: View {
     @State private var lineWidth: CGFloat = 5
     @State private var zoomScale: CGFloat = 1.0
     @State private var actions = PDFKitViewActions()
+    
+    @State private var showPalette = false
 
     init(pdfFile: PDFModelData) {
-        
-        
-        
+
         currentPDF = URL(string: pdfFile.urlPath ?? "")!  // pdfUrl
 //        if let startURL = Bundle.main.url(forResource: "sample1", withExtension: "pdf") {
 //            _currentPDF = State(initialValue: startURL)
@@ -33,6 +33,23 @@ struct PDFViewerView: View {
 
     var body: some View {
         VStack {
+            
+            HStack{
+                Spacer()
+                AnnotationControllerView { drawingTool in
+                    debugPrint("U>> pressed tool \(drawingTool)")
+                    self.drawingTool = drawingTool
+                    if drawingTool != .none{
+                        showPalette = true
+                    }
+                    
+                }
+
+                Spacer()
+            }.frame(height: 100)
+            
+            .background(Color.green)
+            
             PDFKitView(pdfURL: $currentPDF, settings: pdfSettings, mode: $drawingTool,
                        lineColor: $color,
                        lineWidth: $lineWidth,
@@ -88,32 +105,44 @@ struct PDFViewerView: View {
             }
             .padding()
 
-            HStack {
-                Button("None") { drawingTool = .none }
-                Button("Pen") { drawingTool = .pen
-                    //actions.setZoomScale(scaleFactor: zoomScale)
-                }
-                Button("Highlighter") { drawingTool = .highlighter
-                    //actions.setZoomScale(scaleFactor: zoomScale)
-                }
-                Button("Eraser") { drawingTool = .eraser }
-            }
+//            HStack {
+//                Button("None") { drawingTool = .none }
+//                Button("Pen") { drawingTool = .pen
+//                    //actions.setZoomScale(scaleFactor: zoomScale)
+//                }
+//                Button("Highlighter") { drawingTool = .highlighter
+//                    //actions.setZoomScale(scaleFactor: zoomScale)
+//                }
+//                Button("Eraser") { drawingTool = .eraser }
+//            }
 
-            HStack {
-                Button("Red") { color = .red }
-                Button("Blue") { color = .blue }
-                Button("Yellow") { color = .yellow }
-            }
+//            HStack {
+//                Button("Red") { color = .red }
+//                Button("Blue") { color = .blue }
+//                Button("Yellow") { color = .yellow }
+//            }
 
             Slider(value: $lineWidth, in: 1 ... 20, step: 1) {
                 Text("Line Width")
             }
         }
+        .sheet(isPresented: $showPalette) {
+                    AnnotationDetailsView(
+                        selectedColor: $color,
+                        showPalette: $showPalette
+                    )
+                    .presentationDetents([.height(250)]) // or .medium, .large
+                    .presentationDragIndicator(.visible)
+                }
+
     }
     
 
 }
 
 #Preview {
-    PDFViewerView(pdfFile: samplePDFModelData)
+    NavigationStack{
+        PDFViewerView(pdfFile: samplePDFModelData)
+    }
+    
 }

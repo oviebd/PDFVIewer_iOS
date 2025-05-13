@@ -14,12 +14,10 @@ struct Controller: View {
 //    @State private var isExpanded = false
 //    @State private var showColorPalette = false
     @StateObject var vm = ControllerVM()
-   
+
     var body: some View {
-        
         ZStack {
             VStack {
-               
                 HStack {
                     // Main Expand Button
                     Button(action: {
@@ -27,16 +25,14 @@ struct Controller: View {
                             vm.isExpanded.toggle()
                         }
                     }) {
-                           
-                            Circle()
-                                .fill(Color.black)
-                                .frame(width: 25, height: 25)
-                        
-                                .overlay(Image(systemName: "pencil.tip")
-                                    .font(.system(size: 18))
-                                    .rotationEffect(.init(degrees: -120))
-                                    .foregroundColor(.white))
-                       
+                        Circle()
+                            .fill(Color.black)
+                            .frame(width: 25, height: 25)
+
+                            .overlay(Image(systemName: "pencil.tip")
+                                .font(.system(size: 18))
+                                .rotationEffect(.init(degrees: -120))
+                                .foregroundColor(.white))
                     }
 
                     if vm.isExpanded {
@@ -44,17 +40,16 @@ struct Controller: View {
                             Button(action: {
                                 withAnimation(.spring()) {
                                     vm.showColorPalette.toggle()
-                                                       }
+                                }
 
                             }) {
                                 Circle()
                                     .fill(vm.selectedColor)
                                     .frame(width: 25, height: 25)
-                                
+
                                     .overlay(Image(systemName: "paintpalette.fill")
                                         .font(.system(size: 12))
                                         .foregroundColor(.white))
-                                       
                             }
                             .transition(.scale.combined(with: .opacity))
                         }
@@ -66,17 +61,15 @@ struct Controller: View {
                 .cornerRadius(5)
 
                 Spacer()
-                
+
                 if vm.showColorPalette {
                     ColorPaletteView(selectedColor: $vm.selectedColor, showPalette: $vm.showColorPalette)
-                                    .transition(.scale.combined(with: .opacity))
-                            }
+                        .transition(.scale.combined(with: .opacity))
+                }
             }
         }
     }
-   
 }
-
 
 struct ColorPaletteView: View {
     @Binding var selectedColor: Color
@@ -106,34 +99,34 @@ struct ColorPaletteView: View {
                 }
             }
             .padding()
-            
+
             Button(action: {
-                          withAnimation {
-                              showPalette = false
-                          }
-                      }) {
-                          Text("Close")
-                              .foregroundColor(.white)
-                              .padding(.horizontal, 20)
-                              .padding(.vertical, 10)
-                              .background(Color.gray)
-                              .cornerRadius(10)
-                      }
-                      .padding(.bottom)
-                  }
-                  .padding()
-                  .background(.ultraThinMaterial)
-                  .cornerRadius(20)
-                  .shadow(radius: 10)
-                  .padding()
-              }
-          }
+                withAnimation {
+                    showPalette = false
+                }
+            }) {
+                Text("Close")
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(Color.gray)
+                    .cornerRadius(10)
+            }
+            .padding(.bottom)
+        }
+        .padding()
+        .background(.ultraThinMaterial)
+        .cornerRadius(20)
+        .shadow(radius: 10)
+        .padding()
+    }
+}
 
 #Preview {
     Controller()
 }
 
-//struct DrawingCanvas: UIViewRepresentable {
+// struct DrawingCanvas: UIViewRepresentable {
 //    @Binding var canvasView: PKCanvasView
 //    @Binding var selectedColor: Color
 //
@@ -148,5 +141,4 @@ struct ColorPaletteView: View {
 //    func updateUIView(_ uiView: PKCanvasView, context: Context) {
 //        uiView.tool = PKInkingTool(.pen, color: UIColor(selectedColor), width: 5)
 //    }
-//}
-
+// }
