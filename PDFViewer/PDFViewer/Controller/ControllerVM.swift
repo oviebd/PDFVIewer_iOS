@@ -10,7 +10,14 @@ import PDFKit
 import PencilKit
 import SwiftUI
 
+class ControllerVM: ObservableObject {
+    @Published var selectedColor: Color = .black
+    @Published var isExpanded = false
+    @Published var showColorPalette = false
+}
+
 struct PDFColorView: UIViewRepresentable {
+   
     
     func makeUIView(context: Context) -> PDFView {
         let pdfView = PDFView()

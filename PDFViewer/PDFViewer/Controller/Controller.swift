@@ -10,53 +10,21 @@ import PencilKit
 import SwiftUI
 
 struct Controller: View {
-    @State private var selectedColor: Color = .black
-    @State private var isExpanded = false
-
+//    @State private var selectedColor: Color = .black
+//    @State private var isExpanded = false
+//    @State private var showColorPalette = false
+    @StateObject var vm = ControllerVM()
+   
     var body: some View {
-        //                ZStack {
-        //                           // PDFKitView()
-        //                    PDFColorView()
-        //                            // Overlay PencilKit Drawing Canvas
-        //                            DrawingCanvas(canvasView: $canvasView, selectedColor: $selectedColor)
-        //                                .edgesIgnoringSafeArea(.all)
-        //
-        //                            // Toolbar for Selecting Color
-        //                          VStack {
-        //                                //Spacer()
-        //                                HStack {
-        //                                    ColorPicker("Pick a Color", selection: $selectedColor)
-        //                                        .frame(width: 150)
-        //                                        .padding()
-        //                                        .background(Color.white.opacity(0.8))
-        //                                        .cornerRadius(10)
-        //
-        //        //                            Button(action: {
-        //        //                                canvasView.drawing = PKDrawing()
-        //        //                            }) {
-        //        //                                Text("Clear")
-        //        //                                    .padding()
-        //        //                                    .background(Color.red.opacity(0.8))
-        //        //                                    .foregroundColor(.white)
-        //        //                                    .cornerRadius(10)
-        //        //                            }
-        //                                }
-        //                                .padding()
-        //                                Spacer()
-        //                            }
-        //                        }
-        //                    }
-        //                }
-        //
-        //
-
+        
         ZStack {
             VStack {
+               
                 HStack {
                     // Main Expand Button
                     Button(action: {
                         withAnimation {
-                            isExpanded.toggle()
+                            vm.isExpanded.toggle()
                         }
                     }) {
                            
@@ -71,15 +39,16 @@ struct Controller: View {
                        
                     }
 
-                    if isExpanded {
+                    if vm.isExpanded {
                         HStack(spacing: 10) {
                             Button(action: {
-                                // print("Symbol 1 clicked")
-//                            selectedColor
+                                withAnimation(.spring()) {
+                                    vm.showColorPalette.toggle()
+                                                       }
 
                             }) {
                                 Circle()
-                                    .fill(selectedColor)
+                                    .fill(vm.selectedColor)
                                     .frame(width: 25, height: 25)
                                 
                                     .overlay(Image(systemName: "paintpalette.fill")
@@ -97,28 +66,87 @@ struct Controller: View {
                 .cornerRadius(5)
 
                 Spacer()
+                
+                if vm.showColorPalette {
+                    ColorPaletteView(selectedColor: $vm.selectedColor, showPalette: $vm.showColorPalette)
+                                    .transition(.scale.combined(with: .opacity))
+                            }
             }
         }
     }
+   
 }
+
+
+struct ColorPaletteView: View {
+    @Binding var selectedColor: Color
+    @Binding var showPalette: Bool
+
+    let colors: [Color] = [.red, .green, .blue, .yellow, .orange, .purple, .pink, .black, .gray]
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Choose Color")
+                .font(.headline)
+                .padding(.top)
+
+            HStack {
+                ForEach(colors, id: \.self) { color in
+                    Button(action: {
+                        selectedColor = color
+                        withAnimation {
+                            showPalette = false
+                        }
+                    }) {
+                        Circle()
+                            .fill(color)
+                            .frame(width: 40, height: 40)
+                            .shadow(radius: 2)
+                    }
+                }
+            }
+            .padding()
+            
+            Button(action: {
+                          withAnimation {
+                              showPalette = false
+                          }
+                      }) {
+                          Text("Close")
+                              .foregroundColor(.white)
+                              .padding(.horizontal, 20)
+                              .padding(.vertical, 10)
+                              .background(Color.gray)
+                              .cornerRadius(10)
+                      }
+                      .padding(.bottom)
+                  }
+                  .padding()
+                  .background(.ultraThinMaterial)
+                  .cornerRadius(20)
+                  .shadow(radius: 10)
+                  .padding()
+              }
+          }
 
 #Preview {
     Controller()
 }
 
-struct DrawingCanvas: UIViewRepresentable {
-    @Binding var canvasView: PKCanvasView
-    @Binding var selectedColor: Color
+//struct DrawingCanvas: UIViewRepresentable {
+//    @Binding var canvasView: PKCanvasView
+//    @Binding var selectedColor: Color
+//
+//    func makeUIView(context: Context) -> PKCanvasView {
+//        canvasView.tool = PKInkingTool(.pen, color: UIColor(selectedColor), width: 5)
+//        canvasView.isOpaque = false
+//        canvasView.backgroundColor = .clear
+//        canvasView.drawingPolicy = .anyInput
+//        return canvasView
+//    }
+//
+//    func updateUIView(_ uiView: PKCanvasView, context: Context) {
+//        uiView.tool = PKInkingTool(.pen, color: UIColor(selectedColor), width: 5)
+//    }
+//}
 
-    func makeUIView(context: Context) -> PKCanvasView {
-        canvasView.tool = PKInkingTool(.pen, color: UIColor(selectedColor), width: 5)
-        canvasView.isOpaque = false
-        canvasView.backgroundColor = .clear
-        canvasView.drawingPolicy = .anyInput
-        return canvasView
-    }
-
-    func updateUIView(_ uiView: PKCanvasView, context: Context) {
-        uiView.tool = PKInkingTool(.pen, color: UIColor(selectedColor), width: 5)
-    }
-}
