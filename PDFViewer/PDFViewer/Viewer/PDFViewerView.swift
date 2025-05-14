@@ -5,12 +5,18 @@
 //  Created by Habibur Rahman on 25/3/25.
 //
 
+
+
 import PDFKit
 import SwiftUI
 
 
+import SwiftUI
+import PDFKit
 
 struct PDFViewerView: View {
+    @Environment(\.dismiss) var dismiss
+
     @State private var currentPDF: URL
     @StateObject private var pdfSettings = PDFSettings()
     @State private var drawingTool: DrawingTool = .none
@@ -18,131 +24,319 @@ struct PDFViewerView: View {
     @State private var lineWidth: CGFloat = 5
     @State private var zoomScale: CGFloat = 1.0
     @State private var actions = PDFKitViewActions()
-    
+
     @State private var showPalette = false
+    @State private var showControls = true
 
     init(pdfFile: PDFModelData) {
-
-        currentPDF = URL(string: pdfFile.urlPath ?? "")!  // pdfUrl
-//        if let startURL = Bundle.main.url(forResource: "sample1", withExtension: "pdf") {
-//            _currentPDF = State(initialValue: startURL)
-//        } else {
-//            _currentPDF = State(initialValue: URL(fileURLWithPath: ""))
-//        }
+        _currentPDF = State(initialValue: URL(string: pdfFile.urlPath ?? "")!)
     }
 
     var body: some View {
-        VStack {
-            
-            HStack{
-                Spacer()
-                AnnotationControllerView { drawingTool in
-                    debugPrint("U>> pressed tool \(drawingTool)")
-                    self.drawingTool = drawingTool
-                    if drawingTool != .none{
-                        showPalette = true
-                    }
-                    
-                }
-
-                Spacer()
-            }.frame(height: 100)
-            
-            .background(Color.green)
-            
-            PDFKitView(pdfURL: $currentPDF, settings: pdfSettings, mode: $drawingTool,
+        ZStack {
+            // PDF Viewer with tap to toggle controls
+            PDFKitView(pdfURL: $currentPDF,
+                       settings: pdfSettings,
+                       mode: $drawingTool,
                        lineColor: $color,
                        lineWidth: $lineWidth,
-                   //    zoomScale: $zoomScale,
                        actions: actions)
                 .edgesIgnoringSafeArea(.all)
-
-            HStack {
-                Button("Zoom -") {
-                    zoomScale = max(zoomScale - 0.2, 0.5)
-                    actions.setZoomScale(scaleFactor: zoomScale)
-                }
-                Button("Zoom +") {
-                    zoomScale = min(zoomScale + 0.2, 5.0)
-                    actions.setZoomScale(scaleFactor: zoomScale)
-                }
-            }
-            .padding()
-
-            HStack {
-                Button("Save Annotations") {
-                   _ = actions.saveAnnotedPdf(url: currentPDF)
-                }
-            }
-            .padding()
-
-            HStack {
-                Button("Switch to Horizontal") {
-                    pdfSettings.displayDirection = .horizontal
-                }
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(8)
-
-                Button("Enable Auto Scale") {
-                    pdfSettings.autoScales = true
-                }
-                .padding()
-                .background(Color.green)
-                .foregroundColor(.white)
-                .cornerRadius(8)
-
-                Button("Load New PDF") {
-                    if let newURL = Bundle.main.url(forResource: "sample2", withExtension: "pdf") {
-                        currentPDF = newURL
+                .contentShape(Rectangle()) // Allows tap on empty area
+                .onTapGesture {
+                    // Toggle controls only if not drawing
+                    if drawingTool == .none {
+                        withAnimation {
+                            showControls.toggle()
+                        }
                     }
                 }
-                .padding()
-                .background(Color.red)
-                .foregroundColor(.white)
-                .cornerRadius(8)
+
+            // Show all controls if showControls is true
+            if showControls {
+                VStack(spacing: 0) {
+                    toolbar
+                    annotationView
+                    Spacer()
+                }
+
+                // Floating bottom-right buttons
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        VStack(spacing: 16) {
+                            Button(action: {
+                                zoomScale = max(zoomScale - 0.2, 0.5)
+                                actions.setZoomScale(scaleFactor: zoomScale)
+                            }) {
+                                Image(systemName: "minus.magnifyingglass")
+                                    .font(.title)
+                                    .padding()
+                                    .background(Color.white.opacity(0.9))
+                                    .clipShape(Circle())
+                            }
+
+                            Button(action: {
+                                zoomScale = min(zoomScale + 0.2, 5.0)
+                                actions.setZoomScale(scaleFactor: zoomScale)
+                            }) {
+                                Image(systemName: "plus.magnifyingglass")
+                                    .font(.title)
+                                    .padding()
+                                    .background(Color.white.opacity(0.9))
+                                    .clipShape(Circle())
+                            }
+
+                            Button(action: {
+                                _ = actions.saveAnnotedPdf(url: currentPDF)
+                            }) {
+                                Image(systemName: "square.and.arrow.down")
+                                    .font(.title2)
+                                    .padding()
+                                    .background(Color.green.opacity(0.9))
+                                    .foregroundColor(.white)
+                                    .clipShape(Circle())
+                            }
+                        }
+                        .padding()
+                    }
+                }
             }
-            .padding()
+        }
+        .navigationBarBackButtonHidden(true)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if showControls {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "chevron.left")
+                        Text("Back")
+                    }
+                }
 
-//            HStack {
-//                Button("None") { drawingTool = .none }
-//                Button("Pen") { drawingTool = .pen
-//                    //actions.setZoomScale(scaleFactor: zoomScale)
-//                }
-//                Button("Highlighter") { drawingTool = .highlighter
-//                    //actions.setZoomScale(scaleFactor: zoomScale)
-//                }
-//                Button("Eraser") { drawingTool = .eraser }
-//            }
+                ToolbarItem(placement: .principal) {
+                    Text("PDF Viewer")
+                        .font(.headline)
+                }
 
-//            HStack {
-//                Button("Red") { color = .red }
-//                Button("Blue") { color = .blue }
-//                Button("Yellow") { color = .yellow }
-//            }
-
-            Slider(value: $lineWidth, in: 1 ... 20, step: 1) {
-                Text("Line Width")
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Button("Horizontal Scroll") {
+                            pdfSettings.displayDirection = .horizontal
+                        }
+                        Button("Auto Scale") {
+                            pdfSettings.autoScales = true
+                        }
+                        Button("Load New PDF") {
+                            if let newURL = Bundle.main.url(forResource: "sample2", withExtension: "pdf") {
+                                currentPDF = newURL
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .imageScale(.large)
+                    }
+                }
             }
         }
         .sheet(isPresented: $showPalette) {
-                    AnnotationDetailsView(
-                        selectedColor: $color,
-                        showPalette: $showPalette
-                    )
-                    .presentationDetents([.height(250)]) // or .medium, .large
-                    .presentationDragIndicator(.visible)
-                }
-
+            AnnotationDetailsView(
+                selectedColor: $color,
+                showPalette: $showPalette
+            )
+            .presentationDetents([.height(250)])
+            .presentationDragIndicator(.visible)
+        }
     }
-    
 
+    var annotationView: some View {
+        HStack {
+            Spacer()
+            AnnotationControllerView { selectedTool in
+                drawingTool = selectedTool
+                if selectedTool != .none {
+                    withAnimation {
+                        showControls = true
+                    }
+                    showPalette = true
+                }
+            }
+            Spacer()
+        }
+        .padding(.vertical, 6)
+        .background(Color(.systemGray6))
+    }
+
+    var toolbar: some View {
+        Color.clear.frame(height: 0) // keeps layout if needed
+    }
 }
 
 #Preview {
-    NavigationStack{
+    NavigationStack {
         PDFViewerView(pdfFile: samplePDFModelData)
     }
-    
 }
+
+
+//struct PDFViewerView: View {
+//    @Environment(\.dismiss) var dismiss
+//
+//    @State private var currentPDF: URL
+//    @StateObject private var pdfSettings = PDFSettings()
+//    @State private var drawingTool: DrawingTool = .none
+//    @State private var color: UIColor = .red
+//    @State private var lineWidth: CGFloat = 5
+//    @State private var zoomScale: CGFloat = 1.0
+//    @State private var actions = PDFKitViewActions()
+//    
+//    @State private var showPalette = false
+//
+//    init(pdfFile: PDFModelData) {
+//        _currentPDF = State(initialValue: URL(string: pdfFile.urlPath ?? "")!)
+//    }
+//
+//    var body: some View {
+//        ZStack(alignment: .bottom) {
+//            VStack(spacing: 0) {
+//                annotationView
+//                    .padding(.vertical, 6)
+//                    .background(Color(.systemGray6))
+//
+//                PDFKitView(
+//                    pdfURL: $currentPDF,
+//                    settings: pdfSettings,
+//                    mode: $drawingTool,
+//                    lineColor: $color,
+//                    lineWidth: $lineWidth,
+//                    actions: actions
+//                )
+//            }
+//
+//            // Floating overlay buttons
+//            overlayControls
+//        }
+//        .navigationBarBackButtonHidden(true)
+//        .navigationBarTitleDisplayMode(.inline)
+//        .toolbar {
+//            ToolbarItem(placement: .navigationBarLeading) {
+//                Button(action: {
+//                    dismiss()
+//                }) {
+//                    Image(systemName: "chevron.left")
+//                    Text("Back")
+//                }
+//            }
+//
+//            ToolbarItem(placement: .principal) {
+//                Text("PDF Viewer")
+//                    .font(.headline)
+//            }
+//
+//            ToolbarItem(placement: .navigationBarTrailing) {
+//                Menu {
+//                    Button("Horizontal Scroll") {
+//                        pdfSettings.displayDirection = .horizontal
+//                    }
+//                    Button("Auto Scale") {
+//                        pdfSettings.autoScales = true
+//                    }
+//                    Button("Load New PDF") {
+//                        if let newURL = Bundle.main.url(forResource: "sample2", withExtension: "pdf") {
+//                            currentPDF = newURL
+//                        }
+//                    }
+//                } label: {
+//                    Image(systemName: "ellipsis.circle")
+//                        .imageScale(.large)
+//                }
+//            }
+//        }
+//        .sheet(isPresented: $showPalette) {
+//            AnnotationDetailsView(
+//                selectedColor: $color,
+//                showPalette: $showPalette
+//            )
+//            .presentationDetents([.height(250)])
+//            .presentationDragIndicator(.visible)
+//        }
+//    }
+//
+//
+//    var annotationView: some View {
+//        HStack {
+//            Spacer()
+//            AnnotationControllerView { selectedTool in
+//                self.drawingTool = selectedTool
+//                if selectedTool != .none {
+//                    showPalette = true
+//                }
+//            }
+//            Spacer()
+//        }
+//    }
+//
+//    var overlayControls: some View {
+//        HStack {
+//            // Save Annotation Floating Button (Bottom Left)
+//            Button(action: {
+//                _ = actions.saveAnnotedPdf(url: currentPDF)
+//            }) {
+//                Image(systemName: "square.and.arrow.down")
+//                    .font(.system(size: 22, weight: .bold))
+//                    .padding()
+//                    .background(Color.blue.opacity(0.9))
+//                    .foregroundColor(.white)
+//                    .clipShape(Circle())
+//                    .shadow(radius: 4)
+//            }
+//            .padding(.leading, 20)
+//
+//            Spacer()
+//
+//            // Zoom Buttons (Bottom Right)
+//            VStack(spacing: 12) {
+//                Button(action: {
+//                    zoomScale = min(zoomScale + 0.2, 5.0)
+//                    actions.setZoomScale(scaleFactor: zoomScale)
+//                }) {
+//                    Image(systemName: "plus.magnifyingglass")
+//                        .font(.system(size: 22, weight: .none))
+//                        .padding(5)
+//                        .background(Color.gray.opacity(0.5))
+//                        .foregroundColor(.white)
+//                        .clipShape(Circle())
+//                        .shadow(radius: 4)
+//                }
+//
+//                Button(action: {
+//                    zoomScale = max(zoomScale - 0.2, 0.5)
+//                    actions.setZoomScale(scaleFactor: zoomScale)
+//                }) {
+//                    Image(systemName: "minus.magnifyingglass")
+//                        .font(.system(size: 22, weight: .none))
+//                        .padding(5)
+//                        .background(Color.gray.opacity(0.5))
+//                        .foregroundColor(.white)
+//                        .clipShape(Circle())
+//                        .shadow(radius: 4)
+//                }
+//            }
+//            .padding(.trailing, 20)
+//        }
+//        .padding(.bottom, 30)
+//    }
+//}
+
+#Preview {
+    NavigationStack {
+        PDFViewerView(pdfFile: samplePDFModelData)
+    }
+}
+
+
+
+
