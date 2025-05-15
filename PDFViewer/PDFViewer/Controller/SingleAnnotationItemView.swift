@@ -30,11 +30,12 @@ struct SingleAnnotationItemView: View {
                     }
                 }
             }) {
+                
                 Circle()
                     .fill(Color.black)
                     .frame(width: 25, height: 25)
 
-                    .overlay(Image(systemName: "pencil.tip")
+                    .overlay(Image(systemName: drawingToolType.iconName)
                         .font(.system(size: 18))
                         .rotationEffect(.init(degrees: -120))
                         .foregroundColor(.white))
@@ -68,4 +69,19 @@ struct SingleAnnotationItemView: View {
 
 #Preview {
     SingleAnnotationItemView(drawingToolType: .pen, onItemButtonPresesd: nil)
+}
+
+extension DrawingTool {
+    var iconName: String {
+        switch self {
+        case .none:
+            return "nosign" // A clear, universal "disable" symbol
+        case .pen, .pencil:
+            return "pencil.tip" // Represents a precise drawing pen
+        case .highlighter:
+            return "highlighter" // SF Symbol specifically for highlighters (introduced in iOS 16+)
+        case .eraser:
+            return "eraser" // Commonly used eraser icon
+        }
+    }
 }

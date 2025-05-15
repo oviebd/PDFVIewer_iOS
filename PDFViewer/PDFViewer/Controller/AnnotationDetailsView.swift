@@ -8,25 +8,21 @@
 import SwiftUI
 
 struct AnnotationDetailsView: View {
+    @Binding var thickness : CGFloat
     @Binding var selectedColor: UIColor
     @Binding var showPalette: Bool
 
-//    let colors: [Color] = [.red, .green, .blue, .yellow, .orange, .purple, .pink, .black, .gray]
-    let colors: [UIColor] = [.red, .green, .blue, .yellow, .orange, .purple]
+    let colors: [UIColor] = [.red, .green, .blue, .yellow, .orange, .purple, .black, .gray]
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Choose Color")
-                .font(.headline)
-                .padding(.top)
-
+            
+            Extra(thickness: $thickness, selectedColor: $selectedColor)
+                
             HStack {
                 ForEach(colors, id: \.self) { color in
                     Button(action: {
                         selectedColor = color
-                        withAnimation {
-                            showPalette = false
-                        }
                     }) {
                         Circle()
                             .fill(Color(color))
@@ -34,31 +30,27 @@ struct AnnotationDetailsView: View {
                             .shadow(radius: 2)
                     }
                 }
+                
+                Spacer()
             }
-            .padding()
 
             Button(action: {
                 withAnimation {
                     showPalette = false
                 }
             }) {
-                Text("Close")
+                Text("Ok")
                     .foregroundColor(.white)
                     .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
-                    .background(Color.gray)
-                    .cornerRadius(10)
+                    .padding(.vertical, 5)
+                    .background(Color.blue)
+                    .cornerRadius(4)
             }
-            .padding(.bottom)
-        }
-        .padding()
-        .background(.ultraThinMaterial)
-        .cornerRadius(20)
-        .shadow(radius: 10)
-        .padding()
+           // .padding(.bottom)
+        }  .padding()
     }
 }
 
 #Preview {
-    AnnotationDetailsView(selectedColor: .constant(.red), showPalette: .constant(true))
+    AnnotationDetailsView(thickness: .constant(10.0), selectedColor: .constant(.red), showPalette: .constant(true))
 }

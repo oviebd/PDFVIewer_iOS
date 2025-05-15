@@ -144,7 +144,7 @@ struct PDFViewerView: View {
         }
         .sheet(isPresented: $showPalette) {
             AnnotationDetailsView(
-                selectedColor: $color,
+                thickness: $lineWidth, selectedColor: $color,
                 showPalette: $showPalette
             )
             .presentationDetents([.height(250)])
