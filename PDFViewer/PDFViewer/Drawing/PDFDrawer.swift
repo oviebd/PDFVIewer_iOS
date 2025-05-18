@@ -31,9 +31,23 @@ class PDFDrawer {
     private var path: UIBezierPath?
     private var currentAnnotation : DrawingAnnotation?
     private var currentPage: PDFPage?
-    var color = UIColor.red // default color is red
+    //var color = UIColor.red // default color is red
     var drawingTool = DrawingTool.pen
     var lineWidth : CGFloat = 2.0
+    
+    var toolColors: [DrawingTool: UIColor] = [
+        .pen: .red,
+        .highlighter: .yellow,
+        .pencil: .blue
+    ]
+    
+    var color: UIColor {
+        toolColors[drawingTool] ?? .black
+    }
+    
+    func setColor(_ newColor: UIColor, for tool: DrawingTool) {
+        toolColors[tool] = newColor
+    }
 }
 
 extension PDFDrawer: DrawingGestureRecognizerDelegate {

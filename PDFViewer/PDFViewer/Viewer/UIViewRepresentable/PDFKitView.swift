@@ -89,7 +89,7 @@ struct PDFKitView: UIViewRepresentable {
 
         // ✅ Update the drawing tool and color here
         context.coordinator.drawer.drawingTool = mode
-        context.coordinator.drawer.color = lineColor.withAlphaComponent(mode.alpha)
+        context.coordinator.drawer.setColor(lineColor.withAlphaComponent(mode.alpha), for: mode) //= lineColor.withAlphaComponent(mode.alpha)
         context.coordinator.drawer.lineWidth = lineWidth
     }
 

@@ -8,12 +8,16 @@
 import SwiftUI
 
 struct AnnotationDetailsView: View {
+   
     @Binding var thickness : CGFloat
     @Binding var selectedColor: UIColor
     @Binding var showPalette: Bool
+    @Binding var toolColors: [DrawingTool: UIColor]
+    
+    var drawingTool: DrawingTool = .pen
 
     let colors: [UIColor] = [.red, .green, .blue, .yellow, .orange, .purple, .black, .gray]
-
+   
     var body: some View {
         VStack(spacing: 16) {
             
@@ -23,6 +27,7 @@ struct AnnotationDetailsView: View {
                 ForEach(colors, id: \.self) { color in
                     Button(action: {
                         selectedColor = color
+                        toolColors = [drawingTool: selectedColor]
                     }) {
                         Circle()
                             .fill(Color(color))
@@ -51,6 +56,6 @@ struct AnnotationDetailsView: View {
     }
 }
 
-#Preview {
-    AnnotationDetailsView(thickness: .constant(10.0), selectedColor: .constant(.red), showPalette: .constant(true))
-}
+//#Preview {
+//    AnnotationDetailsView(thickness: .constant(10.0), selectedColor: .constant(.red), showPalette: .constant(true), toolColors: [.pen : .red])
+//}

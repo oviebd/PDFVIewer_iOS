@@ -26,6 +26,12 @@ struct PDFViewerView: View {
     @State private var showPalette = false
     @State private var showControls = true
 
+    @State private var toolColors: [DrawingTool: UIColor] = [
+        .pen: .red,
+        .pencil: .blue,
+        .highlighter: .yellow
+    ]
+    
     init(pdfFile: PDFModelData) {
         _currentPDF = State(initialValue: URL(string: pdfFile.urlPath ?? "")!)
     }
@@ -165,7 +171,7 @@ struct PDFViewerView: View {
         .sheet(isPresented: $showPalette) {
             AnnotationDetailsView(
                 thickness: $lineWidth, selectedColor: $color,
-                showPalette: $showPalette
+                showPalette: $showPalette, toolColors: $toolColors, drawingTool: drawingTool
             )
             .presentationDetents([.height(250)])
             .presentationDragIndicator(.visible)
@@ -175,8 +181,9 @@ struct PDFViewerView: View {
     var annotationView: some View {
         HStack {
             Spacer()
-            AnnotationControllerView { selectedTool in
+            AnnotationControllerView(toolColors: toolColors) { selectedTool in
                 drawingTool = selectedTool
+            
                 if selectedTool != .none {
                     withAnimation {
                         showControls = true

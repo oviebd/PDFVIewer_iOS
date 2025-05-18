@@ -7,68 +7,137 @@
 
 import SwiftUI
 
+//struct SingleAnnotationItemView: View {
+//    @State var isExpanded: Bool = false
+//
+//    @State private var selectedColor: Color = .red
+//
+//    var drawingToolType: DrawingTool
+//    private var onItemButtonPresesd: ((DrawingTool) -> Void)?
+//
+//    init(drawingToolType: DrawingTool, onItemButtonPresesd: ((DrawingTool) -> Void)?) {
+//        self.drawingToolType = drawingToolType
+//        self.onItemButtonPresesd = onItemButtonPresesd
+//    }
+//
+//    var body: some View {
+//        HStack {
+//            // Main Expand Button
+//            Button(action: {
+//                withAnimation {
+//                    isExpanded.toggle()
+//                    if isExpanded == false {
+//                        onItemButtonPresesd?(.none)
+//                    }
+//                }
+//            }) {
+//                ZStack {
+//                    Circle()
+//                        .fill(Color.white)
+//                        .frame(width: 30, height: 30)
+//                        .overlay(
+//                            // Inner stroke by overlaying a smaller filled circle
+//                            Circle()
+//                                // .inset(by: 4) // Make the stroke *inside*
+//                                .stroke(selectedColor, lineWidth: 4)
+//                        )
+//
+//                        .overlay(Image(systemName: drawingToolType.iconName)
+//                            .font(.system(size: 14))
+//                            // .rotationEffect(.init(degrees: -120))
+//                            .foregroundColor(selectedColor))
+//                }
+//            }
+//
+//            if isExpanded {
+//                HStack(spacing: 10) {
+//                    Button(action: {
+//                        withAnimation(.spring()) {
+//                            // vm.showColorPalette.toggle()
+//                        }
+//
+//                        onItemButtonPresesd?(drawingToolType)
+//
+//                    }) {
+//                        Circle()
+//                            // .fill(vm.selectedColor)
+//                            .frame(width: 25, height: 25)
+//
+//                            .overlay(Image(systemName: "paintpalette.fill")
+//                                .font(.system(size: 12))
+//                                .foregroundColor(.white))
+//                    }
+//                    .transition(.scale.combined(with: .opacity))
+//                }
+//            }
+//        }
+//        // .cornerRadius(5)
+//    }
+//}
+
 struct SingleAnnotationItemView: View {
-    
-    @State var isExpanded : Bool = false
-    
-    var drawingToolType : DrawingTool
-    private var onItemButtonPresesd : ((DrawingTool) -> Void)?
-    
-    init(drawingToolType : DrawingTool, onItemButtonPresesd : ((DrawingTool) -> Void)?) {
+    @State var isExpanded: Bool = false
+    var selectedColor: Color // 👈 Injected from parent
+    var drawingToolType: DrawingTool
+    private var onItemButtonPressed: ((DrawingTool) -> Void)?
+
+    init(drawingToolType: DrawingTool,
+         selectedColor: Color,
+         onItemButtonPressed: ((DrawingTool) -> Void)?) {
         self.drawingToolType = drawingToolType
-        self.onItemButtonPresesd = onItemButtonPresesd
+        self.selectedColor = selectedColor
+        self.onItemButtonPressed = onItemButtonPressed
     }
-    
+
     var body: some View {
         HStack {
-            // Main Expand Button
             Button(action: {
                 withAnimation {
                     isExpanded.toggle()
-                    if isExpanded == false {
-                        onItemButtonPresesd?(.none)
+                    if !isExpanded {
+                        onItemButtonPressed?(.none)
                     }
                 }
             }) {
-                
-                Circle()
-                    .fill(Color.black)
-                    .frame(width: 25, height: 25)
-
-                    .overlay(Image(systemName: drawingToolType.iconName)
-                        .font(.system(size: 18))
-                        .rotationEffect(.init(degrees: -120))
-                        .foregroundColor(.white))
+                ZStack {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 30, height: 30)
+                        .overlay(
+                            Circle()
+                                .stroke(selectedColor, lineWidth: 4)
+                        )
+                        .overlay(
+                            Image(systemName: drawingToolType.iconName)
+                                .font(.system(size: 14))
+                                .foregroundColor(selectedColor)
+                        )
+                }
             }
 
             if isExpanded {
                 HStack(spacing: 10) {
                     Button(action: {
-                        withAnimation(.spring()) {
-                           // vm.showColorPalette.toggle()
-                        }
-                        
-                        onItemButtonPresesd?(drawingToolType)
-
+                        onItemButtonPressed?(drawingToolType)
                     }) {
                         Circle()
-                            //.fill(vm.selectedColor)
                             .frame(width: 25, height: 25)
-
-                            .overlay(Image(systemName: "paintpalette.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.white))
+                            .overlay(
+                                Image(systemName: "paintpalette.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.white)
+                            )
                     }
                     .transition(.scale.combined(with: .opacity))
                 }
             }
         }
-        .cornerRadius(5)
     }
 }
 
+
 #Preview {
-    SingleAnnotationItemView(drawingToolType: .pen, onItemButtonPresesd: nil)
+    SingleAnnotationItemView(drawingToolType: .pen, selectedColor: .brown, onItemButtonPressed: nil)
 }
 
 extension DrawingTool {
