@@ -10,9 +10,7 @@ import PencilKit
 import SwiftUI
 
 struct Controller: View {
-//    @State private var selectedColor: Color = .black
-//    @State private var isExpanded = false
-//    @State private var showColorPalette = false
+
     @StateObject var vm = ControllerVM()
 
     var body: some View {

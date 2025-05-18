@@ -55,20 +55,4 @@ final class PDFLocalRepositoryImpl: PDFRepositoryProtocol {
                 $0.toPDfModelData()
             }.eraseToAnyPublisher()
     }
-    
-//    func toggleFavorite(pdfItem: PDFCoreDataModel) -> AnyPublisher<PDFFile, Error> {
-//        let updated = pdfItem.togglingFavorite()
-//        return store.update(updatedData: updated)
-//            .tryMap { _ in
-//                var isStale = false
-//                let url = try URL(resolvingBookmarkData: updated.data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
-//                return Self.maptoPDFFile(url: url, coreDataModel: updated)
-//                //  let url = try URL(resolvingBookmarkData: updated.data, options: [], relativeTo: nil, bookmarkDataIsStale:false)
-//            } // { _ in updated }
-//            .eraseToAnyPublisher()
-//    }
-//
-//    func delete(pdfItem: PDFCoreDataModel) -> AnyPublisher<Bool, Error> {
-//        store.delete(updatedData: pdfItem)
-//    }
 }
