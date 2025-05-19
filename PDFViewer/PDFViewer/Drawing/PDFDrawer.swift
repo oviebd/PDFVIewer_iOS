@@ -27,14 +27,12 @@ enum DrawingTool: Int {
 }
 
 
-
-
 class PDFDrawer {
     weak var pdfView: PDFView!
     private var path: UIBezierPath?
     private var currentAnnotation : DrawingAnnotation?
     private var currentPage: PDFPage?
-    //var color = UIColor.red // default color is red
+  
     var drawingTool = DrawingTool.pen
     var lineWidth : CGFloat = 2.0
     

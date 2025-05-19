@@ -182,16 +182,20 @@ struct PDFViewerView: View {
     var annotationView: some View {
         HStack {
             Spacer()
-            AnnotationControllerView() { selectedTool in
-                drawingTool = selectedTool
             
-                if selectedTool != .none {
+            
+            
+            AnnotationControllerView(onDrawingToolSelected: { tool in
+                self.drawingTool = tool
+            }, onPalettePressed: { tool in
+                drawingTool = tool
+                if drawingTool != .none {
                     withAnimation {
                         showControls = true
                     }
                     showPalette = true
                 }
-            }
+            })
             Spacer()
         }
         .padding(.vertical, 6)

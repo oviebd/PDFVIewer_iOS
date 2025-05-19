@@ -8,75 +8,65 @@
 import SwiftUI
 
 struct SingleAnnotationItemView: View {
-   
     @EnvironmentObject var drawingToolManager: DrawingToolManager
-   
-    @State var isExpanded: Bool = false
-    var drawingToolType: DrawingTool
-    private var onItemButtonPressed: ((DrawingTool) -> Void)?
 
-    
-   var selectedColor : Color = .blue
+    var drawingToolType: DrawingTool
+    var isExpanded: Bool
    
-    init(drawingToolType: DrawingTool,
-         onItemButtonPressed: ((DrawingTool) -> Void)?) {
-        self.drawingToolType = drawingToolType
-        self.onItemButtonPressed = onItemButtonPressed
-    }
+    var onDrawingToolSelected: ((DrawingTool) -> Void)?
+    var onPalettePressed: ((DrawingTool) -> Void)?
+
 
     var body: some View {
-        HStack {
+        HStack(spacing: 8) {
             Button(action: {
-                withAnimation {
-                    isExpanded.toggle()
-                    if !isExpanded {
-                        onItemButtonPressed?(.none)
-                    }
-                }
+                onDrawingToolSelected?(drawingToolType)
             }) {
                 ZStack {
                     Circle()
-                        .fill(Color.white)
-                        .frame(width: 30, height: 30)
+                        .fill(Color.clear)
+                        .frame(width: 35, height: 35)
                         .overlay(
                             Circle()
                                 .stroke(getSelectedColor(), lineWidth: 4)
                         )
                         .overlay(
                             Image(systemName: drawingToolType.iconName)
-                                .font(.system(size: 14))
+                                .font(.system(size: 16))
                                 .foregroundColor(getSelectedColor())
                         )
                 }
             }
 
             if isExpanded {
-                HStack(spacing: 10) {
-                    Button(action: {
-                        onItemButtonPressed?(drawingToolType)
-                    }) {
-                        Circle()
-                            .frame(width: 25, height: 25)
-                            .overlay(
-                                Image(systemName: "paintpalette.fill")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.white)
-                            )
-                    }
-                    .transition(.scale.combined(with: .opacity))
+                Button(action: {
+                    onPalettePressed?(drawingToolType)
+                }) {
+                    Circle()
+                        .frame(width: 30, height: 30)
+                        .foregroundColor(.blue)
+                        .overlay(
+                            Image(systemName: "paintpalette.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.white)
+                        )
                 }
+                .transition(.scale.combined(with: .opacity))
             }
         }
+        .animation(.default, value: isExpanded) // Important!
     }
-    
+
     func getSelectedColor() -> Color {
-        return Color(drawingToolManager.toolColors[drawingToolType] ?? .cyan)
+        Color(drawingToolManager.toolColors[drawingToolType] ?? .cyan)
     }
 }
 
-
 #Preview {
-    SingleAnnotationItemView(drawingToolType: .pen, onItemButtonPressed: nil)
+    SingleAnnotationItemView(drawingToolType: .pen, isExpanded: true)
+        .environmentObject(DrawingToolManager())
+        .background(Color.white)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
 }
 
 extension DrawingTool {

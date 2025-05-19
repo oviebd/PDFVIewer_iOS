@@ -31,7 +31,7 @@ struct PDFKitView: UIViewRepresentable {
 
     @Binding var lineColor: UIColor
     @Binding var lineWidth: CGFloat
- //   @Binding var zoomScale : CGFloat
+
     
     @ObservedObject var actions: PDFKitViewActions
     
@@ -77,12 +77,8 @@ struct PDFKitView: UIViewRepresentable {
         // Reapply settings
         applySettings(to: pdfView)
 
-        // Restore page if available
-//        if let currentPage = currentPage {
-//            pdfView.go(to: currentPage)
-//        }
 
-        // ✅ Toggle drawing gesture recognizer
+ 
         if let gesture = context.coordinator.gestureRecognizer {
             gesture.isEnabled = mode != .none
         }
