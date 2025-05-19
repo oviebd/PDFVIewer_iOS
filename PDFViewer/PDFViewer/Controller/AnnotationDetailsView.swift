@@ -8,26 +8,25 @@
 import SwiftUI
 
 struct AnnotationDetailsView: View {
-   
-    @Binding var thickness : CGFloat
+    @EnvironmentObject var drawingToolManager: DrawingToolManager
+
+    @Binding var thickness: CGFloat
     @Binding var selectedColor: UIColor
     @Binding var showPalette: Bool
-    @Binding var toolColors: [DrawingTool: UIColor]
-    
+
     var drawingTool: DrawingTool = .pen
 
     let colors: [UIColor] = [.red, .green, .blue, .yellow, .orange, .purple, .black, .gray]
-   
+
     var body: some View {
         VStack(spacing: 16) {
-            
             Extra(thickness: $thickness, selectedColor: $selectedColor)
-                
+
             HStack {
                 ForEach(colors, id: \.self) { color in
                     Button(action: {
                         selectedColor = color
-                        toolColors = [drawingTool: selectedColor]
+                        drawingToolManager.toolColors[drawingTool] = selectedColor
                     }) {
                         Circle()
                             .fill(Color(color))
@@ -35,7 +34,7 @@ struct AnnotationDetailsView: View {
                             .shadow(radius: 2)
                     }
                 }
-                
+
                 Spacer()
             }
 
@@ -51,11 +50,11 @@ struct AnnotationDetailsView: View {
                     .background(Color.blue)
                     .cornerRadius(4)
             }
-           // .padding(.bottom)
-        }  .padding()
+            // .padding(.bottom)
+        }.padding()
     }
 }
 
-//#Preview {
-//    AnnotationDetailsView(thickness: .constant(10.0), selectedColor: .constant(.red), showPalette: .constant(true), toolColors: [.pen : .red])
-//}
+ #Preview {
+    AnnotationDetailsView(thickness: .constant(10.0), selectedColor: .constant(.red), showPalette: .constant(true))
+ }

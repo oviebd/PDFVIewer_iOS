@@ -11,6 +11,7 @@ import PDFKit
 
 struct PDFViewerView: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var drawingToolManager: DrawingToolManager
 
     @State private var currentPDF: URL
     @StateObject private var pdfSettings = PDFSettings()
@@ -26,11 +27,11 @@ struct PDFViewerView: View {
     @State private var showPalette = false
     @State private var showControls = true
 
-    @State private var toolColors: [DrawingTool: UIColor] = [
-        .pen: .red,
-        .pencil: .blue,
-        .highlighter: .yellow
-    ]
+//    @State private var toolColors: [DrawingTool: UIColor] = [
+//        .pen: .red,
+//        .pencil: .blue,
+//        .highlighter: .yellow
+//    ]
     
     init(pdfFile: PDFModelData) {
         _currentPDF = State(initialValue: URL(string: pdfFile.urlPath ?? "")!)
@@ -171,7 +172,7 @@ struct PDFViewerView: View {
         .sheet(isPresented: $showPalette) {
             AnnotationDetailsView(
                 thickness: $lineWidth, selectedColor: $color,
-                showPalette: $showPalette, toolColors: $toolColors, drawingTool: drawingTool
+                showPalette: $showPalette, drawingTool: drawingTool
             )
             .presentationDetents([.height(250)])
             .presentationDragIndicator(.visible)
@@ -181,7 +182,7 @@ struct PDFViewerView: View {
     var annotationView: some View {
         HStack {
             Spacer()
-            AnnotationControllerView(toolColors: toolColors) { selectedTool in
+            AnnotationControllerView() { selectedTool in
                 drawingTool = selectedTool
             
                 if selectedTool != .none {
