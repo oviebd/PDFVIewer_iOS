@@ -11,10 +11,15 @@ class DrawingToolManager: ObservableObject {
   
     @Published var toolColors: [DrawingTool: UIColor] = [
         .pen: .red,
-        .pencil: .blue,
-        .highlighter: .yellow
+        .highlighter: .blue,
+        .eraser: .gray
     ]
     
+    @Published var selectedTool: DrawingTool = .none
+    
+    func getSelectedColor() -> UIColor {
+        return toolColors[selectedTool] ?? .cyan
+    }
     
 }
 

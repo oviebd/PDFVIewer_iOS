@@ -27,27 +27,23 @@ struct AnnotationControllerView: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            ForEach([DrawingTool.pen, .highlighter, .pencil], id: \.self) { tool in
-                
-                
+            ForEach([DrawingTool.pen, .highlighter,.eraser], id: \.self) { tool in
                 
                 SingleAnnotationItemView(
                     drawingToolType: tool,
                     isExpanded: expandedTool == tool,
                     onDrawingToolSelected: { tool in
                         withAnimation {
-                            // Toggle behavior
-                            expandedTool = (expandedTool == tool) ? nil : tool
-                            onDrawingToolSelected?(tool)
-                            
+                            expandedTool = (expandedTool == tool) ? .none : tool
+                            onDrawingToolSelected?(expandedTool!)
+                            drawingToolManager.selectedTool = expandedTool!
+                           
                         }
                     },
                     onPalettePressed: onPalettePressed
                 )
             }
         }
-       // .padding()
-       // .background(Color.gray.opacity(0.2))
     }
 }
 

@@ -12,14 +12,13 @@ import PDFKit
 enum DrawingTool: Int {
     case none = -1
     case eraser = 0
-    case pencil = 1
     case pen = 2
     case highlighter = 3
     
     var alpha: CGFloat {
         switch self {
         case .highlighter:
-            return 0.3 //0,5
+            return 0.3
         default:
             return 1
         }
@@ -36,19 +35,21 @@ class PDFDrawer {
     var drawingTool = DrawingTool.pen
     var lineWidth : CGFloat = 2.0
     
-    var toolColors: [DrawingTool: UIColor] = [
-        .pen: .red,
-        .highlighter: .yellow,
-        .pencil: .blue
-    ]
+//    var toolColors: [DrawingTool: UIColor] = [
+//        .pen: .red,
+//        .highlighter: .yellow,
+//        .pencil: .blue
+//    ]
     
-    var color: UIColor {
-        toolColors[drawingTool] ?? .black
-    }
     
-    func setColor(_ newColor: UIColor, for tool: DrawingTool) {
-        toolColors[tool] = newColor
-    }
+    var color: UIColor = .red
+//    {
+//        toolColors[drawingTool] ?? .black
+//    }
+    
+//    func setColor(_ newColor: UIColor, for tool: DrawingTool) {
+//        toolColors[tool] = newColor
+//    }
 }
 
 extension PDFDrawer: DrawingGestureRecognizerDelegate {

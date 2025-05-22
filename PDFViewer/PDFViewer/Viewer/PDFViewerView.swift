@@ -27,18 +27,16 @@ struct PDFViewerView: View {
     @State private var showPalette = false
     @State private var showControls = true
 
-//    @State private var toolColors: [DrawingTool: UIColor] = [
-//        .pen: .red,
-//        .pencil: .blue,
-//        .highlighter: .yellow
-//    ]
-    
+
     init(pdfFile: PDFModelData) {
         _currentPDF = State(initialValue: URL(string: pdfFile.urlPath ?? "")!)
     }
 
     var body: some View {
         ZStack {
+            
+            Color(.systemGray6)
+            
             // PDF Viewer with tap to toggle controls
             PDFKitView(pdfURL: $currentPDF,
                        settings: pdfSettings,
@@ -70,6 +68,7 @@ struct PDFViewerView: View {
                 VStack(spacing: 0) {
                     toolbar
                     annotationView
+                        .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 4)
                     Spacer()
                 }
 
@@ -182,24 +181,26 @@ struct PDFViewerView: View {
     var annotationView: some View {
         HStack {
             Spacer()
-            
-            
-            
             AnnotationControllerView(onDrawingToolSelected: { tool in
                 self.drawingTool = tool
+                self.color = drawingToolManager.getSelectedColor()
             }, onPalettePressed: { tool in
                 drawingTool = tool
                 if drawingTool != .none {
-                    withAnimation {
-                        showControls = true
-                    }
+//                    withAnimation {
+//                        showControls = true
+//                    }
+                    showControls = true
                     showPalette = true
                 }
             })
             Spacer()
         }
-        .padding(.vertical, 6)
-        .background(Color(.systemGray6))
+     //   .padding(.vertical, 6)
+        .padding()
+        .background(Color(.white))
+//        .background(Color(.systemGray6))
+       // .padding()
     }
 
     var toolbar: some View {
@@ -210,6 +211,7 @@ struct PDFViewerView: View {
 #Preview {
     NavigationStack {
         PDFViewerView(pdfFile: samplePDFModelData)
+            .environmentObject(DrawingToolManager())
     }
 }
 
