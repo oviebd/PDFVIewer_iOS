@@ -21,7 +21,7 @@ struct PDFViewerView: View {
     @State private var actions = PDFKitViewActions()
   
     @State private var readingMode: ReadingMode = .normal
-    
+    @State private var brightness: Double = 1.0 // 1.0 = normal, 0.0 = black
     
     @State private var showPalette = false
     @State private var showControls = true
@@ -56,9 +56,35 @@ struct PDFViewerView: View {
                        .edgesIgnoringSafeArea(.all)
                        .allowsHitTesting(false)
                }
+            
+            // 🌗 Brightness Overlay
+            Color.black
+                .opacity(1.0 - brightness)
+                .edgesIgnoringSafeArea(.all)
+                .allowsHitTesting(false)
 
 
+//            VStack(spacing: 8) {
+//                Text("Brightness")
+//                    .font(.caption2)
+//                    .foregroundColor(.black)
+//                
+//                Slider(value: $brightness, in: 0...1)
+//                    .frame(width: 120)
+//            }
+//            .padding()
+//            .background(Color.white.opacity(0.9))
+//            .cornerRadius(12)
+            
             // Show all controls if showControls is true
+            
+            Button(action: { drawingTool = .text }) {
+                Image(systemName: "textformat")
+                    .padding()
+                    .background(drawingTool == .text ? Color.blue : Color.gray.opacity(0.2))
+                    .clipShape(Circle())
+            }
+            
             if showControls {
                 VStack(spacing: 0) {
                     toolbar
@@ -143,6 +169,9 @@ struct PDFViewerView: View {
                               }
                         
                                 Divider()
+                        
+                        
+                        Slider(value: $brightness, in: 0...1)
                         
                         Button("Horizontal Scroll") {
                             pdfSettings.displayDirection = .horizontal

@@ -82,6 +82,9 @@ extension DrawingTool {
             return "highlighter" // SF Symbol specifically for highlighters (introduced in iOS 16+)
         case .eraser:
             return "eraser" // Commonly used eraser icon
+            
+        case .text:
+            return ""
         }
     }
 }
