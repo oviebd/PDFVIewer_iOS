@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct PDFListView: View {
-  //  @EnvironmentObject var drawingToolManager: DrawingToolManager
+    //  @EnvironmentObject var drawingToolManager: DrawingToolManager
     @StateObject private var viewModel: PDFListViewModel
     @State private var showFilePicker = false
 
@@ -16,8 +16,6 @@ struct PDFListView: View {
         let store = try? PDFLocalDataStore()
         let repo = PDFLocalRepositoryImpl(store: store!)
         _viewModel = StateObject(wrappedValue: PDFListViewModel(repository: repo))
-        
-       
     }
 
     var body: some View {
@@ -29,19 +27,25 @@ struct PDFListView: View {
                 } else {
                     List {
                         ForEach(viewModel.pdfModels, id: \.id) { pdf in
-                            PDFListItemView(
-                                pdf: pdf,
-                                toggleFavorite: { viewModel.toggleFavorite(for: pdf) }
-                            )
+
+                            NavigationLink(value: pdf) {
+                                PDFListItemView(
+                                    pdf: pdf,
+                                    toggleFavorite: { viewModel.toggleFavorite(for: pdf) }
+                                )
+                            }
                         }
                         .onDelete { indexSet in
                             viewModel.deletePdf(indexSet: indexSet)
                         }
                     }
-                    .listStyle(.plain)
+                  // .listStyle(.plain)
                 }
             }
             .navigationTitle("PDF Files")
+            .navigationDestination(for: PDFModelData.self) { selectedItem in
+                PDFViewerView(pdfFile: selectedItem)
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     ImportButton {
@@ -55,7 +59,7 @@ struct PDFListView: View {
                 }
             }
             .onAppear {
-               // drawingToolManager.toolColors[.pen] = .green
+                // drawingToolManager.toolColors[.pen] = .green
                 viewModel.loadPDFsAndForget()
             }
         }

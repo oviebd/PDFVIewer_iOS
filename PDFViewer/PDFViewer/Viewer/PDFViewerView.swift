@@ -13,6 +13,8 @@ struct PDFViewerView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var drawingToolManager: DrawingToolManager
 
+    
+    @State var pdfData : PDFModelData
     @State private var currentPDF: URL
     @StateObject private var pdfSettings = PDFSettings()
     @State private var drawingTool: DrawingTool = .none
@@ -29,6 +31,7 @@ struct PDFViewerView: View {
 
 
     init(pdfFile: PDFModelData) {
+        self.pdfData = pdfFile
         _currentPDF = State(initialValue: URL(string: pdfFile.urlPath ?? "")!)
     }
 
@@ -116,21 +119,21 @@ struct PDFViewerView: View {
                 }
             }
         }
-        .navigationBarBackButtonHidden(true)
+     //   .navigationBarBackButtonHidden(true)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if showControls {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Image(systemName: "chevron.left")
-                        Text("Back")
-                    }
-                }
+//                ToolbarItem(placement: .navigationBarLeading) {
+//                    Button(action: {
+//                        dismiss()
+//                    }) {
+//                        Image(systemName: "chevron.left")
+//                    }
+//                }
 
+                
                 ToolbarItem(placement: .principal) {
-                    Text("PDF Viewer")
+                    Text(pdfData.title ?? "Unknown file")
                         .font(.headline)
                 }
 

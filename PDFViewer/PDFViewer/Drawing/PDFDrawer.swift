@@ -35,21 +35,7 @@ class PDFDrawer {
     var drawingTool = DrawingTool.pen
     var lineWidth : CGFloat = 2.0
     
-//    var toolColors: [DrawingTool: UIColor] = [
-//        .pen: .red,
-//        .highlighter: .yellow,
-//        .pencil: .blue
-//    ]
-    
-    
     var color: UIColor = .red
-//    {
-//        toolColors[drawingTool] ?? .black
-//    }
-    
-//    func setColor(_ newColor: UIColor, for tool: DrawingTool) {
-//        toolColors[tool] = newColor
-//    }
 }
 
 extension PDFDrawer: DrawingGestureRecognizerDelegate {
