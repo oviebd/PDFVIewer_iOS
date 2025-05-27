@@ -10,23 +10,23 @@ import SwiftUI
 struct AnnotationDetailsView: View {
     @EnvironmentObject var drawingToolManager: DrawingToolManager
 
-    @Binding var thickness: CGFloat
-    @Binding var selectedColor: UIColor
+//    @Binding var thickness: CGFloat
+//    @Binding var selectedColor: UIColor
     @Binding var showPalette: Bool
 
-    var drawingTool: DrawingTool = .pen
+    @State var drawingTool: PDFSettingData
 
     let colors: [UIColor] = [.red, .green, .blue, .yellow, .orange, .purple, .black, .gray]
 
     var body: some View {
         VStack(spacing: 16) {
-            Extra(thickness: $thickness, selectedColor: $selectedColor)
+            Extra(annotationSetting: $drawingTool)
 
             HStack {
                 ForEach(colors, id: \.self) { color in
                     Button(action: {
-                        selectedColor = color
-                        drawingToolManager.toolColors[drawingTool] = selectedColor
+                        //drawingTool.color = selectedColor
+                        drawingToolManager.updatePdfSettingData(newSetting: drawingTool)
                     }) {
                         Circle()
                             .fill(Color(color))
@@ -56,5 +56,5 @@ struct AnnotationDetailsView: View {
 }
 
  #Preview {
-    AnnotationDetailsView(thickness: .constant(10.0), selectedColor: .constant(.red), showPalette: .constant(true))
+     AnnotationDetailsView( showPalette: .constant(true), drawingTool: PDFSettingData.dummyData())
  }

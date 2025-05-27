@@ -17,9 +17,10 @@ struct PDFViewerView: View {
     @State var pdfData : PDFModelData
     @State private var currentPDF: URL
     @StateObject private var pdfSettings = PDFSettings()
-    @State private var drawingTool: DrawingTool = .none
-    @State private var color: UIColor = .red
-    @State private var lineWidth: CGFloat = 5
+    
+    @State private var drawingTool: PDFSettingData = PDFSettingData.noneData()
+//    @State private var color: UIColor = .red
+//    @State private var lineWidth: CGFloat = 5
     @State private var zoomScale: CGFloat = 1.0
     @State private var actions = PDFKitViewActions()
   
@@ -44,8 +45,8 @@ struct PDFViewerView: View {
             PDFKitView(pdfURL: $currentPDF,
                        settings: pdfSettings,
                        mode: $drawingTool,
-                       lineColor: $color,
-                       lineWidth: $lineWidth,
+//                       lineColor: $color,
+//                       lineWidth: $lineWidth,
                        actions: actions)
                 .edgesIgnoringSafeArea(.all)
                 .contentShape(Rectangle()) // Allows tap on empty area
@@ -173,7 +174,6 @@ struct PDFViewerView: View {
         }
         .sheet(isPresented: $showPalette) {
             AnnotationDetailsView(
-                thickness: $lineWidth, selectedColor: $color,
                 showPalette: $showPalette, drawingTool: drawingTool
             )
             .presentationDetents([.height(250)])
@@ -186,10 +186,9 @@ struct PDFViewerView: View {
             Spacer()
             AnnotationControllerView(onDrawingToolSelected: { tool in
                 self.drawingTool = tool
-                self.color = drawingToolManager.getSelectedColor()
             }, onPalettePressed: { tool in
                 drawingTool = tool
-                if drawingTool != .none {
+                if drawingTool.drawingTool != .none {
 //                    withAnimation {
 //                        showControls = true
 //                    }
@@ -214,7 +213,7 @@ struct PDFViewerView: View {
 #Preview {
     NavigationStack {
         PDFViewerView(pdfFile: samplePDFModelData)
-            .environmentObject(DrawingToolManager())
+            .environmentObject(DrawingToolManager.dummyData())
     }
 }
 

@@ -39,7 +39,7 @@ struct PDFListView: View {
                             viewModel.deletePdf(indexSet: indexSet)
                         }
                     }
-                  // .listStyle(.plain)
+                .listStyle(.plain)
                 }
             }
             .navigationTitle("PDF Files")

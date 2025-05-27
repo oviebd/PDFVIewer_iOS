@@ -11,20 +11,20 @@ import SwiftUI
 struct SingleAnnotationItemView: View {
     @EnvironmentObject var drawingToolManager: DrawingToolManager
 
-    var drawingToolType: DrawingTool
+    var drawingToolType: PDFSettingData
     var isExpanded: Bool
    
-    var onDrawingToolSelected: ((DrawingTool) -> Void)?
-    var onPalettePressed: ((DrawingTool) -> Void)?
+    var onDrawingToolSelected: ((PDFSettingData) -> Void)?
+    var onPalettePressed: ((PDFSettingData) -> Void)?
 
     var isSelected: Bool {
-        drawingToolManager.selectedTool == drawingToolType
+        drawingToolManager.selectePdfdSetting.drawingTool == drawingToolType.drawingTool
     }
 
     var body: some View {
         HStack(spacing: 8) {
             Button(action: {
-                drawingToolManager.selectedTool = drawingToolType
+               // drawingToolManager.selectePdfdSetting = drawingToolType
                 onDrawingToolSelected?(drawingToolType)
             }) {
                 ZStack {
@@ -36,7 +36,7 @@ struct SingleAnnotationItemView: View {
                                 .stroke(getSelectedColor(), lineWidth: isSelected ? 3 : 1)
                         )
                         .overlay(
-                            Image(systemName: drawingToolType.iconName)
+                            Image(systemName: drawingToolType.drawingTool.iconName)
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(getSelectedColor())
                         )
@@ -65,11 +65,11 @@ struct SingleAnnotationItemView: View {
     }
     
     func isExpandable() -> Bool {
-        drawingToolType == .pen || drawingToolType == .highlighter
+        drawingToolType.isExpandable
     }
 
     func getSelectedColor() -> Color {
-        Color(drawingToolManager.toolColors[drawingToolType] ?? .cyan)
+        Color(drawingToolManager.selectePdfdSetting.color)
     }
 }
 
@@ -134,8 +134,8 @@ struct SingleAnnotationItemView: View {
 //}
 
 #Preview {
-    SingleAnnotationItemView(drawingToolType: .pen, isExpanded: true)
-        .environmentObject(DrawingToolManager())
+    SingleAnnotationItemView(drawingToolType: PDFSettingData(drawingTool: .pen, lineWidth: 1.0, color: .red, isExpandable: true), isExpanded: true)
+        .environmentObject(DrawingToolManager.dummyData())
         .background(Color.white)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
 }

@@ -27,10 +27,10 @@ class PDFKitViewActions: ObservableObject {
 struct PDFKitView: UIViewRepresentable {
     @Binding var pdfURL: URL
     @ObservedObject var settings: PDFSettings
-    @Binding var mode: DrawingTool
-
-    @Binding var lineColor: UIColor
-    @Binding var lineWidth: CGFloat
+    @Binding var mode: PDFSettingData
+//
+//    @Binding var lineColor: UIColor
+//    @Binding var lineWidth: CGFloat
 
     
     @ObservedObject var actions: PDFKitViewActions
@@ -80,13 +80,13 @@ struct PDFKitView: UIViewRepresentable {
 
  
         if let gesture = context.coordinator.gestureRecognizer {
-            gesture.isEnabled = mode != .none
+            gesture.isEnabled = mode.drawingTool != .none
         }
 
         // ✅ Update the drawing tool and color here
-        context.coordinator.drawer.drawingTool = mode
-        context.coordinator.drawer.color = lineColor.withAlphaComponent(mode.alpha) //setColor(lineColor.withAlphaComponent(mode.alpha), for: mode) //= lineColor.withAlphaComponent(mode.alpha)
-        context.coordinator.drawer.lineWidth = lineWidth
+        context.coordinator.drawer.drawingTool = mode.drawingTool
+        context.coordinator.drawer.color = mode.color.withAlphaComponent(mode.drawingTool.alpha) //setColor(lineColor.withAlphaComponent(mode.alpha), for: mode) //= lineColor.withAlphaComponent(mode.alpha)
+        context.coordinator.drawer.lineWidth = mode.lineWidth
     }
 
     private func applySettings(to pdfView: PDFView) {

@@ -25,6 +25,45 @@ enum DrawingTool: Int {
     }
 }
 
+class PDFSettingData : Hashable {
+    var drawingTool : DrawingTool
+    var lineWidth : CGFloat
+    
+    var color : UIColor
+    var isExpandable : Bool
+    
+    init(drawingTool: DrawingTool, lineWidth: CGFloat, color: UIColor, isExpandable: Bool) {
+        self.drawingTool = drawingTool
+        self.lineWidth = lineWidth
+        self.color = color
+        self.isExpandable = isExpandable
+    }
+    
+    static func == (lhs: PDFSettingData, rhs: PDFSettingData) -> Bool {
+         return lhs.drawingTool == rhs.drawingTool &&
+                lhs.lineWidth == rhs.lineWidth &&
+                lhs.color.isEqual(rhs.color) && // UIColor doesn't conform to Hashable
+                lhs.isExpandable == rhs.isExpandable
+     }
+
+     func hash(into hasher: inout Hasher) {
+         hasher.combine(drawingTool)
+         hasher.combine(lineWidth)
+         hasher.combine(color.hashValue)
+         hasher.combine(isExpandable)
+     }
+}
+
+extension PDFSettingData {
+    static func dummyData () -> PDFSettingData {
+        return PDFSettingData(drawingTool: .pen, lineWidth: 2.0, color: .red, isExpandable: true)
+    }
+    
+    static func noneData () -> PDFSettingData {
+        return PDFSettingData(drawingTool: .none, lineWidth: 0.0, color: .red, isExpandable: false)
+    }
+}
+
 
 class PDFDrawer {
     weak var pdfView: PDFView!
