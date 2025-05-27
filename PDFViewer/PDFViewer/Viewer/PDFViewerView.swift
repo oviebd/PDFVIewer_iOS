@@ -41,18 +41,19 @@ struct PDFViewerView: View {
             
             Color(.systemGray6)
             
+                
+            
             // PDF Viewer with tap to toggle controls
             PDFKitView(pdfURL: $currentPDF,
                        settings: pdfSettings,
                        mode: $drawingTool,
-//                       lineColor: $color,
-//                       lineWidth: $lineWidth,
                        actions: actions)
+          //  .id(pdfSettings.annotationSetting)
                 .edgesIgnoringSafeArea(.all)
                 .contentShape(Rectangle()) // Allows tap on empty area
                 .onTapGesture {
                     // Toggle controls only if not drawing
-                    if drawingTool == .none {
+                    if drawingTool.drawingTool == .none {
                         withAnimation {
                             showControls.toggle()
                         }
@@ -120,6 +121,8 @@ struct PDFViewerView: View {
                 }
             }
         }
+        
+        
      //   .navigationBarBackButtonHidden(true)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -174,8 +177,10 @@ struct PDFViewerView: View {
         }
         .sheet(isPresented: $showPalette) {
             AnnotationDetailsView(
-                showPalette: $showPalette, drawingTool: drawingTool
-            )
+                showPalette: $showPalette, drawingTool: $drawingTool
+                ,onDataChanged: {
+                    onAnnotationDataChanged(annotationSettingData: drawingTool)
+                })
             .presentationDetents([.height(250)])
             .presentationDragIndicator(.visible)
         }
@@ -184,14 +189,14 @@ struct PDFViewerView: View {
     var annotationView: some View {
         HStack {
             Spacer()
-            AnnotationControllerView(onDrawingToolSelected: { tool in
-                self.drawingTool = tool
+            AnnotationControllerView( annotationSettingItems: drawingToolManager.pdfSettings,
+                                      onDrawingToolSelected: { tool in
+                onAnnotationDataChanged(annotationSettingData: tool)
             }, onPalettePressed: { tool in
-                drawingTool = tool
-                if drawingTool.drawingTool != .none {
-//                    withAnimation {
-//                        showControls = true
-//                    }
+//                drawingTool = tool
+//                drawingToolManager.selectePdfdSetting = drawingTool
+                onAnnotationDataChanged(annotationSettingData: tool)
+                if drawingToolManager.selectePdfdSetting.drawingTool != .none {
                     showControls = true
                     showPalette = true
                 }
@@ -207,6 +212,12 @@ struct PDFViewerView: View {
 
     var toolbar: some View {
         Color.clear.frame(height: 0) // keeps layout if needed
+    }
+    
+    func onAnnotationDataChanged(annotationSettingData: PDFSettingData){
+        drawingTool = annotationSettingData
+        drawingToolManager.selectePdfdSetting = drawingTool
+        drawingToolManager.updatePdfSettingData(newSetting: drawingTool)
     }
 }
 

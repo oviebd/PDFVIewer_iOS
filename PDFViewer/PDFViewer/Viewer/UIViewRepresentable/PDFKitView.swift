@@ -28,11 +28,7 @@ struct PDFKitView: UIViewRepresentable {
     @Binding var pdfURL: URL
     @ObservedObject var settings: PDFSettings
     @Binding var mode: PDFSettingData
-//
-//    @Binding var lineColor: UIColor
-//    @Binding var lineWidth: CGFloat
 
-    
     @ObservedObject var actions: PDFKitViewActions
     
 
@@ -84,15 +80,15 @@ struct PDFKitView: UIViewRepresentable {
         }
 
         // ✅ Update the drawing tool and color here
-        context.coordinator.drawer.drawingTool = mode.drawingTool
-        context.coordinator.drawer.color = mode.color.withAlphaComponent(mode.drawingTool.alpha) //setColor(lineColor.withAlphaComponent(mode.alpha), for: mode) //= lineColor.withAlphaComponent(mode.alpha)
-        context.coordinator.drawer.lineWidth = mode.lineWidth
+        context.coordinator.drawer.annotationSetting = mode
+
     }
 
     private func applySettings(to pdfView: PDFView) {
       //  pdfView.autoScales = settings.autoScales
         pdfView.displayMode = settings.displayMode
         pdfView.displayDirection = settings.displayDirection
+        
     }
 
     // MARK: - Coordinator Keeps Objects Alive
@@ -131,5 +127,6 @@ struct PDFKitView: UIViewRepresentable {
 
             pdfView.go(to: page)
         }
+        
     }
 }

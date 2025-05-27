@@ -8,14 +8,12 @@
 import SwiftUI
 
 struct AnnotationDetailsView: View {
-    @EnvironmentObject var drawingToolManager: DrawingToolManager
 
-//    @Binding var thickness: CGFloat
-//    @Binding var selectedColor: UIColor
     @Binding var showPalette: Bool
 
-    @State var drawingTool: PDFSettingData
-
+    @Binding var drawingTool: PDFSettingData
+    var onDataChanged: (() -> Void)?
+   
     let colors: [UIColor] = [.red, .green, .blue, .yellow, .orange, .purple, .black, .gray]
 
     var body: some View {
@@ -25,8 +23,8 @@ struct AnnotationDetailsView: View {
             HStack {
                 ForEach(colors, id: \.self) { color in
                     Button(action: {
-                        //drawingTool.color = selectedColor
-                        drawingToolManager.updatePdfSettingData(newSetting: drawingTool)
+                        drawingTool.color = color
+                        onDataChanged?()
                     }) {
                         Circle()
                             .fill(Color(color))
@@ -40,7 +38,9 @@ struct AnnotationDetailsView: View {
 
             Button(action: {
                 withAnimation {
+                    onDataChanged?()
                     showPalette = false
+                   
                 }
             }) {
                 Text("Ok")
@@ -56,5 +56,5 @@ struct AnnotationDetailsView: View {
 }
 
  #Preview {
-     AnnotationDetailsView( showPalette: .constant(true), drawingTool: PDFSettingData.dummyData())
+     AnnotationDetailsView( showPalette: .constant(true), drawingTool: .constant(.dummyData()))
  }

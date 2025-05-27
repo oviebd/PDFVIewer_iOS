@@ -12,4 +12,5 @@ class PDFSettings: ObservableObject {
     @Published var displayMode: PDFDisplayMode = .singlePageContinuous
     @Published var displayDirection: PDFDisplayDirection = .vertical
     @Published var autoScales: Bool = true
+   // @Published var annotationSetting : PDFSettingData = .dummyData()
 }

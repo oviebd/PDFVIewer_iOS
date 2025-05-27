@@ -9,22 +9,22 @@ import SwiftUI
 
 
 struct SingleAnnotationItemView: View {
-    @EnvironmentObject var drawingToolManager: DrawingToolManager
+//    @EnvironmentObject var drawingToolManager: DrawingToolManager
 
     var drawingToolType: PDFSettingData
-    var isExpanded: Bool
+    var selectedAnnotationType: PDFSettingData
    
     var onDrawingToolSelected: ((PDFSettingData) -> Void)?
     var onPalettePressed: ((PDFSettingData) -> Void)?
 
     var isSelected: Bool {
-        drawingToolManager.selectePdfdSetting.drawingTool == drawingToolType.drawingTool
+        selectedAnnotationType == drawingToolType
     }
 
     var body: some View {
         HStack(spacing: 8) {
             Button(action: {
-               // drawingToolManager.selectePdfdSetting = drawingToolType
+               // selectedAnnotationType = drawingToolType
                 onDrawingToolSelected?(drawingToolType)
             }) {
                 ZStack {
@@ -45,7 +45,7 @@ struct SingleAnnotationItemView: View {
                 }
             }
 
-            if isExpanded && isExpandable() {
+            if isExpandedView() && isExpandable() {
                 Button(action: {
                     onPalettePressed?(drawingToolType)
                 }) {
@@ -63,82 +63,27 @@ struct SingleAnnotationItemView: View {
         }
         .padding(4)
     }
+    func isExpandedView() -> Bool {
+        selectedAnnotationType == drawingToolType
+    }
     
     func isExpandable() -> Bool {
         drawingToolType.isExpandable
     }
 
     func getSelectedColor() -> Color {
-        Color(drawingToolManager.selectePdfdSetting.color)
+        //let settings = drawingToolManager.getSettingFrom(drawingTool: draw)
+        Color(drawingToolType.color)
     }
 }
 
-//struct SingleAnnotationItemView: View {
-//    @EnvironmentObject var drawingToolManager: DrawingToolManager
-//
-//    var drawingToolType: DrawingTool
-//    var isExpanded: Bool
-//   
-//    var onDrawingToolSelected: ((DrawingTool) -> Void)?
-//    var onPalettePressed: ((DrawingTool) -> Void)?
-//
-//
-//    var body: some View {
-//        HStack(spacing: 8) {
-//            Button(action: {
-//                drawingToolManager.selectedTool = drawingToolType
-//                onDrawingToolSelected?(drawingToolType)
-//            }) {
-//                ZStack {
-//                    Circle()
-//                        .fill(Color.clear)
-//                        .frame(width: 20, height: 20)
-//                        .overlay(
-//                            Circle()
-//                                .stroke(getSelectedColor(), lineWidth: 2)
-//                        )
-//                        .overlay(
-//                            Image(systemName: drawingToolType.iconName)
-//                                .font(.system(size: 12))
-//                                .foregroundColor(getSelectedColor())
-//                        )
-//                }
-//            }
-//
-//            if isExpanded && isExpandable() {
-//                Button(action: {
-//                    onPalettePressed?(drawingToolType)
-//                }) {
-//                    Circle()
-//                        .frame(width: 20, height: 20)
-//                        .foregroundColor(.blue)
-//                        .overlay(
-//                            Image(systemName: "paintpalette.fill")
-//                                .font(.system(size: 12))
-//                                .foregroundColor(.white)
-//                        )
-//                }
-//                .transition(.scale.combined(with: .opacity))
-//            }
-//        }
-//        .animation(.default, value: isExpanded) // Important!
-//    }
-//    
-//    func isExpandable () -> Bool {
-//        return drawingToolType == .pen || drawingToolType == .highlighter
-//    }
-//
-//    func getSelectedColor() -> Color {
-//        Color(drawingToolManager.toolColors[drawingToolType] ?? .cyan)
-//    }
+//#Preview {
+// 
+//    SingleAnnotationItemView(drawingToolType: PDFSettingData(drawingTool: .pen, lineWidth: 1.0, color: .red, isExpandable: true))
+//        .environmentObject(DrawingToolManager.dummyData())
+//        .background(Color.white)
+//        .frame(maxWidth: .infinity, maxHeight: .infinity)
 //}
-
-#Preview {
-    SingleAnnotationItemView(drawingToolType: PDFSettingData(drawingTool: .pen, lineWidth: 1.0, color: .red, isExpandable: true), isExpanded: true)
-        .environmentObject(DrawingToolManager.dummyData())
-        .background(Color.white)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-}
 
 extension DrawingTool {
     var iconName: String {

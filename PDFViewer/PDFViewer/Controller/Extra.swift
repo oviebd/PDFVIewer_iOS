@@ -9,8 +9,7 @@ import SwiftUI
 
 struct Extra: View {
    
-    @Binding var annotationSetting : PDFSettingData //thickness: CGFloat
-  //  @Binding var selectedColor: UIColor
+    @Binding var annotationSetting : PDFSettingData
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {

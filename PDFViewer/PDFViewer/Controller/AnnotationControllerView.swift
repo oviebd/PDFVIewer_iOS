@@ -10,34 +10,39 @@ import SwiftUI
 
 struct AnnotationControllerView: View {
    
-    @EnvironmentObject var drawingToolManager: DrawingToolManager
+   // @EnvironmentObject var drawingToolManager: DrawingToolManager
    
-    @State private var expandedTool: PDFSettingData? = nil
+    var annotationSettingItems : [PDFSettingData]
+    
+    @State private var itemAnnotationSetting: PDFSettingData? = .dummyData()
+    @State private var selectedAnnotationSetting : PDFSettingData = .dummyData()
     
     var onDrawingToolSelected: ((PDFSettingData) -> Void)?
     var onPalettePressed: ((PDFSettingData) -> Void)?
     
-    init(onDrawingToolSelected: ((PDFSettingData) -> Void)?,
+    init(annotationSettingItems : [PDFSettingData],
+         onDrawingToolSelected: ((PDFSettingData) -> Void)?,
          onPalettePressed: ((PDFSettingData) -> Void)?) {
+        self.annotationSettingItems = annotationSettingItems
         self.onPalettePressed = onPalettePressed
         self.onDrawingToolSelected = onDrawingToolSelected
     }
 
     var body: some View {
         HStack(spacing: 10) {
-            ForEach(drawingToolManager.pdfSettings, id: \.self) { tool in
+            ForEach(annotationSettingItems, id: \.self) { tool in
                 if tool.drawingTool  != .none {
                     
                 SingleAnnotationItemView(
                     drawingToolType: tool,
-                    isExpanded: expandedTool == tool,
+                    selectedAnnotationType: selectedAnnotationSetting,
                     onDrawingToolSelected: { tool in
                         withAnimation {
-                            expandedTool = (expandedTool == tool) ? PDFSettingData.noneData() : tool
-                            onDrawingToolSelected?(expandedTool!)
+                            itemAnnotationSetting = (itemAnnotationSetting == tool) ? PDFSettingData.noneData() : tool
+                            onDrawingToolSelected?(itemAnnotationSetting!)
                             
-                            drawingToolManager.selectePdfdSetting = expandedTool!
-                         //   drawingToolManager.updatePdfSettingData(newSetting: expandedTool!)
+                            selectedAnnotationSetting = itemAnnotationSetting!
+                            //drawingToolManager.selectePdfdSetting = expandedTool!
                             
                         }
                     },
@@ -45,29 +50,13 @@ struct AnnotationControllerView: View {
                 )
             }
             }
-            
-//            ForEach([DrawingTool.pen, .highlighter,.eraser], id: \.self) { tool in
-//                
-//                SingleAnnotationItemView(
-//                    drawingToolType: tool,
-//                    isExpanded: expandedTool == tool,
-//                    onDrawingToolSelected: { tool in
-//                        withAnimation {
-//                            expandedTool = (expandedTool == tool) ? .none : tool
-//                            onDrawingToolSelected?(expandedTool!)
-//                            drawingToolManager.selectedTool = expandedTool!
-//                           
-//                        }
-//                    },
-//                    onPalettePressed: onPalettePressed
-//                )
-//            }
+        
         }
     }
 }
 
-
-#Preview {
-    AnnotationControllerView(onDrawingToolSelected: nil, onPalettePressed: nil)
-        .environmentObject(DrawingToolManager.dummyData())
-}
+//
+//#Preview {
+//    AnnotationControllerView(onDrawingToolSelected: nil, onPalettePressed: nil)
+//        .environmentObject(DrawingToolManager.dummyData())
+//}

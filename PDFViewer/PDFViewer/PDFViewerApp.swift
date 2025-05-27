@@ -21,6 +21,10 @@ class DrawingToolManager: ObservableObject {
             pdfSettings[index] = newSetting
         }
     }
+    
+    func getSettingFrom(drawingTool: DrawingTool) -> PDFSettingData? {
+        pdfSettings.first(where: { $0.drawingTool == drawingTool })
+    }
 }
 
 extension DrawingToolManager {
