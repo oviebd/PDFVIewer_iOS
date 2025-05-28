@@ -9,23 +9,21 @@ import SwiftUI
 
 
 struct SingleAnnotationItemView: View {
-//    @EnvironmentObject var drawingToolManager: DrawingToolManager
 
-    var drawingToolType: PDFSettingData
-    var selectedAnnotationType: PDFSettingData
+    var itemAnnotationSetting: PDFAnnotationSetting
+    var selectedAnnotationSetting: PDFAnnotationSetting
    
-    var onDrawingToolSelected: ((PDFSettingData) -> Void)?
-    var onPalettePressed: ((PDFSettingData) -> Void)?
+    var onDrawingToolSelected: ((PDFAnnotationSetting) -> Void)?
+    var onPalettePressed: ((PDFAnnotationSetting) -> Void)?
 
     var isSelected: Bool {
-        selectedAnnotationType == drawingToolType
+        selectedAnnotationSetting == itemAnnotationSetting
     }
 
     var body: some View {
         HStack(spacing: 8) {
             Button(action: {
-               // selectedAnnotationType = drawingToolType
-                onDrawingToolSelected?(drawingToolType)
+                onDrawingToolSelected?(itemAnnotationSetting)
             }) {
                 ZStack {
                     Circle()
@@ -36,7 +34,7 @@ struct SingleAnnotationItemView: View {
                                 .stroke(getSelectedColor(), lineWidth: isSelected ? 3 : 1)
                         )
                         .overlay(
-                            Image(systemName: drawingToolType.drawingTool.iconName)
+                            Image(systemName: itemAnnotationSetting.annotationTool.iconName)
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(getSelectedColor())
                         )
@@ -47,7 +45,7 @@ struct SingleAnnotationItemView: View {
 
             if isExpandedView() && isExpandable() {
                 Button(action: {
-                    onPalettePressed?(drawingToolType)
+                    onPalettePressed?(itemAnnotationSetting)
                 }) {
                     Circle()
                         .frame(width: 28, height: 28)
@@ -64,28 +62,28 @@ struct SingleAnnotationItemView: View {
         .padding(4)
     }
     func isExpandedView() -> Bool {
-        selectedAnnotationType == drawingToolType
+        selectedAnnotationSetting == itemAnnotationSetting
     }
     
     func isExpandable() -> Bool {
-        drawingToolType.isExpandable
+        itemAnnotationSetting.isExpandable
     }
 
     func getSelectedColor() -> Color {
         //let settings = drawingToolManager.getSettingFrom(drawingTool: draw)
-        Color(drawingToolType.color)
+        Color(itemAnnotationSetting.color)
     }
 }
 
-//#Preview {
-// 
-//    SingleAnnotationItemView(drawingToolType: PDFSettingData(drawingTool: .pen, lineWidth: 1.0, color: .red, isExpandable: true))
-//        .environmentObject(DrawingToolManager.dummyData())
-//        .background(Color.white)
-//        .frame(maxWidth: .infinity, maxHeight: .infinity)
-//}
+#Preview {
+ 
+    SingleAnnotationItemView(itemAnnotationSetting: .dummyData(), selectedAnnotationSetting: .dummyData())
+        .environmentObject(DrawingToolManager.dummyData())
+        .background(Color.white)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+}
 
-extension DrawingTool {
+extension AnnotationTool {
     var iconName: String {
         switch self {
         case .none:

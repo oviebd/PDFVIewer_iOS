@@ -7,23 +7,23 @@
 
 import SwiftUI
 
-struct AnnotationDetailsView: View {
+struct AnnotationSettingsView: View {
 
     @Binding var showPalette: Bool
 
-    @Binding var drawingTool: PDFSettingData
+    @Binding var annotationSetting: PDFAnnotationSetting
     var onDataChanged: (() -> Void)?
    
     let colors: [UIColor] = [.red, .green, .blue, .yellow, .orange, .purple, .black, .gray]
 
     var body: some View {
         VStack(spacing: 16) {
-            Extra(annotationSetting: $drawingTool)
+            Extra(annotationSetting: $annotationSetting)
 
             HStack {
                 ForEach(colors, id: \.self) { color in
                     Button(action: {
-                        drawingTool.color = color
+                        annotationSetting.color = color
                         onDataChanged?()
                     }) {
                         Circle()
@@ -40,7 +40,6 @@ struct AnnotationDetailsView: View {
                 withAnimation {
                     onDataChanged?()
                     showPalette = false
-                   
                 }
             }) {
                 Text("Ok")
@@ -56,5 +55,5 @@ struct AnnotationDetailsView: View {
 }
 
  #Preview {
-     AnnotationDetailsView( showPalette: .constant(true), drawingTool: .constant(.dummyData()))
+     AnnotationSettingsView( showPalette: .constant(true), annotationSetting: .constant(.dummyData()))
  }

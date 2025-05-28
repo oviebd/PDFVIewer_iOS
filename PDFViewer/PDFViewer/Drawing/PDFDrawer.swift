@@ -9,7 +9,7 @@
 import Foundation
 import PDFKit
 
-enum DrawingTool: Int {
+enum AnnotationTool : Int {
     case none = -1
     case eraser = 0
     case pen = 2
@@ -25,42 +25,42 @@ enum DrawingTool: Int {
     }
 }
 
-struct PDFSettingData : Hashable {
-    var drawingTool : DrawingTool
+struct PDFAnnotationSetting : Hashable {
+    var annotationTool : AnnotationTool
     var lineWidth : CGFloat
     
     var color : UIColor
     var isExpandable : Bool
     
-    init(drawingTool: DrawingTool, lineWidth: CGFloat, color: UIColor, isExpandable: Bool) {
-        self.drawingTool = drawingTool
+    init(annotationTool: AnnotationTool, lineWidth: CGFloat, color: UIColor, isExpandable: Bool) {
+        self.annotationTool = annotationTool
         self.lineWidth = lineWidth
         self.color = color
         self.isExpandable = isExpandable
     }
     
-    static func == (lhs: PDFSettingData, rhs: PDFSettingData) -> Bool {
-         return lhs.drawingTool == rhs.drawingTool &&
+    static func == (lhs: PDFAnnotationSetting, rhs: PDFAnnotationSetting) -> Bool {
+         return lhs.annotationTool == rhs.annotationTool &&
                 lhs.lineWidth == rhs.lineWidth &&
                 lhs.color.isEqual(rhs.color) && // UIColor doesn't conform to Hashable
                 lhs.isExpandable == rhs.isExpandable
      }
 
      func hash(into hasher: inout Hasher) {
-         hasher.combine(drawingTool)
+         hasher.combine(annotationTool)
          hasher.combine(lineWidth)
          hasher.combine(color.hashValue)
          hasher.combine(isExpandable)
      }
 }
 
-extension PDFSettingData {
-    static func dummyData () -> PDFSettingData {
-        return PDFSettingData(drawingTool: .pen, lineWidth: 2.0, color: .red, isExpandable: true)
+extension PDFAnnotationSetting {
+    static func dummyData () -> PDFAnnotationSetting {
+        return PDFAnnotationSetting(annotationTool: .pen, lineWidth: 2.0, color: .red, isExpandable: true)
     }
     
-    static func noneData () -> PDFSettingData {
-        return PDFSettingData(drawingTool: .none, lineWidth: 0.0, color: .red, isExpandable: false)
+    static func noneData () -> PDFAnnotationSetting {
+        return PDFAnnotationSetting(annotationTool: .none, lineWidth: 0.0, color: .red, isExpandable: false)
     }
 }
 
@@ -71,15 +71,10 @@ class PDFDrawer {
     private var currentAnnotation : DrawingAnnotation?
     private var currentPage: PDFPage?
     
-    var annotationSetting : PDFSettingData = .dummyData()
-  
-//    var drawingTool = DrawingTool.pen
-//    var lineWidth : CGFloat = 2.0
-//    
-//    var color: UIColor = .red
-    
-    func getAnnotationType() -> DrawingTool {
-        return annotationSetting.drawingTool
+    var annotationSetting : PDFAnnotationSetting = .dummyData()
+
+    func getAnnotationType() -> AnnotationTool {
+        return annotationSetting.annotationTool
     }
 }
 
@@ -135,7 +130,7 @@ extension PDFDrawer: DrawingGestureRecognizerDelegate {
         border.lineWidth = annotationSetting.lineWidth//drawingTool.width
         
         let annotation = DrawingAnnotation(bounds: page.bounds(for: pdfView.displayBox), forType: .ink, withProperties: nil)
-        annotation.color = annotationSetting.color.withAlphaComponent(annotationSetting.drawingTool.alpha)
+        annotation.color = annotationSetting.color.withAlphaComponent(annotationSetting.annotationTool.alpha)
         annotation.border = border
         return annotation
     }
@@ -170,7 +165,7 @@ extension PDFDrawer: DrawingGestureRecognizerDelegate {
 
         // Create annotation
         let annotation = PDFAnnotation(bounds: bounds, forType: .ink, withProperties: nil)
-        annotation.color = annotationSetting.color.withAlphaComponent(annotationSetting.drawingTool.alpha)
+        annotation.color = annotationSetting.color.withAlphaComponent(annotationSetting.annotationTool.alpha)
         annotation.border = border
         annotation.add(centeredPath)
 

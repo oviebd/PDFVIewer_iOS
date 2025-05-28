@@ -18,9 +18,8 @@ struct PDFViewerView: View {
     @State private var currentPDF: URL
     @StateObject private var pdfSettings = PDFSettings()
     
-    @State private var drawingTool: PDFSettingData = PDFSettingData.noneData()
-//    @State private var color: UIColor = .red
-//    @State private var lineWidth: CGFloat = 5
+    @State private var drawingTool: PDFAnnotationSetting = PDFAnnotationSetting.noneData()
+
     @State private var zoomScale: CGFloat = 1.0
     @State private var actions = PDFKitViewActions()
   
@@ -53,7 +52,7 @@ struct PDFViewerView: View {
                 .contentShape(Rectangle()) // Allows tap on empty area
                 .onTapGesture {
                     // Toggle controls only if not drawing
-                    if drawingTool.drawingTool == .none {
+                    if drawingTool.annotationTool == .none {
                         withAnimation {
                             showControls.toggle()
                         }
@@ -176,8 +175,8 @@ struct PDFViewerView: View {
             }
         }
         .sheet(isPresented: $showPalette) {
-            AnnotationDetailsView(
-                showPalette: $showPalette, drawingTool: $drawingTool
+            AnnotationSettingsView(
+                showPalette: $showPalette, annotationSetting: $drawingTool
                 ,onDataChanged: {
                     onAnnotationDataChanged(annotationSettingData: drawingTool)
                 })
@@ -196,7 +195,7 @@ struct PDFViewerView: View {
 //                drawingTool = tool
 //                drawingToolManager.selectePdfdSetting = drawingTool
                 onAnnotationDataChanged(annotationSettingData: tool)
-                if drawingToolManager.selectePdfdSetting.drawingTool != .none {
+                if drawingToolManager.selectePdfdSetting.annotationTool != .none {
                     showControls = true
                     showPalette = true
                 }
@@ -214,7 +213,7 @@ struct PDFViewerView: View {
         Color.clear.frame(height: 0) // keeps layout if needed
     }
     
-    func onAnnotationDataChanged(annotationSettingData: PDFSettingData){
+    func onAnnotationDataChanged(annotationSettingData: PDFAnnotationSetting){
         drawingTool = annotationSettingData
         drawingToolManager.selectePdfdSetting = drawingTool
         drawingToolManager.updatePdfSettingData(newSetting: drawingTool)

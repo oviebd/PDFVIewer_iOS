@@ -12,17 +12,17 @@ struct AnnotationControllerView: View {
    
    // @EnvironmentObject var drawingToolManager: DrawingToolManager
    
-    var annotationSettingItems : [PDFSettingData]
+    var annotationSettingItems : [PDFAnnotationSetting]
     
-    @State private var itemAnnotationSetting: PDFSettingData? = .dummyData()
-    @State private var selectedAnnotationSetting : PDFSettingData = .dummyData()
+    @State private var itemAnnotationSetting: PDFAnnotationSetting? = .dummyData()
+    @State private var selectedAnnotationSetting : PDFAnnotationSetting = .dummyData()
     
-    var onDrawingToolSelected: ((PDFSettingData) -> Void)?
-    var onPalettePressed: ((PDFSettingData) -> Void)?
+    var onDrawingToolSelected: ((PDFAnnotationSetting) -> Void)?
+    var onPalettePressed: ((PDFAnnotationSetting) -> Void)?
     
-    init(annotationSettingItems : [PDFSettingData],
-         onDrawingToolSelected: ((PDFSettingData) -> Void)?,
-         onPalettePressed: ((PDFSettingData) -> Void)?) {
+    init(annotationSettingItems : [PDFAnnotationSetting],
+         onDrawingToolSelected: ((PDFAnnotationSetting) -> Void)?,
+         onPalettePressed: ((PDFAnnotationSetting) -> Void)?) {
         self.annotationSettingItems = annotationSettingItems
         self.onPalettePressed = onPalettePressed
         self.onDrawingToolSelected = onDrawingToolSelected
@@ -31,14 +31,14 @@ struct AnnotationControllerView: View {
     var body: some View {
         HStack(spacing: 10) {
             ForEach(annotationSettingItems, id: \.self) { tool in
-                if tool.drawingTool  != .none {
+                if tool.annotationTool  != .none {
                     
                 SingleAnnotationItemView(
-                    drawingToolType: tool,
-                    selectedAnnotationType: selectedAnnotationSetting,
+                    itemAnnotationSetting: tool,
+                    selectedAnnotationSetting: selectedAnnotationSetting,
                     onDrawingToolSelected: { tool in
                         withAnimation {
-                            itemAnnotationSetting = (itemAnnotationSetting == tool) ? PDFSettingData.noneData() : tool
+                            itemAnnotationSetting = (itemAnnotationSetting == tool) ? PDFAnnotationSetting.noneData() : tool
                             onDrawingToolSelected?(itemAnnotationSetting!)
                             
                             selectedAnnotationSetting = itemAnnotationSetting!

@@ -9,7 +9,7 @@ import SwiftUI
 
 struct Extra: View {
    
-    @Binding var annotationSetting : PDFSettingData
+    @Binding var annotationSetting : PDFAnnotationSetting
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -46,5 +46,5 @@ struct Extra: View {
 }
 
 #Preview {
-    Extra(annotationSetting: .constant(PDFSettingData.dummyData()))
+    Extra(annotationSetting: .constant(PDFAnnotationSetting.dummyData()))
 }

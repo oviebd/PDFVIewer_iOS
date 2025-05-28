@@ -27,7 +27,7 @@ class PDFKitViewActions: ObservableObject {
 struct PDFKitView: UIViewRepresentable {
     @Binding var pdfURL: URL
     @ObservedObject var settings: PDFSettings
-    @Binding var mode: PDFSettingData
+    @Binding var mode: PDFAnnotationSetting
 
     @ObservedObject var actions: PDFKitViewActions
     
@@ -76,7 +76,7 @@ struct PDFKitView: UIViewRepresentable {
 
  
         if let gesture = context.coordinator.gestureRecognizer {
-            gesture.isEnabled = mode.drawingTool != .none
+            gesture.isEnabled = mode.annotationTool != .none
         }
 
         // ✅ Update the drawing tool and color here

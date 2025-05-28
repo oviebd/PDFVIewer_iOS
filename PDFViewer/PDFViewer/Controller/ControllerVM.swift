@@ -15,19 +15,3 @@ class ControllerVM: ObservableObject {
     @Published var isExpanded = false
     @Published var showColorPalette = false
 }
-
-struct PDFColorView: UIViewRepresentable {
-   
-    
-    func makeUIView(context: Context) -> PDFView {
-        let pdfView = PDFView()
-        pdfView.autoScales = true
-        if let path = Bundle.main.url(forResource: "sample", withExtension: "pdf") {
-            pdfView.document = PDFDocument(url: path)
-        }
-        return pdfView
-    }
-    
-    func updateUIView(_ uiView: PDFView, context: Context) {}
-}
-
