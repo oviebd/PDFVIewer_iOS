@@ -70,7 +70,6 @@ struct SingleAnnotationItemView: View {
     }
 
     func getSelectedColor() -> Color {
-        //let settings = drawingToolManager.getSettingFrom(drawingTool: draw)
         Color(itemAnnotationSetting.color)
     }
 }

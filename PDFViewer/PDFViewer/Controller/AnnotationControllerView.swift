@@ -10,8 +10,6 @@ import SwiftUI
 
 struct AnnotationControllerView: View {
    
-   // @EnvironmentObject var drawingToolManager: DrawingToolManager
-   
     var annotationSettingItems : [PDFAnnotationSetting]
     
     @State private var itemAnnotationSetting: PDFAnnotationSetting? = .dummyData()
@@ -42,7 +40,6 @@ struct AnnotationControllerView: View {
                             onDrawingToolSelected?(itemAnnotationSetting!)
                             
                             selectedAnnotationSetting = itemAnnotationSetting!
-                            //drawingToolManager.selectePdfdSetting = expandedTool!
                             
                         }
                     },
@@ -55,8 +52,10 @@ struct AnnotationControllerView: View {
     }
 }
 
-//
-//#Preview {
-//    AnnotationControllerView(onDrawingToolSelected: nil, onPalettePressed: nil)
-//        .environmentObject(DrawingToolManager.dummyData())
-//}
+
+#Preview {
+    AnnotationControllerView(annotationSettingItems: [],
+                             onDrawingToolSelected: nil,
+                             onPalettePressed: nil)
+        .environmentObject(DrawingToolManager.dummyData())
+}
