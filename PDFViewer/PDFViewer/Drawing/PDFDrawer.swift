@@ -25,6 +25,8 @@ enum AnnotationTool : Int {
     }
 }
 
+
+
 struct PDFAnnotationSetting : Hashable {
     var annotationTool : AnnotationTool
     var lineWidth : CGFloat

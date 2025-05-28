@@ -99,6 +99,22 @@ extension PDFViewerView {
                     }
                 }
             )
+            
+            
+            Button {
+               // onBrightnessButtonPresesd?()
+            } label: {
+                Image(systemName: "sun.max.fill")
+                    .resizable()
+                    .frame(width: 20, height: 20)
+                    // .font(.subheadline)
+                    .foregroundColor(.white)
+                    .padding(5)
+                    .background(Color.gray.opacity(0.8))
+                    .clipShape(Circle())
+                    .shadow(radius: 4)
+            }
+            
             Spacer()
         }
         .padding()

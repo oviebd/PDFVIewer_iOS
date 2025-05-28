@@ -73,13 +73,13 @@ struct SingleAnnotationItemView: View {
     }
 }
 //
-//#Preview {
-// 
-//    SingleAnnotationItemView(itemAnnotationSetting: .dummyData(), selectedAnnotationSetting: .dummyData())
-//        .environmentObject(DrawingToolManager.dummyData())
-//        .background(Color.white)
-//        .frame(maxWidth: .infinity, maxHeight: .infinity)
-//}
+#Preview {
+ 
+    SingleAnnotationItemView(itemAnnotationSetting: .dummyData())
+        .environmentObject(DrawingToolManager.dummyData())
+        .background(Color.white)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+}
 
 extension AnnotationTool {
     var iconName: String {
