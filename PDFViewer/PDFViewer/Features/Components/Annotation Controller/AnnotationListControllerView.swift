@@ -8,12 +8,12 @@
 import SwiftUI
 
 
-struct AnnotationControllerView: View {
+struct AnnotationListControllerView: View {
    
     var annotationSettingItems : [PDFAnnotationSetting]
     
     @State private var itemAnnotationSetting: PDFAnnotationSetting? = .dummyData()
-    @State private var selectedAnnotationSetting : PDFAnnotationSetting = .dummyData()
+  
     
     var onDrawingToolSelected: ((PDFAnnotationSetting) -> Void)?
     var onPalettePressed: ((PDFAnnotationSetting) -> Void)?
@@ -33,14 +33,10 @@ struct AnnotationControllerView: View {
                     
                 SingleAnnotationItemView(
                     itemAnnotationSetting: tool,
-                    selectedAnnotationSetting: selectedAnnotationSetting,
                     onDrawingToolSelected: { tool in
                         withAnimation {
                             itemAnnotationSetting = (itemAnnotationSetting == tool) ? PDFAnnotationSetting.noneData() : tool
                             onDrawingToolSelected?(itemAnnotationSetting!)
-                            
-                            selectedAnnotationSetting = itemAnnotationSetting!
-                            
                         }
                     },
                     onPalettePressed: onPalettePressed
@@ -54,7 +50,7 @@ struct AnnotationControllerView: View {
 
 
 #Preview {
-    AnnotationControllerView(annotationSettingItems: [],
+    AnnotationListControllerView(annotationSettingItems: [],
                              onDrawingToolSelected: nil,
                              onPalettePressed: nil)
         .environmentObject(DrawingToolManager.dummyData())

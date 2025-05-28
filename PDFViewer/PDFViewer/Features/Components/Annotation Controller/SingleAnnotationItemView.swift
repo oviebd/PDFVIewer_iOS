@@ -10,14 +10,15 @@ import SwiftUI
 
 struct SingleAnnotationItemView: View {
 
+    @EnvironmentObject var drawingToolManager: DrawingToolManager
+    
     var itemAnnotationSetting: PDFAnnotationSetting
-    var selectedAnnotationSetting: PDFAnnotationSetting
    
     var onDrawingToolSelected: ((PDFAnnotationSetting) -> Void)?
     var onPalettePressed: ((PDFAnnotationSetting) -> Void)?
 
     var isSelected: Bool {
-        selectedAnnotationSetting == itemAnnotationSetting
+        drawingToolManager.selectePdfdSetting == itemAnnotationSetting
     }
 
     var body: some View {
@@ -43,7 +44,7 @@ struct SingleAnnotationItemView: View {
                 }
             }
 
-            if isExpandedView() && isExpandable() {
+            if isSelected && isExpandable() {
                 Button(action: {
                     onPalettePressed?(itemAnnotationSetting)
                 }) {
@@ -61,9 +62,7 @@ struct SingleAnnotationItemView: View {
         }
         .padding(4)
     }
-    func isExpandedView() -> Bool {
-        selectedAnnotationSetting == itemAnnotationSetting
-    }
+   
     
     func isExpandable() -> Bool {
         itemAnnotationSetting.isExpandable
@@ -73,14 +72,14 @@ struct SingleAnnotationItemView: View {
         Color(itemAnnotationSetting.color)
     }
 }
-
-#Preview {
- 
-    SingleAnnotationItemView(itemAnnotationSetting: .dummyData(), selectedAnnotationSetting: .dummyData())
-        .environmentObject(DrawingToolManager.dummyData())
-        .background(Color.white)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-}
+//
+//#Preview {
+// 
+//    SingleAnnotationItemView(itemAnnotationSetting: .dummyData(), selectedAnnotationSetting: .dummyData())
+//        .environmentObject(DrawingToolManager.dummyData())
+//        .background(Color.white)
+//        .frame(maxWidth: .infinity, maxHeight: .infinity)
+//}
 
 extension AnnotationTool {
     var iconName: String {

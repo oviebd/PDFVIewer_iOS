@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct AnnotationSettingsView: View {
-
     @Binding var showPalette: Bool
 
     @Binding var annotationSetting: PDFAnnotationSetting
@@ -18,7 +17,7 @@ struct AnnotationSettingsView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Extra(annotationSetting: $annotationSetting)
+            AnnotationSliderSetting(annotationSetting: $annotationSetting)
 
             HStack {
                 ForEach(colors, id: \.self) { color in

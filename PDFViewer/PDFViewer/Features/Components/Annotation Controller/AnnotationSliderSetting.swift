@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct Extra: View {
+struct AnnotationSliderSetting: View {
    
     @Binding var annotationSetting : PDFAnnotationSetting
 
@@ -46,5 +46,5 @@ struct Extra: View {
 }
 
 #Preview {
-    Extra(annotationSetting: .constant(PDFAnnotationSetting.dummyData()))
+    AnnotationSliderSetting(annotationSetting: .constant(PDFAnnotationSetting.dummyData()))
 }
