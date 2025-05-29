@@ -7,41 +7,47 @@
 
 import SwiftUI
 
-struct AnnotationSliderSetting: View {
-   
-    @Binding var annotationSetting : PDFAnnotationSetting
 
+struct AnnotationSliderSetting: View {
+    @Binding var annotationSetting: PDFAnnotationSetting
+    
+    
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Thickness")
-                .font(.subheadline)
+            Text("Set Line Width")
+                .font(.headline)
 
-            HStack(spacing: 0) {
-                Group{
-                    Circle()
-                        .fill(Color(annotationSetting.color))
-                        .frame(width: getThickness() / 2, height: getThickness() / 2)
-                        .overlay(Circle().stroke(Color.primary.opacity(0.3), lineWidth: 1))
-                        .animation(.easeInOut, value: getThickness())
-                }.frame(width: 50, height: 50)
-              
+            HStack {
+                ZStack(alignment: .bottom) {
+                    // Base icon in gray
+                    Image(systemName: "line.3.horizontal")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 30, height: 30)
+                        .foregroundColor(.gray)
 
-                Slider(value: $annotationSetting.lineWidth, in: 1 ... 70, step: 1)
+                    // Filled icon in selected color with bottom-to-top masking
+                    Image(systemName: "line.3.horizontal")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 30, height: 30)
+                        .foregroundColor(Color(annotationSetting.color))
+                        .mask(
+                            Rectangle()
+                                .frame(height: CGFloat((annotationSetting.lineWidth - 2) / 48) * 30)
+                                .offset(y: (1 - CGFloat((annotationSetting.lineWidth - 2) / 48)) * 15)
+                        )
+                }
+
+                Slider(value: $annotationSetting.lineWidth, in: 2...50, step: 1)
                     .accentColor(Color(annotationSetting.color))
 
-                Text("\(Int(getThickness()))")
-                    .font(.caption)
-                    .padding(.leading,15)
-
-            }.frame(height: 30)
-
+                Text("\(Int(annotationSetting.lineWidth)) pt")
+                    .frame(width: 60, alignment: .trailing)
+            }
         }
-        
-        
-    }
-    
-    func getThickness() -> CGFloat {
-        return annotationSetting.lineWidth
+        .padding()
     }
 }
 

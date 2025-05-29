@@ -13,6 +13,7 @@ import SwiftUI
 import PDFKit
 
 struct PDFViewerView: View {
+   
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var drawingToolManager: DrawingToolManager
     @StateObject private var viewModel: PDFViewerViewModel
@@ -33,9 +34,12 @@ struct PDFViewerView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent() }
 
-        //.toolbar { if viewModel.showControls { toolbarContent } }
         .sheet(isPresented: $viewModel.showPalette) {
             annotationSettingsSheet
+        }
+        
+        .sheet(isPresented: $viewModel.showBrightnessControls) {
+            brightnessSettingsSheet
         }
     }
 }
@@ -102,7 +106,8 @@ extension PDFViewerView {
             
             
             Button {
-               // onBrightnessButtonPresesd?()
+                viewModel.showBrightnessControls = true
+              
             } label: {
                 Image(systemName: "sun.max.fill")
                     .resizable()
@@ -173,6 +178,16 @@ extension PDFViewerView {
                 viewModel.updateAnnotationSetting(viewModel.annotationSettingData, manager: drawingToolManager)
             }
         )
+        .presentationDetents([.height(250)])
+        .presentationDragIndicator(.visible)
+    }
+    
+    var brightnessSettingsSheet: some View {
+        BrightnessSettingPopupView(showPalette: $viewModel.showBrightnessControls,
+                                   value: viewModel.displayBrightness){
+            newValue in
+            viewModel.displayBrightness = newValue
+        }
         .presentationDetents([.height(250)])
         .presentationDragIndicator(.visible)
     }
