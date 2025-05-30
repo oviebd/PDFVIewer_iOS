@@ -85,7 +85,7 @@ struct PDFKitView: UIViewRepresentable {
     }
 
     private func applySettings(to pdfView: PDFView) {
-        //  pdfView.autoScales = settings.autoScales
+        pdfView.autoScales = settings.autoScales
         pdfView.displayMode = settings.displayMode
         pdfView.displayDirection = settings.displayDirection
     }
