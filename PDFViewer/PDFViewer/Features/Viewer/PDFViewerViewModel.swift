@@ -50,8 +50,15 @@ class PDFViewerViewModel: ObservableObject {
         actions.setZoomScale(scaleFactor: zoomScale)
     }
 
-    func savePDF() {
-        _ = actions.saveAnnotedPdf(url: currentPDF)
+    func savePDFWithAnnotation() {
+        actions.saveAnnotatedPDFInBackground(to: currentPDF) { success in
+            if success {
+                // Show success UI or alert
+            } else {
+                // Show failure UI or retry option
+            }
+        }
+      //  _ = actions.saveAnnotedPdf(url: currentPDF)
     }
 
     func getBrightnessOpacity() -> CGFloat {
@@ -85,6 +92,8 @@ extension PDFViewerViewModel {
         timer = RepeatingTimer(interval: 10.0) { [weak self] in
             guard let self = self else { return }
             self.updatePdfDataInDb()
+            self.savePDFWithAnnotation()
+           
         }
         timer?.start()
     }

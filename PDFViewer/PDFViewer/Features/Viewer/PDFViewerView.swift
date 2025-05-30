@@ -42,6 +42,7 @@ struct PDFViewerView: View {
         }
         .onDisappear {
             viewModel.stopTrackingProgress()
+            viewModel.savePDFWithAnnotation()
             viewModel.updatePdfDataInDb()
         }
         .onAppear{
@@ -153,7 +154,7 @@ extension PDFViewerView {
             VStack(spacing: 16) {
                 ControlButton(systemName: "minus.magnifyingglass", action: viewModel.zoomOut)
                 ControlButton(systemName: "plus.magnifyingglass", action: viewModel.zoomIn)
-                ControlButton(systemName: "square.and.arrow.down", color: .green, foreground: .white, action: viewModel.savePDF)
+                ControlButton(systemName: "square.and.arrow.down", color: .green, foreground: .white, action: viewModel.savePDFWithAnnotation)
             }
             .padding()
         }
