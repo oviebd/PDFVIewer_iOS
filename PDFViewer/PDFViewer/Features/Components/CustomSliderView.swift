@@ -12,7 +12,7 @@
 import SwiftUI
 import SwiftUI
 
-struct LineWidthSliderView: View {
+struct CustomSliderView: View {
     var title: String
     var startValue: CGFloat
     var endValue: CGFloat
@@ -71,7 +71,7 @@ struct CustomSliderView_Previews: PreviewProvider {
 
         var body: some View {
             VStack(spacing: 40) {
-                LineWidthSliderView(
+                CustomSliderView(
                     title: "Line Width",
                     startValue: 2,
                     endValue: 50,
@@ -82,7 +82,7 @@ struct CustomSliderView_Previews: PreviewProvider {
                     print("Line width changed to: \(newValue)")
                 }
 
-                LineWidthSliderView(
+                CustomSliderView(
                     title: "Brightness",
                     startValue: 10,
                     endValue: 100,

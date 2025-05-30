@@ -18,7 +18,7 @@ struct AnnotationSettingsView: View {
     var body: some View {
         VStack(spacing: 16) {
             
-            LineWidthSliderView(title: "Set Width", startValue: 2, endValue: 50, currentValue:  annotationSetting.lineWidth, iconName: "line.3.horizontal", iconColor: annotationSetting.color){ newValue in
+            CustomSliderView(title: "Set Width", startValue: 2, endValue: 50, currentValue:  annotationSetting.lineWidth, iconName: "line.3.horizontal", iconColor: annotationSetting.color){ newValue in
                 annotationSetting.lineWidth = newValue
             }
 
