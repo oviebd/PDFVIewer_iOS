@@ -9,9 +9,6 @@
 import SwiftUI
 import PDFKit
 
-import SwiftUI
-import PDFKit
-
 struct PDFViewerView: View {
    
     @Environment(\.dismiss) var dismiss
@@ -25,12 +22,20 @@ struct PDFViewerView: View {
     var body: some View {
         ZStack {
             Color(.systemGray6).edgesIgnoringSafeArea(.all)
+            
             pdfContent
             readingOverlay
+            
+            Color.black
+                .opacity(viewModel.displayBrightness/100)
+                        .edgesIgnoringSafeArea(.all)
+                        .allowsHitTesting(false)
+            
             if viewModel.showControls {
                 overlayControls
             }
         }
+       
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent() }
 

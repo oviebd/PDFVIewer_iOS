@@ -19,7 +19,7 @@ class PDFViewerViewModel: ObservableObject {
     @Published var showBrightnessControls = true
     @Published var actions = PDFKitViewActions()
     @Published var settings = PDFSettings()
-    @Published var displayBrightness : CGFloat = 50.0
+    @Published var displayBrightness : CGFloat = 0.5
 
     init(pdfFile: PDFModelData) {
         self.pdfData = pdfFile
