@@ -27,7 +27,7 @@ struct PDFViewerView: View {
             readingOverlay
             
             Color.black
-                .opacity(viewModel.displayBrightness/100)
+                .opacity(viewModel.getBrightnessOpacity())
                         .edgesIgnoringSafeArea(.all)
                         .allowsHitTesting(false)
             
@@ -37,6 +37,7 @@ struct PDFViewerView: View {
         }
        
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarHidden(!viewModel.showControls)
         .toolbar { toolbarContent() }
 
         .sheet(isPresented: $viewModel.showPalette) {
@@ -146,6 +147,7 @@ extension PDFViewerView {
 
     @ToolbarContentBuilder
     func toolbarContent() -> some ToolbarContent {
+        
         ToolbarItem(placement: .principal) {
             Text(viewModel.pdfData.title ?? "Unknown file").font(.headline)
         }

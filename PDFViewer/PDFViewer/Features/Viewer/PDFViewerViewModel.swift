@@ -16,10 +16,11 @@ class PDFViewerViewModel: ObservableObject {
     @Published var readingMode: ReadingMode = .normal
     @Published var showPalette = false
     @Published var showControls = true
-    @Published var showBrightnessControls = true
+    @Published var showBrightnessControls = false
     @Published var actions = PDFKitViewActions()
     @Published var settings = PDFSettings()
-    @Published var displayBrightness : CGFloat = 0.5
+    @Published var displayBrightness : CGFloat = 100
+    
 
     init(pdfFile: PDFModelData) {
         self.pdfData = pdfFile
@@ -44,5 +45,10 @@ class PDFViewerViewModel: ObservableObject {
 
     func savePDF() {
         _ = actions.saveAnnotedPdf(url: currentPDF)
+    }
+    
+    func getBrightnessOpacity() -> CGFloat{
+        let bifgtnessPercentage : CGFloat = displayBrightness / 100
+        return 1.0 - bifgtnessPercentage
     }
 }
