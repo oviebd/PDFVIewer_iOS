@@ -5,8 +5,9 @@
 //  Created by Habibur Rahman on 28/5/25.
 //
 
-import SwiftUI
+import Combine
 import PDFKit
+import SwiftUI
 
 class PDFViewerViewModel: ObservableObject {
     @Published var pdfData: PDFModelData
@@ -19,12 +20,18 @@ class PDFViewerViewModel: ObservableObject {
     @Published var showBrightnessControls = false
     @Published var actions = PDFKitViewActions()
     @Published var settings = PDFSettings()
-    @Published var displayBrightness : CGFloat = 100
-    
+    @Published var displayBrightness: CGFloat = 100
 
-    init(pdfFile: PDFModelData) {
-        self.pdfData = pdfFile
-        self.currentPDF = URL(string: pdfFile.urlPath ?? "")!
+    private var repository: PDFRepositoryProtocol
+    private var cancellables = Set<AnyCancellable>()
+
+    private var timer: RepeatingTimer?
+    //   @State private var timerCancellable: AnyCancellable?
+
+    init(pdfFile: PDFModelData, repository: PDFRepositoryProtocol) {
+        pdfData = pdfFile
+        currentPDF = URL(string: pdfFile.urlPath ?? "")!
+        self.repository = repository
     }
 
     func updateAnnotationSetting(_ setting: PDFAnnotationSetting, manager: DrawingToolManager) {
@@ -46,9 +53,48 @@ class PDFViewerViewModel: ObservableObject {
     func savePDF() {
         _ = actions.saveAnnotedPdf(url: currentPDF)
     }
-    
-    func getBrightnessOpacity() -> CGFloat{
-        let bifgtnessPercentage : CGFloat = displayBrightness / 100
+
+    func getBrightnessOpacity() -> CGFloat {
+        let bifgtnessPercentage: CGFloat = displayBrightness / 100
         return 1.0 - bifgtnessPercentage
     }
+}
+
+// Db
+extension PDFViewerViewModel {
+    
+    func updatePdfDataInDb(){
+        pdfData.lastOpenedPage = actions.getCurrentPageNumber() ?? 0
+        pdfData.lastOpenTime = Date()
+        saveToDB()
+    }
+    func saveToDB() {
+        repository.update(updatedPdfData: pdfData)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { _ in }, receiveValue: { _ in
+                //  self?.UpdatePdfList(updatedModel: updatedModel)
+            })
+            .store(in: &cancellables)
+    }
+    
+}
+
+extension PDFViewerViewModel {
+    
+    func startTrackingProgress() {
+        timer = RepeatingTimer(interval: 10.0) { [weak self] in
+            guard let self = self else { return }
+            self.updatePdfDataInDb()
+        }
+        timer?.start()
+    }
+
+    func stopTrackingProgress() {
+        timer?.stop()
+    }
+
+    func goToPage() {
+        actions.goPage(pageNumber: pdfData.lastOpenedPage)
+    }
+
 }

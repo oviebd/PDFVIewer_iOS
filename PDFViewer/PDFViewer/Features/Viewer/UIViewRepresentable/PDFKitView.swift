@@ -22,6 +22,10 @@ class PDFKitViewActions: ObservableObject {
     func goPage(pageNumber: Int) {
         coordinator?.goToPage(pageNumber)
     }
+    
+    func getCurrentPageNumber() -> Int? {
+        return coordinator?.getCurrentPageNumber()
+    }
 }
 
 struct PDFKitView: UIViewRepresentable {
@@ -30,7 +34,6 @@ struct PDFKitView: UIViewRepresentable {
     @Binding var mode: PDFAnnotationSetting
 
     @ObservedObject var actions: PDFKitViewActions
-    
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -62,7 +65,7 @@ struct PDFKitView: UIViewRepresentable {
 
     func updateUIView(_ pdfView: PDFView, context: Context) {
         // Reload PDF when the URL changes
-        //let currentPage = pdfView.currentPage
+        // let currentPage = pdfView.currentPage
 
         print("P>> Update Ui View ")
         // If the PDF has changed, reload it
@@ -73,22 +76,18 @@ struct PDFKitView: UIViewRepresentable {
         // Reapply settings
         applySettings(to: pdfView)
 
-
- 
         if let gesture = context.coordinator.gestureRecognizer {
             gesture.isEnabled = mode.annotationTool != .none
         }
 
         // ✅ Update the drawing tool and color here
         context.coordinator.drawer.annotationSetting = mode
-
     }
 
     private func applySettings(to pdfView: PDFView) {
-      //  pdfView.autoScales = settings.autoScales
+        //  pdfView.autoScales = settings.autoScales
         pdfView.displayMode = settings.displayMode
         pdfView.displayDirection = settings.displayDirection
-        
     }
 
     // MARK: - Coordinator Keeps Objects Alive
@@ -97,7 +96,6 @@ struct PDFKitView: UIViewRepresentable {
         let drawer = PDFDrawer()
         var gestureRecognizer: DrawingGestureRecognizer?
         var pdfView: PDFView?
-      
 
         func saveAnnotatedPDF(to url: URL) -> Bool {
             guard let document = pdfView?.document else {
@@ -127,6 +125,13 @@ struct PDFKitView: UIViewRepresentable {
 
             pdfView.go(to: page)
         }
-        
+
+        func getCurrentPageNumber() -> Int? {
+            guard let pdfView = pdfView, let currentPage = pdfView.currentPage,
+                  let index = pdfView.document?.index(for: currentPage) else {
+                return nil
+            }
+            return index + 1
+        }
     }
 }

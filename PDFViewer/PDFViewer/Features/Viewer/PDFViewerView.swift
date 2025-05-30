@@ -5,37 +5,50 @@
 //  Created by Habibur Rahman on 25/3/25.
 //
 
-
-import SwiftUI
+import Combine
 import PDFKit
+import SwiftUI
 
 struct PDFViewerView: View {
    
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var drawingToolManager: DrawingToolManager
     @StateObject private var viewModel: PDFViewerViewModel
+    
 
     init(pdfFile: PDFModelData) {
-        _viewModel = StateObject(wrappedValue: PDFViewerViewModel(pdfFile: pdfFile))
+        let store = try? PDFLocalDataStore()
+        let repo = PDFLocalRepositoryImpl(store: store!)
+
+        _viewModel = StateObject(wrappedValue: PDFViewerViewModel(pdfFile: pdfFile, repository: repo))
+
     }
 
     var body: some View {
         ZStack {
             Color(.systemGray6).edgesIgnoringSafeArea(.all)
-            
+
             pdfContent
             readingOverlay
-            
+
             Color.black
                 .opacity(viewModel.getBrightnessOpacity())
-                        .edgesIgnoringSafeArea(.all)
-                        .allowsHitTesting(false)
-            
+                .edgesIgnoringSafeArea(.all)
+                .allowsHitTesting(false)
+
             if viewModel.showControls {
                 overlayControls
             }
         }
-       
+        .onDisappear {
+            viewModel.stopTrackingProgress()
+            viewModel.updatePdfDataInDb()
+        }
+        .onAppear{
+            viewModel.startTrackingProgress()
+            viewModel.goToPage()
+        }
+
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(!viewModel.showControls)
         .toolbar { toolbarContent() }
@@ -43,12 +56,15 @@ struct PDFViewerView: View {
         .sheet(isPresented: $viewModel.showPalette) {
             annotationSettingsSheet
         }
-        
+
         .sheet(isPresented: $viewModel.showBrightnessControls) {
             brightnessSettingsSheet
         }
     }
+    
+    
 }
+
 
 
 #Preview {
@@ -57,7 +73,6 @@ struct PDFViewerView: View {
             .environmentObject(DrawingToolManager.dummyData())
     }
 }
-
 
 extension PDFViewerView {
     var pdfContent: some View {
@@ -109,11 +124,10 @@ extension PDFViewerView {
                     }
                 }
             )
-            
-            
+
             Button {
                 viewModel.showBrightnessControls = true
-              
+
             } label: {
                 Image(systemName: "sun.max.fill")
                     .resizable()
@@ -125,7 +139,7 @@ extension PDFViewerView {
                     .clipShape(Circle())
                     .shadow(radius: 4)
             }
-            
+
             Spacer()
         }
         .padding()
@@ -147,7 +161,6 @@ extension PDFViewerView {
 
     @ToolbarContentBuilder
     func toolbarContent() -> some ToolbarContent {
-        
         ToolbarItem(placement: .principal) {
             Text(viewModel.pdfData.title ?? "Unknown file").font(.headline)
         }
@@ -173,7 +186,6 @@ extension PDFViewerView {
             }
         }
     }
-
 }
 
 extension PDFViewerView {
@@ -188,10 +200,10 @@ extension PDFViewerView {
         .presentationDetents([.height(250)])
         .presentationDragIndicator(.visible)
     }
-    
+
     var brightnessSettingsSheet: some View {
         BrightnessSettingPopupView(showPalette: $viewModel.showBrightnessControls,
-                                   value: viewModel.displayBrightness){
+                                   value: viewModel.displayBrightness) {
             newValue in
             viewModel.displayBrightness = newValue
         }
@@ -199,9 +211,3 @@ extension PDFViewerView {
         .presentationDragIndicator(.visible)
     }
 }
-
-
-
-
-
-
