@@ -11,10 +11,7 @@ import SwiftUI
 class PDFKitViewActions: ObservableObject {
     fileprivate var coordinator: PDFKitView.Coordinator?
 
-//    func saveAnnotedPdf(url: URL) -> Bool {
-//        coordinator?.saveAnnotatedPDF(to: url) ?? false
-//    }
-    
+
     func saveAnnotatedPDFInBackground(to url: URL, completion: @escaping (Bool) -> Void) {
         coordinator?.saveAnnotatedPDF(to: url, completion: completion)
     }
@@ -26,9 +23,13 @@ class PDFKitViewActions: ObservableObject {
     func goPage(pageNumber: Int) {
         coordinator?.goToPage(pageNumber)
     }
-    
+
     func getCurrentPageNumber() -> Int? {
         return coordinator?.getCurrentPageNumber()
+    }
+
+    func getTotalPageNumber() -> Int? {
+        return coordinator?.getTotalPageNumber()
     }
 }
 
@@ -96,27 +97,13 @@ struct PDFKitView: UIViewRepresentable {
 
     // MARK: - Coordinator Keeps Objects Alive
 
-    class Coordinator {
+    class Coordinator: NSObject, PDFViewDelegate {
+
         let drawer = PDFDrawer()
         var gestureRecognizer: DrawingGestureRecognizer?
         var pdfView: PDFView?
 
-//        func saveAnnotatedPDF(to url: URL) -> Bool {
-//            guard let document = pdfView?.document else {
-//                print("No PDF document found in PDFView")
-//                return false
-//            }
-//
-//            let success = document.write(to: url)
-//            if success {
-//                print("PDF saved successfully to \(url)")
-//            } else {
-//                print("Failed to save PDF")
-//            }
-//
-//            return success
-//        }
-        
+
         func saveAnnotatedPDF(to url: URL, completion: @escaping (Bool) -> Void) {
             DispatchQueue.global(qos: .userInitiated).async {
                 guard let document = self.pdfView?.document else {
@@ -151,6 +138,12 @@ struct PDFKitView: UIViewRepresentable {
                   let page = document.page(at: number - 1) else { return }
 
             pdfView.go(to: page)
+        }
+
+        func getTotalPageNumber() -> Int? {
+            guard let pdfView = pdfView,
+                  let document = pdfView.document else { return nil }
+            return document.pageCount
         }
 
         func getCurrentPageNumber() -> Int? {

@@ -49,6 +49,7 @@ class PDFViewerViewModel: ObservableObject {
         zoomScale = max(zoomScale - 0.2, 0.5)
         actions.setZoomScale(scaleFactor: zoomScale)
     }
+    
 
     func savePDFWithAnnotation() {
         actions.saveAnnotatedPDFInBackground(to: currentPDF) { success in
@@ -64,6 +65,12 @@ class PDFViewerViewModel: ObservableObject {
     func getBrightnessOpacity() -> CGFloat {
         let bifgtnessPercentage: CGFloat = displayBrightness / 100
         return 1.0 - bifgtnessPercentage
+    }
+    
+    func getPageProgressText() -> String {
+        let currentPage = actions.getCurrentPageNumber() ?? 0
+        let totalPageCount = actions.getTotalPageNumber() ?? 0
+        return  "\(currentPage)/\(totalPageCount)"
     }
 }
 

@@ -39,6 +39,8 @@ struct PDFViewerView: View {
             if viewModel.showControls {
                 overlayControls
             }
+            
+            pageProgressText
         }
         .onDisappear {
             viewModel.stopTrackingProgress()
@@ -188,6 +190,29 @@ extension PDFViewerView {
         }
     }
 }
+
+extension PDFViewerView{
+    var pageProgressText: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Text(viewModel.getPageProgressText())
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.9))
+                    .cornerRadius(6)
+                    .shadow(radius: 3)
+
+                Spacer()
+            }
+            .padding([.leading, .bottom], 12)
+        }
+    }
+
+}
+
 
 extension PDFViewerView {
     var annotationSettingsSheet: some View {
