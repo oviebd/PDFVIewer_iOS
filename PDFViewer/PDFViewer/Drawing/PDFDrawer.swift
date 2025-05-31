@@ -54,6 +54,8 @@ struct PDFAnnotationSetting : Hashable {
          hasher.combine(color.hashValue)
          hasher.combine(isExpandable)
      }
+    
+    
 }
 
 extension PDFAnnotationSetting {

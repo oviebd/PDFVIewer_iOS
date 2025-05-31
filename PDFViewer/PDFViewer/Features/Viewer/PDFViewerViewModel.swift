@@ -26,9 +26,6 @@ class PDFViewerViewModel: ObservableObject {
     private var repository: PDFRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
 
-//    private var databaseRefresh: RepeatingTimer?
-    //  private var pageRefreshTimer: RepeatingTimer?
-    //   @State private var timerCancellable: AnyCancellable?
 
     init(pdfFile: PDFModelData, repository: PDFRepositoryProtocol) {
         pdfData = pdfFile
@@ -100,6 +97,7 @@ extension PDFViewerViewModel {
 }
 
 extension PDFViewerViewModel {
+   
     func startTrackingProgress() {
         actions.onPageChanged = { [weak self] _ in
             self?.preparePageProgressText()

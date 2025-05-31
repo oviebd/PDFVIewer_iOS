@@ -44,6 +44,9 @@ struct PDFViewerView: View {
             viewModel.startTrackingProgress()
             viewModel.goToPage()
         }
+        .onDisappear{
+            drawingToolManager.selectePdfdSetting = .noneData()
+        }
 
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(!viewModel.showControls)
