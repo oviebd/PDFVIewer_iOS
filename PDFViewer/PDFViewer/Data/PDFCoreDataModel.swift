@@ -34,7 +34,7 @@ extension PDFCoreDataModel {
     }
 
     func toPDFEntity() -> PDFEntity {
-        var entityData = PDFEntity()
+        let entityData = PDFEntity()
 
         entityData.key = key
         entityData.isFavourite = isFavourite

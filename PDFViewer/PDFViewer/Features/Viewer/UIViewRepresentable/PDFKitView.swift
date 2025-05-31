@@ -11,8 +11,6 @@ import SwiftUI
 
 class PDFKitViewActions: ObservableObject {
     fileprivate var coordinator: PDFKitView.Coordinator?
-
-    fileprivate let pageChangeSubject = PassthroughSubject<Int, Never>()
     fileprivate let annotationEditFinishedPublisher = PassthroughSubject<Void, Never>()
     private var cancellables = Set<AnyCancellable>()
 
@@ -20,15 +18,6 @@ class PDFKitViewActions: ObservableObject {
     var onAnnotationEditFinished: (() -> Void)?
 
     init() {
-        // Debounced publisher
-        pageChangeSubject
-            .removeDuplicates() // Only emit when the page actually changes
-            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
-            .sink { [weak self] pageNumber in
-                self?.onPageChanged?(pageNumber)
-            }
-            .store(in: &cancellables)
-
         annotationEditFinishedPublisher
             .debounce(for: .milliseconds(2000), scheduler: RunLoop.main)
             .sink { [weak self] _ in
@@ -58,7 +47,7 @@ class PDFKitViewActions: ObservableObject {
     }
 
     func notifyPageChange(_ page: Int) {
-        pageChangeSubject.send(page)
+        onPageChanged?(page)
     }
 
     func notifyAnnotationEditingFinished() {
@@ -90,7 +79,7 @@ struct PDFKitView: UIViewRepresentable {
 
         // Annotation Callback
         context.coordinator.drawer.onAnnotationDrawingCompleted = {
-           // print("U>> On ANnotation completed")
+            // print("U>> On ANnotation completed")
             context.coordinator.actions?.notifyAnnotationEditingFinished()
         }
 
@@ -137,29 +126,36 @@ struct PDFKitView: UIViewRepresentable {
         weak var actions: PDFKitViewActions?
 
         var lastPageIndex: Int?
-        private var pageRefreshTimer: RepeatingTimer?
+        //  private var pageRefreshTimer: RepeatingTimer?
+        private var timerPublisher: AnyCancellable?
 
         override init() {
             super.init()
         }
 
         func startPollingPageChanges() {
-            pageRefreshTimer?.stop()
+            // Cancel existing timer
+            timerPublisher?.cancel()
 
-            pageRefreshTimer = RepeatingTimer(interval: 0.1) { [weak self] in
-                guard let self = self else { return }
-                let currentIndex = getCurrentPageNumber() ?? 0
-                if currentIndex != self.lastPageIndex {
-                    self.lastPageIndex = currentIndex
-                    // 🔁 Debounced page notification
-                    self.actions?.notifyPageChange(currentIndex + 1)
+            // Start a new Combine timer
+            timerPublisher = Timer.publish(every: 0.1, on: .main, in: .common)
+                .autoconnect()
+                .map { [weak self] _ -> Int? in
+                    guard let self = self else { return nil }
+                    return self.getCurrentPageNumber()
                 }
-            }
-            pageRefreshTimer?.start()
+                .compactMap { $0 } // Remove nils
+                .removeDuplicates() // Only emit when the page changes
+                .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+                .sink { [weak self] currentIndex in
+                    guard let self = self else { return }
+                    self.lastPageIndex = currentIndex
+                    self.actions?.notifyPageChange(currentIndex)
+                }
         }
 
         func stopPolling() {
-            pageRefreshTimer?.stop()
+            timerPublisher?.cancel()
         }
 
         deinit {
