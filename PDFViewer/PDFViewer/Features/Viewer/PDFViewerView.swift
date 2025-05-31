@@ -10,18 +10,15 @@ import PDFKit
 import SwiftUI
 
 struct PDFViewerView: View {
-   
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var drawingToolManager: DrawingToolManager
     @StateObject private var viewModel: PDFViewerViewModel
-    
 
     init(pdfFile: PDFModelData) {
         let store = try? PDFLocalDataStore()
         let repo = PDFLocalRepositoryImpl(store: store!)
 
         _viewModel = StateObject(wrappedValue: PDFViewerViewModel(pdfFile: pdfFile, repository: repo))
-
     }
 
     var body: some View {
@@ -39,15 +36,11 @@ struct PDFViewerView: View {
             if viewModel.showControls {
                 overlayControls
             }
-            
+
             pageProgressText
         }
-        .onDisappear {
-            viewModel.stopTrackingProgress()
-           // viewModel.savePDFWithAnnotation()
-            //viewModel.updatePdfDataInDb()
-        }
-        .onAppear{
+
+        .onAppear {
             viewModel.startTrackingProgress()
             viewModel.goToPage()
         }
@@ -64,11 +57,7 @@ struct PDFViewerView: View {
             brightnessSettingsSheet
         }
     }
-    
-    
 }
-
-
 
 #Preview {
     NavigationStack {
@@ -191,7 +180,7 @@ extension PDFViewerView {
     }
 }
 
-extension PDFViewerView{
+extension PDFViewerView {
     var pageProgressText: some View {
         VStack {
             Spacer()
@@ -210,9 +199,7 @@ extension PDFViewerView{
             .padding([.leading, .bottom], 12)
         }
     }
-
 }
-
 
 extension PDFViewerView {
     var annotationSettingsSheet: some View {

@@ -5,32 +5,38 @@
 //  Created by Habibur Rahman on 25/3/25.
 //
 
+import Combine
 import PDFKit
 import SwiftUI
-import Combine
 
 class PDFKitViewActions: ObservableObject {
     fileprivate var coordinator: PDFKitView.Coordinator?
-    
+
     fileprivate let pageChangeSubject = PassthroughSubject<Int, Never>()
+    fileprivate let annotationEditFinishedPublisher = PassthroughSubject<Void, Never>()
     private var cancellables = Set<AnyCancellable>()
-    
+
     var onPageChanged: ((Int) -> Void)?
-    var onAnnotationChanged: (() -> Void)?
+    var onAnnotationEditFinished: (() -> Void)?
 
-    
     init() {
-           // Debounced publisher
-           pageChangeSubject
-               .removeDuplicates() // Only emit when the page actually changes
-               .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
-               .sink { [weak self] pageNumber in
-                   self?.onPageChanged?(pageNumber)
-               }
-               .store(in: &cancellables)
-       }
+        // Debounced publisher
+        pageChangeSubject
+            .removeDuplicates() // Only emit when the page actually changes
+            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+            .sink { [weak self] pageNumber in
+                self?.onPageChanged?(pageNumber)
+            }
+            .store(in: &cancellables)
 
-    
+        annotationEditFinishedPublisher
+            .debounce(for: .milliseconds(2000), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.onAnnotationEditFinished?()
+            }
+            .store(in: &cancellables)
+    }
+
     func saveAnnotatedPDFInBackground(to url: URL, completion: @escaping (Bool) -> Void) {
         coordinator?.saveAnnotatedPDF(to: url, completion: completion)
     }
@@ -50,11 +56,14 @@ class PDFKitViewActions: ObservableObject {
     func getTotalPageNumber() -> Int? {
         return coordinator?.getTotalPageNumber()
     }
-    
-   
-       func notifyPageChange(_ page: Int) {
-           pageChangeSubject.send(page)
-       }
+
+    func notifyPageChange(_ page: Int) {
+        pageChangeSubject.send(page)
+    }
+
+    func notifyAnnotationEditingFinished() {
+        annotationEditFinishedPublisher.send()
+    }
 }
 
 struct PDFKitView: UIViewRepresentable {
@@ -79,6 +88,12 @@ struct PDFKitView: UIViewRepresentable {
         pdfView.addGestureRecognizer(context.coordinator.gestureRecognizer!)
         context.coordinator.pdfView = pdfView
 
+        // Annotation Callback
+        context.coordinator.drawer.onAnnotationDrawingCompleted = {
+           // print("U>> On ANnotation completed")
+            context.coordinator.actions?.notifyAnnotationEditingFinished()
+        }
+
         // ✅ Connect the coordinator to actions
         actions.coordinator = context.coordinator
         context.coordinator.actions = actions
@@ -90,7 +105,7 @@ struct PDFKitView: UIViewRepresentable {
     }
 
     func updateUIView(_ pdfView: PDFView, context: Context) {
-       // print("P>> Update Ui View ")
+        // print("P>> Update Ui View ")
         // If the PDF has changed, reload it
         if pdfView.document?.documentURL != pdfURL {
             pdfView.document = PDFDocument(url: pdfURL)
@@ -154,7 +169,7 @@ struct PDFKitView: UIViewRepresentable {
         func saveAnnotatedPDF(to url: URL, completion: @escaping (Bool) -> Void) {
             DispatchQueue.global(qos: .userInitiated).async {
                 guard let document = self.pdfView?.document else {
-                   // print("No PDF document found in PDFView")
+                    // print("No PDF document found in PDFView")
                     DispatchQueue.main.async {
                         completion(false)
                     }
@@ -165,9 +180,9 @@ struct PDFKitView: UIViewRepresentable {
 
                 DispatchQueue.main.async {
                     if success {
-                       // print("PDF saved successfully to \(url)")
+                        // print("PDF saved successfully to \(url)")
                     } else {
-                      // print("Failed to save PDF")
+                        // print("Failed to save PDF")
                     }
                     completion(success)
                 }

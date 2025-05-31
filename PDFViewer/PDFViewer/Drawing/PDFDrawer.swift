@@ -78,6 +78,8 @@ class PDFDrawer {
     func getAnnotationType() -> AnnotationTool {
         return annotationSetting.annotationTool
     }
+    
+    var onAnnotationDrawingCompleted : (() -> Void)?
 }
 
 extension PDFDrawer: DrawingGestureRecognizerDelegate {
@@ -125,6 +127,9 @@ extension PDFDrawer: DrawingGestureRecognizerDelegate {
         page.removeAnnotation(currentAnnotation!)
         _ = createFinalAnnotation(path: path!, page: page)
         currentAnnotation = nil
+        onAnnotationDrawingCompleted?()
+        
+        
     }
     
     private func createAnnotation(path: UIBezierPath, page: PDFPage) -> DrawingAnnotation {

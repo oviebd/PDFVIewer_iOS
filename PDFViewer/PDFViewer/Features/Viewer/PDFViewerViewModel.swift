@@ -105,10 +105,10 @@ extension PDFViewerViewModel {
             self?.preparePageProgressText()
             self?.saveLastOpenedPageNumberInDb()
         }
-    }
-
-    func stopTrackingProgress() {
-       // databaseRefresh?.stop()
+        
+        actions.onAnnotationEditFinished = { [weak self] in
+            self?.savePDFWithAnnotation()
+        }
     }
 
     func goToPage() {
