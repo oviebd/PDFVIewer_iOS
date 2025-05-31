@@ -7,11 +7,30 @@
 
 import PDFKit
 import SwiftUI
+import Combine
 
 class PDFKitViewActions: ObservableObject {
     fileprivate var coordinator: PDFKitView.Coordinator?
+    
+    fileprivate let pageChangeSubject = PassthroughSubject<Int, Never>()
+    private var cancellables = Set<AnyCancellable>()
+    
+    var onPageChanged: ((Int) -> Void)?
+    var onAnnotationChanged: (() -> Void)?
 
+    
+    init() {
+           // Debounced publisher
+           pageChangeSubject
+               .removeDuplicates() // Only emit when the page actually changes
+               .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
+               .sink { [weak self] pageNumber in
+                   self?.onPageChanged?(pageNumber)
+               }
+               .store(in: &cancellables)
+       }
 
+    
     func saveAnnotatedPDFInBackground(to url: URL, completion: @escaping (Bool) -> Void) {
         coordinator?.saveAnnotatedPDF(to: url, completion: completion)
     }
@@ -31,6 +50,11 @@ class PDFKitViewActions: ObservableObject {
     func getTotalPageNumber() -> Int? {
         return coordinator?.getTotalPageNumber()
     }
+    
+   
+       func notifyPageChange(_ page: Int) {
+           pageChangeSubject.send(page)
+       }
 }
 
 struct PDFKitView: UIViewRepresentable {
@@ -49,30 +73,24 @@ struct PDFKitView: UIViewRepresentable {
         pdfView.document = PDFDocument(url: pdfURL)
         applySettings(to: pdfView)
 
-        print("P>> Make Ui View ")
-        // Setup Drawer
         context.coordinator.drawer.pdfView = pdfView
-
-        // Gesture recognizer for drawing
-        let drawingGesture = DrawingGestureRecognizer()
-        drawingGesture.drawingDelegate = context.coordinator.drawer
-        pdfView.addGestureRecognizer(drawingGesture)
-
-        // Save references
-        context.coordinator.gestureRecognizer = drawingGesture
+        context.coordinator.gestureRecognizer = DrawingGestureRecognizer()
+        context.coordinator.gestureRecognizer?.drawingDelegate = context.coordinator.drawer
+        pdfView.addGestureRecognizer(context.coordinator.gestureRecognizer!)
         context.coordinator.pdfView = pdfView
 
-        // 👇 Connect the coordinator to actions
+        // ✅ Connect the coordinator to actions
         actions.coordinator = context.coordinator
+        context.coordinator.actions = actions
+
+        // Start polling and assign the callback
+        context.coordinator.startPollingPageChanges()
 
         return pdfView
     }
 
     func updateUIView(_ pdfView: PDFView, context: Context) {
-        // Reload PDF when the URL changes
-        // let currentPage = pdfView.currentPage
-
-        print("P>> Update Ui View ")
+       // print("P>> Update Ui View ")
         // If the PDF has changed, reload it
         if pdfView.document?.documentURL != pdfURL {
             pdfView.document = PDFDocument(url: pdfURL)
@@ -97,17 +115,46 @@ struct PDFKitView: UIViewRepresentable {
 
     // MARK: - Coordinator Keeps Objects Alive
 
-    class Coordinator: NSObject, PDFViewDelegate {
-
+    class Coordinator: NSObject {
         let drawer = PDFDrawer()
         var gestureRecognizer: DrawingGestureRecognizer?
         var pdfView: PDFView?
+        weak var actions: PDFKitViewActions?
 
+        var lastPageIndex: Int?
+        private var pageRefreshTimer: RepeatingTimer?
+
+        override init() {
+            super.init()
+        }
+
+        func startPollingPageChanges() {
+            pageRefreshTimer?.stop()
+
+            pageRefreshTimer = RepeatingTimer(interval: 0.1) { [weak self] in
+                guard let self = self else { return }
+                let currentIndex = getCurrentPageNumber() ?? 0
+                if currentIndex != self.lastPageIndex {
+                    self.lastPageIndex = currentIndex
+                    // 🔁 Debounced page notification
+                    self.actions?.notifyPageChange(currentIndex + 1)
+                }
+            }
+            pageRefreshTimer?.start()
+        }
+
+        func stopPolling() {
+            pageRefreshTimer?.stop()
+        }
+
+        deinit {
+            stopPolling()
+        }
 
         func saveAnnotatedPDF(to url: URL, completion: @escaping (Bool) -> Void) {
             DispatchQueue.global(qos: .userInitiated).async {
                 guard let document = self.pdfView?.document else {
-                    print("No PDF document found in PDFView")
+                   // print("No PDF document found in PDFView")
                     DispatchQueue.main.async {
                         completion(false)
                     }
@@ -118,9 +165,9 @@ struct PDFKitView: UIViewRepresentable {
 
                 DispatchQueue.main.async {
                     if success {
-                        print("PDF saved successfully to \(url)")
+                       // print("PDF saved successfully to \(url)")
                     } else {
-                        print("Failed to save PDF")
+                      // print("Failed to save PDF")
                     }
                     completion(success)
                 }

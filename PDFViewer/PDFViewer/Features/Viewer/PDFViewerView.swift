@@ -44,8 +44,8 @@ struct PDFViewerView: View {
         }
         .onDisappear {
             viewModel.stopTrackingProgress()
-            viewModel.savePDFWithAnnotation()
-            viewModel.updatePdfDataInDb()
+           // viewModel.savePDFWithAnnotation()
+            //viewModel.updatePdfDataInDb()
         }
         .onAppear{
             viewModel.startTrackingProgress()

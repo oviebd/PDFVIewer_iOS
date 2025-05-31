@@ -26,8 +26,8 @@ class PDFViewerViewModel: ObservableObject {
     private var repository: PDFRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
 
-    private var databaseRefresh: RepeatingTimer?
-    private var pageRefreshTimer: RepeatingTimer?
+//    private var databaseRefresh: RepeatingTimer?
+    //  private var pageRefreshTimer: RepeatingTimer?
     //   @State private var timerCancellable: AnyCancellable?
 
     init(pdfFile: PDFModelData, repository: PDFRepositoryProtocol) {
@@ -77,10 +77,16 @@ class PDFViewerViewModel: ObservableObject {
 
 // Db
 extension PDFViewerViewModel {
-    func updatePdfDataInDb() {
-        pdfData.lastOpenedPage = actions.getCurrentPageNumber() ?? 0
+    func updateLastOpenedtime() {
         pdfData.lastOpenTime = Date()
         saveToDB()
+    }
+
+    func saveLastOpenedPageNumberInDb() {
+        if let lastOpenedPageNumber = actions.getCurrentPageNumber() {
+            pdfData.lastOpenedPage = lastOpenedPageNumber
+            saveToDB()
+        }
     }
 
     func saveToDB() {
@@ -95,24 +101,14 @@ extension PDFViewerViewModel {
 
 extension PDFViewerViewModel {
     func startTrackingProgress() {
-        pageRefreshTimer = RepeatingTimer(interval: 0.5) { [weak self] in
-            guard let self = self else { return }
-            self.preparePageProgressText()
+        actions.onPageChanged = { [weak self] _ in
+            self?.preparePageProgressText()
+            self?.saveLastOpenedPageNumberInDb()
         }
-        pageRefreshTimer?.start()
-
-        databaseRefresh = RepeatingTimer(interval: 10.0) { [weak self] in
-            guard let self = self else { return }
-            self.updatePdfDataInDb()
-            self.savePDFWithAnnotation()
-        }
-        
-        databaseRefresh?.start()
     }
 
     func stopTrackingProgress() {
-        databaseRefresh?.stop()
-        pageRefreshTimer?.stop()
+       // databaseRefresh?.stop()
     }
 
     func goToPage() {
