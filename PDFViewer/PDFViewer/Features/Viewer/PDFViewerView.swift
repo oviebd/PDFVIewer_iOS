@@ -196,7 +196,7 @@ extension PDFViewerView{
         VStack {
             Spacer()
             HStack {
-                Text(viewModel.getPageProgressText())
+                Text(viewModel.pageProgressText)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.black)
                     .padding(.horizontal, 8)

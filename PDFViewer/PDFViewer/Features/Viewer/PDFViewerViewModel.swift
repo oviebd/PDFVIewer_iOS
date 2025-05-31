@@ -21,11 +21,13 @@ class PDFViewerViewModel: ObservableObject {
     @Published var actions = PDFKitViewActions()
     @Published var settings = PDFSettings()
     @Published var displayBrightness: CGFloat = 100
+    @Published var pageProgressText: String = ""
 
     private var repository: PDFRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
 
-    private var timer: RepeatingTimer?
+    private var databaseRefresh: RepeatingTimer?
+    private var pageRefreshTimer: RepeatingTimer?
     //   @State private var timerCancellable: AnyCancellable?
 
     init(pdfFile: PDFModelData, repository: PDFRepositoryProtocol) {
@@ -49,7 +51,6 @@ class PDFViewerViewModel: ObservableObject {
         zoomScale = max(zoomScale - 0.2, 0.5)
         actions.setZoomScale(scaleFactor: zoomScale)
     }
-    
 
     func savePDFWithAnnotation() {
         actions.saveAnnotatedPDFInBackground(to: currentPDF) { success in
@@ -59,29 +60,29 @@ class PDFViewerViewModel: ObservableObject {
                 // Show failure UI or retry option
             }
         }
-      //  _ = actions.saveAnnotedPdf(url: currentPDF)
+        //  _ = actions.saveAnnotedPdf(url: currentPDF)
     }
 
     func getBrightnessOpacity() -> CGFloat {
         let bifgtnessPercentage: CGFloat = displayBrightness / 100
         return 1.0 - bifgtnessPercentage
     }
-    
-    func getPageProgressText() -> String {
+
+    func preparePageProgressText() {
         let currentPage = actions.getCurrentPageNumber() ?? 0
         let totalPageCount = actions.getTotalPageNumber() ?? 0
-        return  "\(currentPage)/\(totalPageCount)"
+        pageProgressText = "\(currentPage)/\(totalPageCount)"
     }
 }
 
 // Db
 extension PDFViewerViewModel {
-    
-    func updatePdfDataInDb(){
+    func updatePdfDataInDb() {
         pdfData.lastOpenedPage = actions.getCurrentPageNumber() ?? 0
         pdfData.lastOpenTime = Date()
         saveToDB()
     }
+
     func saveToDB() {
         repository.update(updatedPdfData: pdfData)
             .receive(on: DispatchQueue.main)
@@ -90,27 +91,31 @@ extension PDFViewerViewModel {
             })
             .store(in: &cancellables)
     }
-    
 }
 
 extension PDFViewerViewModel {
-    
     func startTrackingProgress() {
-        timer = RepeatingTimer(interval: 10.0) { [weak self] in
+        pageRefreshTimer = RepeatingTimer(interval: 0.5) { [weak self] in
+            guard let self = self else { return }
+            self.preparePageProgressText()
+        }
+        pageRefreshTimer?.start()
+
+        databaseRefresh = RepeatingTimer(interval: 10.0) { [weak self] in
             guard let self = self else { return }
             self.updatePdfDataInDb()
             self.savePDFWithAnnotation()
-           
         }
-        timer?.start()
+        
+        databaseRefresh?.start()
     }
 
     func stopTrackingProgress() {
-        timer?.stop()
+        databaseRefresh?.stop()
+        pageRefreshTimer?.stop()
     }
 
     func goToPage() {
         actions.goPage(pageNumber: pdfData.lastOpenedPage)
     }
-
 }
