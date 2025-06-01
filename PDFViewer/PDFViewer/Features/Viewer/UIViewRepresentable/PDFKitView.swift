@@ -128,6 +128,8 @@ struct PDFKitView: UIViewRepresentable {
         var lastPageIndex: Int?
         //  private var pageRefreshTimer: RepeatingTimer?
         private var timerPublisher: AnyCancellable?
+        
+        private let pdfSaveQueue = DispatchQueue(label: "com.yourapp.pdfSaveQueue")
 
         override init() {
             super.init()
@@ -162,28 +164,50 @@ struct PDFKitView: UIViewRepresentable {
             stopPolling()
         }
 
+        
         func saveAnnotatedPDF(to url: URL, completion: @escaping (Bool) -> Void) {
-            DispatchQueue.global(qos: .userInitiated).async {
-                guard let document = self.pdfView?.document else {
-                    // print("No PDF document found in PDFView")
+            pdfSaveQueue.async {
+                guard let pdfView = self.pdfView,
+                      let document = pdfView.document else {
                     DispatchQueue.main.async {
                         completion(false)
                     }
                     return
                 }
 
+                // Keep a strong reference during save
+                _ = pdfView.bounds
+
                 let success = document.write(to: url)
 
                 DispatchQueue.main.async {
-                    if success {
-                        // print("PDF saved successfully to \(url)")
-                    } else {
-                        // print("Failed to save PDF")
-                    }
                     completion(success)
                 }
             }
         }
+        
+//        func saveAnnotatedPDF(to url: URL, completion: @escaping (Bool) -> Void) {
+//            DispatchQueue.global(qos: .userInitiated).async {
+//                guard let document = self.pdfView?.document else {
+//                    // print("No PDF document found in PDFView")
+//                    DispatchQueue.main.async {
+//                        completion(false)
+//                    }
+//                    return
+//                }
+//
+//                let success = document.write(to: url)
+//
+//                DispatchQueue.main.async {
+//                    if success {
+//                        // print("PDF saved successfully to \(url)")
+//                    } else {
+//                        // print("Failed to save PDF")
+//                    }
+//                    completion(success)
+//                }
+//            }
+//        }
 
         func setZoomSscale(scaleFactor: CGFloat) {
             pdfView?.scaleFactor = scaleFactor

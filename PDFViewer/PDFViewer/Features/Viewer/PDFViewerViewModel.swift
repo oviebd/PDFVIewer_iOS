@@ -106,7 +106,7 @@ extension PDFViewerViewModel {
         }
         
         actions.onAnnotationEditFinished = { [weak self] in
-            self?.savePDFWithAnnotation()
+             self?.savePDFWithAnnotation()
         }
     }
 
