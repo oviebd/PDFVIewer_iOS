@@ -10,7 +10,10 @@ import CryptoKit
 import Foundation
 
 final class PDFListViewModel: ObservableObject {
-    @Published var pdfModels: [PDFModelData] = []
+    
+    @Published var selectedSortOption: PDFSortOption = .all
+    @Published var allPdfModels: [PDFModelData] = []
+    @Published var visiblePdfModels: [PDFModelData] = []
 
     private var repository: PDFRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
@@ -28,7 +31,8 @@ final class PDFListViewModel: ObservableObject {
         return repository.retrieve()
             .receive(on: DispatchQueue.main)
             .handleEvents(receiveOutput: { [weak self] models in
-                self?.pdfModels = models
+                self?.allPdfModels = models
+                self?.updateSortOption(.all)
             }, receiveCompletion: { [weak self] completion in
                 self?.isLoading = false
                 if case let .failure(error) = completion {
@@ -55,8 +59,8 @@ final class PDFListViewModel: ObservableObject {
     }
 
     private func UpdatePdfList(updatedModel: PDFModelData) {
-        if let index = pdfModels.firstIndex(where: { $0.key == updatedModel.key }) {
-            pdfModels[index] = updatedModel
+        if let index = allPdfModels.firstIndex(where: { $0.key == updatedModel.key }) {
+            allPdfModels[index] = updatedModel
         }
     }
 
@@ -92,14 +96,16 @@ final class PDFListViewModel: ObservableObject {
 
     func deletePdf(indexSet: IndexSet) {
         if let index = indexSet.first {
-            let pdfToDelete = pdfModels[index]
+            
+            let pdfToDelete = visiblePdfModels[index]
 
             repository.delete(pdfKey: pdfToDelete.key)
                 .receive(on: DispatchQueue.main)
                 .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] isSuccess in
 
                     if isSuccess {
-                        self?.pdfModels.remove(at: index)
+                        self?.visiblePdfModels.remove(at: index)
+                        self?.allPdfModels.removeAll { $0.key == pdfToDelete.key }
                     }
                 })
                 .store(in: &cancellables)
@@ -120,8 +126,34 @@ final class PDFListViewModel: ObservableObject {
     }
 }
 
+extension PDFListViewModel {
+    
+    func updateSortOption(_ option: PDFSortOption) {
+        selectedSortOption = option
+        applySorting(option)
+    }
+
+    private func applySorting(_ option: PDFSortOption) {
+        switch option {
+        case .all:
+            // Load all PDFs
+           visiblePdfModels  = allPdfModels
+        case .favorite:
+            visiblePdfModels = allPdfModels.filter { $0.isFavorite }
+        case .recent:
+            visiblePdfModels = getRecentFiles()
+        }
+    }
+    
+    func getRecentFiles() -> [PDFModelData] {
+        allPdfModels.sorted(by: { $0.lastOpenTime ?? .distantPast > $1.lastOpenTime ?? .distantPast })
+    }
+}
+
 extension PDFModelData {
     func toggleFavorite() {
         return isFavorite.toggle()
     }
 }
+
+

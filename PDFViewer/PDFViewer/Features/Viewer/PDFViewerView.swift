@@ -41,6 +41,7 @@ struct PDFViewerView: View {
         }
 
         .onAppear {
+            viewModel.updateLastOpenedtime()
             viewModel.startTrackingProgress()
             viewModel.goToPage()
         }

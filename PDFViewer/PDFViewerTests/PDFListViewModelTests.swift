@@ -44,7 +44,7 @@ final class PDFListViewModelTests: XCTestCase {
             }, receiveValue: { [weak self] models in
                
                 XCTAssertEqual(models, expectedPDFs)
-                XCTAssertEqual(self?.viewModel.pdfModels, expectedPDFs)
+                XCTAssertEqual(self?.viewModel.allPdfModels, expectedPDFs)
                 expectation.fulfill()
             })
             .store(in: &cancellables)
@@ -73,7 +73,7 @@ final class PDFListViewModelTests: XCTestCase {
                     XCTFail("Expected success, got failure: \(error)")
                 }
             }, receiveValue: { [weak viewModel] _ in
-                XCTAssertEqual(viewModel?.pdfModels, expectedPDFs)
+                XCTAssertEqual(viewModel?.allPdfModels, expectedPDFs)
                 expectation.fulfill()
             })
             .store(in: &cancellables)
@@ -85,7 +85,7 @@ final class PDFListViewModelTests: XCTestCase {
         // Arrange
         let firstPDF = createPDFModelData(key: "key_1", isFavorite: false)
         let secondPDF = createPDFModelData(key: "key_2", isFavorite: false)
-        viewModel.pdfModels = [firstPDF, secondPDF]
+        viewModel.allPdfModels = [firstPDF, secondPDF]
 
         var expectedUpdatedPDF = firstPDF
         expectedUpdatedPDF.toggleFavorite()
@@ -98,7 +98,7 @@ final class PDFListViewModelTests: XCTestCase {
 
         // Assert
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            XCTAssertEqual(self.viewModel.pdfModels, [expectedUpdatedPDF, secondPDF])
+            XCTAssertEqual(self.viewModel.allPdfModels, [expectedUpdatedPDF, secondPDF])
             expectation.fulfill()
         }
 

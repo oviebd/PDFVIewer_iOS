@@ -99,6 +99,7 @@ extension PDFViewerViewModel {
 extension PDFViewerViewModel {
    
     func startTrackingProgress() {
+        
         actions.onPageChanged = { [weak self] _ in
             self?.preparePageProgressText()
             self?.saveLastOpenedPageNumberInDb()
