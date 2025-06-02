@@ -9,6 +9,8 @@ import Combine
 import PDFKit
 import SwiftUI
 
+
+
 struct PDFViewerView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var drawingToolManager: DrawingToolManager
@@ -25,20 +27,32 @@ struct PDFViewerView: View {
         ZStack {
             Color(.systemGray6).edgesIgnoringSafeArea(.all)
 
-            pdfContent
+            VStack(spacing : 0){
+                if viewModel.showControls {
+                    annotationControls
+                        .transition(.move(edge: .top))
+                }
+                pdfContent
+            }
+          
             readingOverlay
 
             Color.black
                 .opacity(viewModel.getBrightnessOpacity())
                 .edgesIgnoringSafeArea(.all)
                 .allowsHitTesting(false)
-
-            if viewModel.showControls {
-                overlayControls
-            }
+//
+//            if viewModel.showControls {
+//                overlayControls
+//            }
 
             pageProgressText
         }
+        .ignoresSafeArea(.container, edges: viewModel.showControls ? .bottom : .all)
+        .animation(.easeInOut(duration: 0.3), value: viewModel.showControls)
+
+        
+       
 
         .onAppear {
             viewModel.updateLastOpenedtime()
@@ -93,14 +107,12 @@ extension PDFViewerView {
         }
     }
 
-    var overlayControls: some View {
-        VStack(spacing: 0) {
-            Color.clear.frame(height: 0)
-            annotationControls
-            Spacer()
-            floatingButtons
-        }
-    }
+//    var overlayControls: some View {
+//        VStack(spacing: 0) {
+//            Spacer()
+//            floatingButtons
+//        }
+//    }
 }
 
 extension PDFViewerView {
@@ -140,25 +152,34 @@ extension PDFViewerView {
         }
         .padding()
         .background(Color.white)
-        .shadow(radius: 4)
+       // .shadow(radius: 4)
+        .overlay(
+              Rectangle()
+                  .fill(Color.black.opacity(0.15))
+                  .frame(height: 4)
+                  .blur(radius: 4)
+                  .offset(y: 2),
+              alignment: .bottom
+          )
     }
 
-    var floatingButtons: some View {
-        HStack {
-            Spacer()
-            VStack(spacing: 16) {
-                ControlButton(systemName: "minus.magnifyingglass", action: viewModel.zoomOut)
-                ControlButton(systemName: "plus.magnifyingglass", action: viewModel.zoomIn)
-                ControlButton(systemName: "square.and.arrow.down", color: .green, foreground: .white, action: viewModel.savePDFWithAnnotation)
-            }
-            .padding()
-        }
-    }
+//    var floatingButtons: some View {
+//        HStack {
+//            Spacer()
+//            VStack(spacing: 16) {
+//                ControlButton(systemName: "minus.magnifyingglass", action: viewModel.zoomOut)
+//                ControlButton(systemName: "plus.magnifyingglass", action: viewModel.zoomIn)
+//                ControlButton(systemName: "square.and.arrow.down", color: .green, foreground: .white, action: viewModel.savePDFWithAnnotation)
+//            }
+//            .padding()
+//        }
+//    }
 
     @ToolbarContentBuilder
     func toolbarContent() -> some ToolbarContent {
         ToolbarItem(placement: .principal) {
             Text(viewModel.pdfData.title ?? "Unknown file").font(.headline)
+                .foregroundStyle(Color.black)
         }
 
         ToolbarItem(placement: .navigationBarTrailing) {
