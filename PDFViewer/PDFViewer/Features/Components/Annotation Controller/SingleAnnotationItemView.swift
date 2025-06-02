@@ -7,13 +7,11 @@
 
 import SwiftUI
 
-
 struct SingleAnnotationItemView: View {
-
     @EnvironmentObject var drawingToolManager: DrawingToolManager
-    
+
     var itemAnnotationSetting: PDFAnnotationSetting
-   
+
     var onDrawingToolSelected: ((PDFAnnotationSetting) -> Void)?
     var onPalettePressed: ((PDFAnnotationSetting) -> Void)?
 
@@ -28,8 +26,8 @@ struct SingleAnnotationItemView: View {
             }) {
                 ZStack {
                     Circle()
-                        .fill(isSelected ? getSelectedColor().opacity(0.3) : Color.clear)
-                        .frame(width: 32, height: 32)
+                        .fill(Color.gray.opacity(0.1))
+                        .frame(width: 25, height: 25)
                         .overlay(
                             Circle()
                                 .stroke(getSelectedColor(), lineWidth: isSelected ? 3 : 1)
@@ -48,22 +46,23 @@ struct SingleAnnotationItemView: View {
                 Button(action: {
                     onPalettePressed?(itemAnnotationSetting)
                 }) {
-                    Circle()
-                        .frame(width: 28, height: 28)
-                        .foregroundColor(.blue)
-                        .overlay(
-                            Image(systemName: "paintpalette.fill")
-                                .font(.system(size: 14))
-                                .foregroundColor(.white)
-                        )
+                    ZStack {
+                        Circle()
+                            .fill(Color.gray)
+                        Image(systemName: "paintpalette.fill") //
+                            .resizable()
+                            .scaledToFit()
+                            .padding(5)
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 25, height: 25)
                 }
                 .transition(.scale.combined(with: .opacity))
             }
         }
         .padding(4)
     }
-   
-    
+
     func isExpandable() -> Bool {
         itemAnnotationSetting.isExpandable
     }
@@ -72,9 +71,9 @@ struct SingleAnnotationItemView: View {
         Color(itemAnnotationSetting.color)
     }
 }
+
 //
 #Preview {
- 
     SingleAnnotationItemView(itemAnnotationSetting: .dummyData())
         .environmentObject(DrawingToolManager.dummyData())
         .background(Color.white)
