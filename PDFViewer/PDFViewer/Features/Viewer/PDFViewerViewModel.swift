@@ -11,7 +11,7 @@ import SwiftUI
 
 class PDFViewerViewModel: ObservableObject {
     @Published var pdfData: PDFModelData
-    @Published var currentPDF: URL
+    @Published var currentPDF: URL?
     @Published var annotationSettingData: PDFAnnotationSetting = .noneData()
     @Published var zoomScale: CGFloat = 1.0
     @Published var readingMode: ReadingMode = .normal
@@ -29,9 +29,31 @@ class PDFViewerViewModel: ObservableObject {
 
     init(pdfFile: PDFModelData, repository: PDFRepositoryProtocol) {
         pdfData = pdfFile
-        currentPDF = URL(string: pdfFile.urlPath ?? "")!
+        
+        if let url = pdfFile.resolveSecureURL() {
+            currentPDF = url
+           // let document = PDFDocument(url: url)
+            // Do something with the document
+          /*  url.stopAccessingSecurityScopedResource()*/ // Don't forget this!
+        }
+        
+      //  currentPDF = URL(string: pdfFile.urlPath ?? "")!
         self.repository = repository
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.unloadPdfData()
+        }
     }
+    
+    deinit {
+        cancellables.removeAll()
+    }
+    
+    func unloadPdfData(){
+        currentPDF?.stopAccessingSecurityScopedResource()
+        cancellables.removeAll()
+    }
+    
 
     func updateAnnotationSetting(_ setting: PDFAnnotationSetting, manager: DrawingToolManager) {
         annotationSettingData = setting
@@ -50,7 +72,8 @@ class PDFViewerViewModel: ObservableObject {
     }
 
     func savePDFWithAnnotation() {
-        actions.saveAnnotatedPDFInBackground(to: currentPDF) { success in
+        guard let currentPDF = currentPDF else { return }
+        actions.saveAnnotatedPDFInBackground(to: currentPDF) {[weak self] success in
             if success {
                 // Show success UI or alert
             } else {

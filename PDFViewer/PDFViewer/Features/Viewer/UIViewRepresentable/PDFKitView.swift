@@ -56,7 +56,7 @@ class PDFKitViewActions: ObservableObject {
 }
 
 struct PDFKitView: UIViewRepresentable {
-    @Binding var pdfURL: URL
+    var pdfURL: URL
     @ObservedObject var settings: PDFSettings
     @Binding var mode: PDFAnnotationSetting
 
@@ -65,6 +65,7 @@ struct PDFKitView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator {
         Coordinator()
     }
+    
 
     func makeUIView(context: Context) -> PDFView {
         let pdfView = PDFView()
@@ -134,6 +135,7 @@ struct PDFKitView: UIViewRepresentable {
         override init() {
             super.init()
         }
+        
 
         func startPollingPageChanges() {
             // Cancel existing timer
@@ -165,6 +167,8 @@ struct PDFKitView: UIViewRepresentable {
         }
 
         
+        
+        
         func saveAnnotatedPDF(to url: URL, completion: @escaping (Bool) -> Void) {
             pdfSaveQueue.async {
                 guard let pdfView = self.pdfView,
@@ -176,7 +180,7 @@ struct PDFKitView: UIViewRepresentable {
                 }
 
                 // Keep a strong reference during save
-                _ = pdfView.bounds
+              //  _ = pdfView.bounds
 
                 let success = document.write(to: url)
 

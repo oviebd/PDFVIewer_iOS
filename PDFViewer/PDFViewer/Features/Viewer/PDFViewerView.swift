@@ -21,6 +21,7 @@ struct PDFViewerView: View {
         let repo = PDFLocalRepositoryImpl(store: store!)
 
         _viewModel = StateObject(wrappedValue: PDFViewerViewModel(pdfFile: pdfFile, repository: repo))
+
     }
 
     var body: some View {
@@ -41,10 +42,6 @@ struct PDFViewerView: View {
                 .opacity(viewModel.getBrightnessOpacity())
                 .edgesIgnoringSafeArea(.all)
                 .allowsHitTesting(false)
-//
-//            if viewModel.showControls {
-//                overlayControls
-//            }
 
             pageProgressText
         }
@@ -60,7 +57,9 @@ struct PDFViewerView: View {
             viewModel.goToPage()
         }
         .onDisappear{
+            viewModel.unloadPdfData()
             drawingToolManager.selectePdfdSetting = .noneData()
+            
         }
 
         .navigationBarTitleDisplayMode(.inline)
@@ -86,18 +85,27 @@ struct PDFViewerView: View {
 
 extension PDFViewerView {
     var pdfContent: some View {
-        PDFKitView(
-            pdfURL: $viewModel.currentPDF,
-            settings: viewModel.settings,
-            mode: $viewModel.annotationSettingData,
-            actions: viewModel.actions
-        )
-        .onTapGesture {
-            if viewModel.annotationSettingData.annotationTool == .none {
-                withAnimation { viewModel.showControls.toggle() }
+        Group {
+            if let currentPDFURL = viewModel.currentPDF {
+                PDFKitView(
+                    pdfURL: currentPDFURL,
+                    settings: viewModel.settings,
+                    mode: $viewModel.annotationSettingData,
+                    actions: viewModel.actions
+                )
+                .onTapGesture {
+                    if viewModel.annotationSettingData.annotationTool == .none {
+                        withAnimation {
+                            viewModel.showControls.toggle()
+                        }
+                    }
+                }
+            } else {
+                Text("No data")
             }
         }
     }
+
 
     var readingOverlay: some View {
         Group {

@@ -53,22 +53,45 @@ extension PDFModelData: Equatable, Hashable {
 }
 
 extension PDFModelData {
-    private func decomposeBookmarkData() {
-        var isStale = false
-        guard let bookmarkData = bookmarkData,
-              let url = try? URL(resolvingBookmarkData: bookmarkData, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale) else { return }
-
-        urlPath = url.absoluteString
-        guard let document = PDFDocument(url: url) else {
+    
+    func decomposeBookmarkData() {
+        guard let url = resolveSecureURL() else {
             return
         }
+        defer { url.stopAccessingSecurityScopedResource() }
 
+        
+        guard let document = PDFDocument(url: url) else {
+            print("Failed to open PDFDocument.")
+            return
+        }
+        urlPath = url.absoluteString
+        
         let page = document.page(at: 0)
         thumbImage = page?.thumbnail(of: CGSize(width: 100, height: 140), for: .cropBox)
         totalPageCount = document.pageCount
         author = document.documentAttributes?[PDFDocumentAttribute.authorAttribute] as? String ?? "Unknown"
         title = document.documentAttributes?[PDFDocumentAttribute.titleAttribute] as? String ?? url.lastPathComponent
+
     }
+    
+    func resolveSecureURL() -> URL? {
+        guard let bookmarkData = bookmarkData else { return nil }
+        var isStale = false
+        do {
+            let url = try URL(resolvingBookmarkData: bookmarkData, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
+            if url.startAccessingSecurityScopedResource() {
+                return url
+            } else {
+                print("Failed to access security-scoped resource.")
+                return nil
+            }
+        } catch {
+            print("Error resolving bookmark: \(error)")
+            return nil
+        }
+    }
+
 }
 
 extension PDFModelData {

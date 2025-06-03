@@ -42,10 +42,10 @@ struct CustomSliderView: View {
                         .frame(width: 30, height: 30)
                         .foregroundColor(Color(iconColor))
                         .mask(
-                            Rectangle()
-                                .frame(height: CGFloat((currentValue - startValue) / (endValue - startValue)) * 30)
-                                .offset(y: (1 - CGFloat((currentValue - startValue) / (endValue - startValue))) * 15)
-                        )
+                        Rectangle()
+                            .frame(height: CGFloat(getProgress()) * 30)
+                            .offset(y: (1 - CGFloat(getProgress())) * 15)
+                    )
                 }
 
                 Slider(value: Binding(
@@ -62,6 +62,12 @@ struct CustomSliderView: View {
             }
         }
        // .padding()
+    }
+    
+    func getProgress ()-> CGFloat {
+        let progress = max(0, min(1, (endValue != startValue ? (currentValue - startValue) / (endValue - startValue) : 0)))
+
+       return progress
     }
 }
 
