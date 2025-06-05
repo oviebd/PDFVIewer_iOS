@@ -47,6 +47,7 @@ class PDFViewerViewModel: ObservableObject {
     
     deinit {
         cancellables.removeAll()
+        debugPrint("U>> Deinit PdfViewerViewModel")
     }
     
     func unloadPdfData(){

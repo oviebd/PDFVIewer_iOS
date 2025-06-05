@@ -164,6 +164,10 @@ final class PDFListViewModel: ObservableObject {
             return UUID().uuidString
         }
     }
+    
+    deinit{
+        cancellables.removeAll()
+    }
 }
 
 extension PDFListViewModel {

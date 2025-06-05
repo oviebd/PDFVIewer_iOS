@@ -10,7 +10,7 @@ import PDFKit
 import SwiftUI
 
 class PDFKitViewActions: ObservableObject {
-    fileprivate var coordinator: PDFKitView.Coordinator?
+    fileprivate weak var coordinator: PDFKitView.Coordinator?
     fileprivate let annotationEditFinishedPublisher = PassthroughSubject<Void, Never>()
     private var cancellables = Set<AnyCancellable>()
 
@@ -53,6 +53,10 @@ class PDFKitViewActions: ObservableObject {
     func notifyAnnotationEditingFinished() {
         annotationEditFinishedPublisher.send()
     }
+    
+    deinit{
+        cancellables.removeAll()
+    }
 }
 
 struct PDFKitView: UIViewRepresentable {
@@ -72,16 +76,21 @@ struct PDFKitView: UIViewRepresentable {
         pdfView.document = PDFDocument(url: pdfURL)
         applySettings(to: pdfView)
 
-        context.coordinator.drawer.pdfView = pdfView
+        context.coordinator.drawer?.pdfView = pdfView
         context.coordinator.gestureRecognizer = DrawingGestureRecognizer()
         context.coordinator.gestureRecognizer?.drawingDelegate = context.coordinator.drawer
         pdfView.addGestureRecognizer(context.coordinator.gestureRecognizer!)
         context.coordinator.pdfView = pdfView
 
         // Annotation Callback
-        context.coordinator.drawer.onAnnotationDrawingCompleted = {
-            // print("U>> On ANnotation completed")
-            context.coordinator.actions?.notifyAnnotationEditingFinished()
+//        context.coordinator.drawer.onAnnotationDrawingCompleted = {
+//            // print("U>> On ANnotation completed")
+//            context.coordinator.actions?.notifyAnnotationEditingFinished()
+//        }
+
+        
+        context.coordinator.drawer?.onAnnotationDrawingCompleted = { [weak coordinator = context.coordinator] in
+            coordinator?.actions?.notifyAnnotationEditingFinished()
         }
 
         // ✅ Connect the coordinator to actions
@@ -109,7 +118,7 @@ struct PDFKitView: UIViewRepresentable {
         }
 
         // ✅ Update the drawing tool and color here
-        context.coordinator.drawer.annotationSetting = mode
+        context.coordinator.drawer?.annotationSetting = mode
     }
 
     private func applySettings(to pdfView: PDFView) {
@@ -121,7 +130,7 @@ struct PDFKitView: UIViewRepresentable {
     // MARK: - Coordinator Keeps Objects Alive
 
     class Coordinator: NSObject {
-        let drawer = PDFDrawer()
+        var drawer :  PDFDrawer?
         var gestureRecognizer: DrawingGestureRecognizer?
         var pdfView: PDFView?
         weak var actions: PDFKitViewActions?
@@ -134,6 +143,7 @@ struct PDFKitView: UIViewRepresentable {
 
         override init() {
             super.init()
+            self.drawer = PDFDrawer()
         }
         
 
@@ -160,14 +170,13 @@ struct PDFKitView: UIViewRepresentable {
 
         func stopPolling() {
             timerPublisher?.cancel()
+            print("U>> timer deinit")
         }
 
         deinit {
             stopPolling()
+            drawer = nil
         }
-
-        
-        
         
         func saveAnnotatedPDF(to url: URL, completion: @escaping (Bool) -> Void) {
             pdfSaveQueue.async {

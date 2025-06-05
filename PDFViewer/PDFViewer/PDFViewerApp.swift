@@ -58,7 +58,7 @@ struct PDFViewerApp: App {
         WindowGroup {
             // PDFViewerView()
             PDFListView()
-                .environmentObject(drawingToolManager)
+            .environmentObject(drawingToolManager)
         }
     }
 }

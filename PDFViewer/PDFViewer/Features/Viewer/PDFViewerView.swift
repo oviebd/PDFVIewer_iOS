@@ -93,6 +93,7 @@ extension PDFViewerView {
                     mode: $viewModel.annotationSettingData,
                     actions: viewModel.actions
                 )
+             //   Text("No data")
                 .onTapGesture {
                     if viewModel.annotationSettingData.annotationTool == .none {
                         withAnimation {
