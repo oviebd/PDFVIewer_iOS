@@ -9,8 +9,6 @@ import Combine
 import PDFKit
 import SwiftUI
 
-
-
 struct PDFViewerView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var drawingToolManager: DrawingToolManager
@@ -21,21 +19,20 @@ struct PDFViewerView: View {
         let repo = PDFLocalRepositoryImpl(store: store!)
 
         _viewModel = StateObject(wrappedValue: PDFViewerViewModel(pdfFile: pdfFile, repository: repo))
-
     }
 
     var body: some View {
         ZStack {
             Color(.systemGray6).edgesIgnoringSafeArea(.all)
 
-            VStack(spacing : 0){
+            VStack(spacing: 0) {
                 if viewModel.showControls {
                     annotationControls
                         .transition(.move(edge: .top))
                 }
                 pdfContent
             }
-          
+
             readingOverlay
 
             Color.black
@@ -48,18 +45,14 @@ struct PDFViewerView: View {
         .ignoresSafeArea(.container, edges: viewModel.showControls ? .bottom : .all)
         .animation(.easeInOut(duration: 0.3), value: viewModel.showControls)
 
-        
-       
-
         .onAppear {
             viewModel.updateLastOpenedtime()
             viewModel.startTrackingProgress()
             viewModel.goToPage()
         }
-        .onDisappear{
+        .onDisappear {
             viewModel.unloadPdfData()
             drawingToolManager.selectePdfdSetting = .noneData()
-            
         }
 
         .navigationBarTitleDisplayMode(.inline)
@@ -74,6 +67,8 @@ struct PDFViewerView: View {
             brightnessSettingsSheet
         }
     }
+
+   
 }
 
 #Preview {
@@ -93,7 +88,7 @@ extension PDFViewerView {
                     mode: $viewModel.annotationSettingData,
                     actions: viewModel.actions
                 )
-             //   Text("No data")
+                //   Text("No data")
                 .onTapGesture {
                     if viewModel.annotationSettingData.annotationTool == .none {
                         withAnimation {
@@ -106,7 +101,6 @@ extension PDFViewerView {
             }
         }
     }
-
 
     var readingOverlay: some View {
         Group {
@@ -161,15 +155,15 @@ extension PDFViewerView {
         }
         .padding()
         .background(Color.white)
-       // .shadow(radius: 4)
+        // .shadow(radius: 4)
         .overlay(
-              Rectangle()
-                  .fill(Color.black.opacity(0.15))
-                  .frame(height: 4)
-                  .blur(radius: 4)
-                  .offset(y: 2),
-              alignment: .bottom
-          )
+            Rectangle()
+                .fill(Color.black.opacity(0.15))
+                .frame(height: 4)
+                .blur(radius: 4)
+                .offset(y: 2),
+            alignment: .bottom
+        )
     }
 
 //    var floatingButtons: some View {
@@ -194,10 +188,10 @@ extension PDFViewerView {
         ToolbarItem(placement: .navigationBarTrailing) {
             Menu {
                 Menu("Reading Mode") {
-                    Button("Normal") { viewModel.readingMode = .normal }
-                    Button("Sepia") { viewModel.readingMode = .sepia }
-                    Button("Night") { viewModel.readingMode = .night }
-                    Button("Eye Comfort") { viewModel.readingMode = .eyeComfort }
+                    Button("Normal") { viewModel.onReadingModeChanged(readingMode: .normal) }
+                    Button("Sepia") { viewModel.onReadingModeChanged(readingMode: .sepia) }
+                    Button("Night") { viewModel.onReadingModeChanged(readingMode: .night) }
+                    Button("Eye Comfort") { viewModel.onReadingModeChanged(readingMode: .eyeComfort) }
                 }
                 Divider()
                 Button("Horizontal Scroll") { viewModel.settings.displayDirection = .horizontal }

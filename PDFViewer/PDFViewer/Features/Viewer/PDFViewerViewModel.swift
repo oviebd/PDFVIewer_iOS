@@ -43,6 +43,11 @@ class PDFViewerViewModel: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             self.unloadPdfData()
         }
+        
+    //    UserDefaultsHelper.shared.savedBrightness = 0
+        readingMode = ReadingMode(rawValue: UserDefaultsHelper.shared.savedReadingMode ?? "") ?? .normal
+        displayBrightness = UserDefaultsHelper.shared.savedBrightness
+        print("U>> saved brightness \(displayBrightness)")
     }
     
     deinit {
@@ -55,6 +60,10 @@ class PDFViewerViewModel: ObservableObject {
         cancellables.removeAll()
     }
     
+    func onReadingModeChanged(readingMode: ReadingMode) {
+        UserDefaultsHelper.shared.savedReadingMode = readingMode.rawValue
+        self.readingMode = readingMode
+    }
 
     func updateAnnotationSetting(_ setting: PDFAnnotationSetting, manager: DrawingToolManager) {
         annotationSettingData = setting
@@ -85,8 +94,10 @@ class PDFViewerViewModel: ObservableObject {
     }
 
     func getBrightnessOpacity() -> CGFloat {
-        let bifgtnessPercentage: CGFloat = displayBrightness / 100
-        return 1.0 - bifgtnessPercentage
+        let brightnessPercentage: CGFloat = displayBrightness / 100
+        let brightness = 1.0  - brightnessPercentage
+        UserDefaultsHelper.shared.savedBrightness = displayBrightness
+        return brightness
     }
 
     func preparePageProgressText() {
