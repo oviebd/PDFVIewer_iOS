@@ -82,13 +82,6 @@ struct PDFKitView: UIViewRepresentable {
         pdfView.addGestureRecognizer(context.coordinator.gestureRecognizer!)
         context.coordinator.pdfView = pdfView
 
-        // Annotation Callback
-//        context.coordinator.drawer.onAnnotationDrawingCompleted = {
-//            // print("U>> On ANnotation completed")
-//            context.coordinator.actions?.notifyAnnotationEditingFinished()
-//        }
-
-        
         context.coordinator.drawer?.onAnnotationDrawingCompleted = { [weak coordinator = context.coordinator] in
             coordinator?.actions?.notifyAnnotationEditingFinished()
         }

@@ -193,14 +193,14 @@ extension PDFViewerView {
                     Button("Night") { viewModel.onReadingModeChanged(readingMode: .night) }
                     Button("Eye Comfort") { viewModel.onReadingModeChanged(readingMode: .eyeComfort) }
                 }
-                Divider()
-                Button("Horizontal Scroll") { viewModel.settings.displayDirection = .horizontal }
-                Button("Auto Scale") { viewModel.settings.autoScales = true }
-                Button("Load New PDF") {
-                    if let newURL = Bundle.main.url(forResource: "sample2", withExtension: "pdf") {
-                        viewModel.currentPDF = newURL
-                    }
-                }
+//                Divider()
+//                Button("Horizontal Scroll") { viewModel.settings.displayDirection = .horizontal }
+//                Button("Auto Scale") { viewModel.settings.autoScales = true }
+//                Button("Load New PDF") {
+//                    if let newURL = Bundle.main.url(forResource: "sample2", withExtension: "pdf") {
+//                        viewModel.currentPDF = newURL
+//                    }
+//                }
             } label: {
                 Image(systemName: "ellipsis.circle").imageScale(.large)
             }

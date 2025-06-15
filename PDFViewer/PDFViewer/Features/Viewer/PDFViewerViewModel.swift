@@ -47,7 +47,7 @@ class PDFViewerViewModel: ObservableObject {
     //    UserDefaultsHelper.shared.savedBrightness = 0
         readingMode = ReadingMode(rawValue: UserDefaultsHelper.shared.savedReadingMode ?? "") ?? .normal
         displayBrightness = UserDefaultsHelper.shared.savedBrightness
-        print("U>> saved brightness \(displayBrightness)")
+     //   print("U>> saved brightness \(displayBrightness)")
     }
     
     deinit {
