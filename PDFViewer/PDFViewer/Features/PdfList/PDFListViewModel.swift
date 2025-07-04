@@ -66,19 +66,20 @@ final class PDFListViewModel: ObservableObject {
     
     func importPDFs(bookmarkDatas: [BookmarkDataClass]) -> AnyPublisher<Void, Error> {
         let pdfCoreDataList = bookmarkDatas.compactMap { url -> PDFModelData? in
-            do {
-               // let bookmark = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
-//                let bookmark = try url.bookmarkData(
-//                    options: .withSecurityScope,
-//                    includingResourceValuesForKeys: nil,
-//                    relativeTo: nil
-//                )
-                //let key = Self.generatePDFKey(for: url)
-
-                return PDFModelData(key: url.key, bookmarkData: url.data, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
-            } catch {
-                return nil
-            }
+            return PDFModelData(key: url.key, bookmarkData: url.data, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
+//            do {
+//               // let bookmark = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
+////                let bookmark = try url.bookmarkData(
+////                    options: .withSecurityScope,
+////                    includingResourceValuesForKeys: nil,
+////                    relativeTo: nil
+////                )
+//                //let key = Self.generatePDFKey(for: url)
+//
+//                return PDFModelData(key: url.key, bookmarkData: url.data, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
+//            } catch {
+//                return nil
+//            }
         }
 
         return repository.insert(pdfDatas: pdfCoreDataList)
