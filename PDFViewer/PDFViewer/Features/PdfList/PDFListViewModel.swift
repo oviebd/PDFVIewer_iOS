@@ -93,43 +93,9 @@ final class PDFListViewModel: ObservableObject {
             .eraseToAnyPublisher()
     }
 
-//    func importPDFs(urls: [URL]) -> AnyPublisher<Void, Error> {
-//        let pdfCoreDataList = urls.compactMap { url -> PDFModelData? in
-//            do {
-//               // let bookmark = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
-//                let bookmark = try url.bookmarkData(
-//                    options: .withSecurityScope,
-//                    includingResourceValuesForKeys: nil,
-//                    relativeTo: nil
-//                )
-//                let key = Self.generatePDFKey(for: url)
-//
-//                return PDFModelData(key: key, bookmarkData: bookmark, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
-//            } catch {
-//                return nil
-//            }
-//        }
-//
-//        return repository.insert(pdfDatas: pdfCoreDataList)
-//            .receive(on: DispatchQueue.main)
-//            .flatMap { [weak self] _ -> AnyPublisher<[PDFModelData], Error> in
-//                guard let self = self else {
-//                    return Fail(error: URLError(.badServerResponse)).eraseToAnyPublisher()
-//                }
-//                return self.loadPDFs()
-//            }
-//            .map { _ in () } // return Void instead of model list
-//            .eraseToAnyPublisher()
-//    }
-
-//    func importPDFsAndForget(urls: [URL]) {
-//        importPDFs(urls: urls)
-//            .sink(receiveCompletion: { _ in }, receiveValue: { _ in })
-//            .store(in: &cancellables)
-//    }
     
-    func importPDFsAndForget(urls: [BookmarkDataClass]) {
-        importPDFs(bookmarkDatas: urls)
+    func importPDFsAndForget(bookmarkDatas: [BookmarkDataClass]) {
+        importPDFs(bookmarkDatas: bookmarkDatas)
             .sink(receiveCompletion: { _ in }, receiveValue: { _ in })
             .store(in: &cancellables)
     }
@@ -149,19 +115,6 @@ final class PDFListViewModel: ObservableObject {
                     }
                 })
                 .store(in: &cancellables)
-        }
-    }
-
-    private static func generatePDFKey(for url: URL) -> String {
-        do {
-            let resourceValues = try url.resourceValues(forKeys: [.fileSizeKey, .creationDateKey])
-            let fileSize = resourceValues.fileSize ?? 0
-            let creationDate = resourceValues.creationDate?.timeIntervalSince1970 ?? 0
-            let combinedString = "\(fileSize)-\(creationDate)"
-            let hash = SHA256.hash(data: Data(combinedString.utf8))
-            return hash.map { String(format: "%02x", $0) }.joined()
-        } catch {
-            return UUID().uuidString
         }
     }
     

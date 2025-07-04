@@ -83,7 +83,7 @@ struct PDFListView: View {
                 }
                 .sheet(isPresented: $showFilePicker) {
                     DocumentPickerRepresentable(mode: .file) { [weak viewModel] urls in
-                        viewModel?.importPDFsAndForget(urls: urls)
+                        viewModel?.importPDFsAndForget(bookmarkDatas: urls)
                     }
                 }
                 .onAppear {
