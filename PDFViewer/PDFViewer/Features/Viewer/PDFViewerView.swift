@@ -14,11 +14,8 @@ struct PDFViewerView: View {
     @EnvironmentObject var drawingToolManager: DrawingToolManager
     @StateObject private var viewModel: PDFViewerViewModel
 
-    init(pdfFile: PDFModelData) {
-        let store = try? PDFLocalDataStore()
-        let repo = PDFLocalRepositoryImpl(store: store!)
-
-        _viewModel = StateObject(wrappedValue: PDFViewerViewModel(pdfFile: pdfFile, repository: repo))
+    init(viewModel: PDFViewerViewModel) {
+        _viewModel = StateObject(wrappedValue: viewModel)
     }
 
     var body: some View {
@@ -71,10 +68,14 @@ struct PDFViewerView: View {
    
 }
 
-#Preview {
-    NavigationStack {
-        PDFViewerView(pdfFile: samplePDFModelData)
-            .environmentObject(DrawingToolManager.dummyData())
+struct PDFViewerView_Previews: PreviewProvider {
+    static var previews: some View {
+        let diContainer = DIContainer()
+        let viewModel = diContainer.makePDFViewerViewModel(pdfFile: samplePDFModelData)
+        NavigationStack {
+            PDFViewerView(viewModel: viewModel)
+                .environmentObject(DrawingToolManager.dummyData())
+        }
     }
 }
 

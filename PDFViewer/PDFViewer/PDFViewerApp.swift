@@ -11,6 +11,7 @@ import SwiftUI
 @main
 struct PDFViewerApp: App {
     @StateObject private var drawingToolManager: DrawingToolManager
+    @StateObject private var diContainer = DIContainer()
 
     init() {
         let pdfSettings: [PDFAnnotationSetting] = [
@@ -27,8 +28,9 @@ struct PDFViewerApp: App {
     var body: some Scene {
         WindowGroup {
             // PDFViewerView()
-            PDFListView()
+            PDFListView(viewModel: diContainer.makePDFListViewModel())
             .environmentObject(drawingToolManager)
+            .environmentObject(diContainer)
         }
     }
 }

@@ -32,11 +32,10 @@ struct PDFListView: View {
     @StateObject private var viewModel: PDFListViewModel
     @State private var showFilePicker = false
     @State private var navigationPath = NavigationPath()
+    @EnvironmentObject private var diContainer: DIContainer
 
-    init() {
-        let store = try? PDFLocalDataStore()
-        let repo = PDFLocalRepositoryImpl(store: store!)
-        _viewModel = StateObject(wrappedValue: PDFListViewModel(repository: repo))
+    init(viewModel: PDFListViewModel) {
+        _viewModel = StateObject(wrappedValue: viewModel)
     }
 
     var body: some View {
@@ -53,7 +52,7 @@ struct PDFListView: View {
                 .navigationDestination(for: PDFNavigationRoute.self) { route in
                     switch route {
                     case let .viewer(pdf):
-                        PDFViewerView(pdfFile: pdf)
+                        PDFViewerView(viewModel: diContainer.makePDFViewerViewModel(pdfFile: pdf))
                     }
                 }
                 .toolbar {
@@ -117,9 +116,12 @@ struct PDFListView: View {
     }
 }
 
-#Preview {
-    NavigationStack {
-        PDFListView()
+struct PDFListView_Previews: PreviewProvider {
+    static var previews: some View {
+        let diContainer = DIContainer()
+        NavigationStack {
+            PDFListView(viewModel: diContainer.makePDFListViewModel())
+        }
     }
 }
 
