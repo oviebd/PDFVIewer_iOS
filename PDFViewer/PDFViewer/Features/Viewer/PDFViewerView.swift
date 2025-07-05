@@ -84,6 +84,7 @@ extension PDFViewerView {
             if let currentPDFURL = viewModel.currentPDF {
                 PDFKitView(
                     pdfURL: currentPDFURL,
+                    pdfDataModel: viewModel.pdfData,
                     settings: viewModel.settings,
                     mode: $viewModel.annotationSettingData,
                     actions: viewModel.actions

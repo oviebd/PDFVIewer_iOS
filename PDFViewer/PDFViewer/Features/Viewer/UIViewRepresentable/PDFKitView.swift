@@ -11,17 +11,17 @@ import SwiftUI
 
 class PDFKitViewActions: ObservableObject {
     fileprivate weak var coordinator: PDFKitView.Coordinator?
-    fileprivate let annotationEditFinishedPublisher = PassthroughSubject<Void, Never>()
+    fileprivate let annotationEditFinishedPublisher = PassthroughSubject<Data?, Never>()
     private var cancellables = Set<AnyCancellable>()
 
     var onPageChanged: ((Int) -> Void)?
-    var onAnnotationEditFinished: (() -> Void)?
+    var onAnnotationEditFinished: ((Data?) -> Void)?
 
     init() {
         annotationEditFinishedPublisher
             .debounce(for: .milliseconds(2000), scheduler: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.onAnnotationEditFinished?()
+            .sink { [weak self] annotationData in
+                self?.onAnnotationEditFinished?(annotationData)
             }
             .store(in: &cancellables)
     }
@@ -50,8 +50,8 @@ class PDFKitViewActions: ObservableObject {
         onPageChanged?(page)
     }
 
-    func notifyAnnotationEditingFinished() {
-        annotationEditFinishedPublisher.send()
+    func notifyAnnotationEditingFinished(annotationdata : Data?) {
+        annotationEditFinishedPublisher.send(annotationdata)
     }
 
     deinit {
@@ -61,6 +61,7 @@ class PDFKitViewActions: ObservableObject {
 
 struct PDFKitView: UIViewRepresentable {
     var pdfURL: URL
+    var pdfDataModel: PDFModelData
     @ObservedObject var settings: PDFSettings
     @Binding var mode: PDFAnnotationSetting
 
@@ -75,9 +76,10 @@ struct PDFKitView: UIViewRepresentable {
         pdfView.document = PDFDocument(url: pdfURL)
         applySettings(to: pdfView)
 
-        if let jsonData = StoredData.annotationData {
+        if let jsonData = pdfDataModel.annotationdata {
             context.coordinator.applyAnnotations(from: jsonData, to:  pdfView.document!)
         }
+       
         context.coordinator.drawer?.pdfView = pdfView
         context.coordinator.gestureRecognizer = DrawingGestureRecognizer()
         context.coordinator.gestureRecognizer?.drawingDelegate = context.coordinator.drawer
@@ -85,7 +87,8 @@ struct PDFKitView: UIViewRepresentable {
         context.coordinator.pdfView = pdfView
 
         context.coordinator.drawer?.onAnnotationDrawingCompleted = { [weak coordinator = context.coordinator] in
-            coordinator?.actions?.notifyAnnotationEditingFinished()
+            let annotationdata = coordinator?.extractAnnotationData(from: pdfView.document!)
+            coordinator?.actions?.notifyAnnotationEditingFinished(annotationdata: annotationdata)
         }
 
         // ✅ Connect the coordinator to actions
@@ -314,18 +317,18 @@ struct PDFKitView: UIViewRepresentable {
         func saveAnnotatedPDF(to url: URL, completion: @escaping (Bool) -> Void) {
 //            let data = extractAnnotationData(from:  pdfView!.document!)
 
-            if let pdfDocument = pdfView?.document,
-               let jsonData = extractAnnotationData(from: pdfDocument) {
-                StoredData.annotationData = jsonData
-
-                if let jsonString = String(data: jsonData, encoding: .utf8) {
-                    print("U>> \(jsonString)") // 👈 Pretty-printed JSON string
-                } else {
-                    print("U>> Failed to convert Data to String")
-                }
-            } else {
-                print("U>> Failed to extract annotation data")
-            }
+//            if let pdfDocument = pdfView?.document,
+//               let jsonData = extractAnnotationData(from: pdfDocument) {
+//               // StoredData.annotationData = jsonData
+//
+//                if let jsonString = String(data: jsonData, encoding: .utf8) {
+//                    print("U>> \(jsonString)") // 👈 Pretty-printed JSON string
+//                } else {
+//                    print("U>> Failed to convert Data to String")
+//                }
+//            } else {
+//                print("U>> Failed to extract annotation data")
+//            }
 //            pdfSaveQueue.async {
 //                guard let pdfView = self.pdfView,
 //                      let document = pdfView.document else {

@@ -57,6 +57,7 @@ class PDFLocalDataStore {
                 entity.key = model.key
                 entity.bookmarkData = model.bookmarkData
                 entity.isFavourite = model.isFavourite
+                entity.annotationData = model.annotationData
             }
             do {
                 try context.save()
@@ -186,6 +187,7 @@ extension PDFEntity {
                                 bookmarkData: bookmarkData,
                                 isFavourite: isFavourite,
                                 lastOpenPage: Int(lastOpenedPage),
-                                lastOpenTime: lastOpenTime)
+                                lastOpenTime: lastOpenTime,
+                                annotationData: annotationData)
     }
 }

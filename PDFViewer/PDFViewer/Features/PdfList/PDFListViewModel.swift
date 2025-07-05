@@ -70,7 +70,7 @@ final class PDFListViewModel: ObservableObject {
         var importedCount = 0
 
         let pdfsToInsert = bookmarkDatas.map {
-            PDFModelData(key: $0.key, bookmarkData: $0.data, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
+            PDFModelData(key: $0.key, bookmarkData: $0.data, annotationData: nil, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
         }
 
         let initialPublisher = Just(()).setFailureType(to: Error.self).eraseToAnyPublisher()

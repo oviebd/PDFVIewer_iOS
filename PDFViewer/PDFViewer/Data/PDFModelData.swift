@@ -21,9 +21,11 @@ class PDFModelData: Identifiable {
 
     var thumbImage: UIImage?
     var totalPageCount: Int = 0
+    var annotationdata : Data?
 
     init(key: String,
          bookmarkData: Data?,
+         annotationData : Data?,
          isFavorite: Bool,
          lastOpenedPage: Int,
          lastOpenTime: Date?) {
@@ -33,6 +35,7 @@ class PDFModelData: Identifiable {
         self.isFavorite = isFavorite
         self.lastOpenedPage = lastOpenedPage
         self.lastOpenTime = lastOpenTime
+        self.annotationdata = annotationData
 
         decomposeBookmarkData()
     }
@@ -100,13 +103,14 @@ extension PDFModelData {
                                 bookmarkData: bookmarkData,
                                 isFavourite: isFavorite,
                                 lastOpenPage: lastOpenedPage,
-                                lastOpenTime: lastOpenTime)
+                                lastOpenTime: lastOpenTime,
+                                annotationData: annotationdata)
     }
 }
 
 let sampleUrl: URL = Bundle.main.url(forResource: "sample1", withExtension: "pdf")!
 
-let samplePDFModelData = PDFModelData(key: "sample_pdf_001", bookmarkData: sampleUrl.toBookmarData(), isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
+let samplePDFModelData = PDFModelData(key: "sample_pdf_001", bookmarkData: sampleUrl.toBookmarData(), annotationData: nil, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
 
 // let samplePDFFile = PDFModelData(
 //    name: "Sample Document",

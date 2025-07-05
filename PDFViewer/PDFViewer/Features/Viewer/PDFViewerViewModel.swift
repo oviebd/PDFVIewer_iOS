@@ -81,15 +81,18 @@ class PDFViewerViewModel: ObservableObject {
         actions.setZoomScale(scaleFactor: zoomScale)
     }
 
-    func savePDFWithAnnotation() {
-        guard let currentPDF = currentPDF else { return }
-        actions.saveAnnotatedPDFInBackground(to: currentPDF) {[weak self] success in
-            if success {
-                // Show success UI or alert
-            } else {
-                // Show failure UI or retry option
-            }
-        }
+    func savePDFWithAnnotation(annotationData : Data?) {
+        //guard let currentPDF = currentPDF else { return }
+        pdfData.annotationdata = annotationData
+        saveToDB()
+        //repository.update(updatedPdfData: pdfData)
+//        actions.saveAnnotatedPDFInBackground(to: currentPDF) {[weak self] success in
+//            if success {
+//                // Show success UI or alert
+//            } else {
+//                // Show failure UI or retry option
+//            }
+//        }
         //  _ = actions.saveAnnotedPdf(url: currentPDF)
     }
 
@@ -140,8 +143,8 @@ extension PDFViewerViewModel {
             self?.saveLastOpenedPageNumberInDb()
         }
         
-        actions.onAnnotationEditFinished = { [weak self] in
-             self?.savePDFWithAnnotation()
+        actions.onAnnotationEditFinished = { [weak self] annotationdata in
+            self?.savePDFWithAnnotation(annotationData: annotationdata)
         }
     }
 
