@@ -14,7 +14,7 @@ func createPDFModelData(key : String,
                         lastOenedPage : Int = 0,
                         lastOpenTime : Date? = nil
 ) -> PDFModelData {
-    return PDFModelData(key: key, bookmarkData: bookmarkData, isFavorite: isFavorite, lastOpenedPage: lastOenedPage, lastOpenTime: lastOpenTime)
+    return PDFModelData(key: key, bookmarkData: bookmarkData, annotationData: nil, isFavorite: isFavorite, lastOpenedPage: lastOenedPage, lastOpenTime: lastOpenTime)
 }
 
 extension PDFModelData {

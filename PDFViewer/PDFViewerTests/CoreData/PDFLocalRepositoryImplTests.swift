@@ -113,7 +113,7 @@ final class PDFLocalRepositoryImplTests: XCTestCase {
         let dummyURL = URL(fileURLWithPath: "/dev/null")
         let bookmarkData = try! dummyURL.bookmarkData()
         // return PDFCoreDataModel(key: "testKey", bookmarkData: bookmarkData, isFavourite: false, lastOpenPage: 0, lastOpenTime: nil)
-        return PDFModelData(key: key, bookmarkData: bookmarkData, isFavorite: isFavorite, lastOpenedPage: 0, lastOpenTime: nil)
+        return PDFModelData(key: key, bookmarkData: bookmarkData, annotationData: nil, isFavorite: isFavorite, lastOpenedPage: 0, lastOpenTime: nil)
     }
 }
 
