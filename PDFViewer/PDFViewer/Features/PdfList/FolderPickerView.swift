@@ -16,10 +16,12 @@ enum PickerMode {
 struct BookmarkDataClass {
     var data : Data
     var key : String
+    var title: String
 }
 
 struct DocumentPickerRepresentable: UIViewControllerRepresentable {
     let mode: PickerMode
+    var onStart: () -> Void
     var onPick: ([BookmarkDataClass]) -> Void
     
     func makeCoordinator() -> Coordinator {
@@ -46,6 +48,7 @@ struct DocumentPickerRepresentable: UIViewControllerRepresentable {
         }
         
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            parent.onStart()
             var bookmarks: [BookmarkDataClass] = []
             let dispatchGroup = DispatchGroup()
 
@@ -63,8 +66,9 @@ struct DocumentPickerRepresentable: UIViewControllerRepresentable {
 
                             // Generate stable key using PDFKeyGenerator
                             let key = PDFKeyGenerator.shared.computeKey(url: url, maxPages: 10) ?? UUID().uuidString
-                            print("U>> Key generated: \(key) for Url -> \(url)")
-                            let bookmarkDataClass = BookmarkDataClass(data: bookmark, key: key)
+                          //  print("U>> Key generated: \(key) for Url -> \(url)")
+                            let title = url.deletingPathExtension().lastPathComponent
+                            let bookmarkDataClass = BookmarkDataClass(data: bookmark, key: key, title: title)
                             
                             // Sync access to bookmarks array
                             DispatchQueue.main.async {

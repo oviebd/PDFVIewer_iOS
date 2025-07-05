@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+//import CustomLoaderView
 
 enum PDFSortOption: String, CaseIterable, Identifiable {
     case all = "All"
@@ -41,16 +42,12 @@ struct PDFListView: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ZStack {
-                Group {
-                    if viewModel.isLoading {
-                        ProgressView()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else {
-                        PDFListContentView(viewModel: viewModel, onSelect: { pdf in
-                            navigationPath.append(PDFNavigationRoute.viewer(pdf))
-                        })
-                    }
-                }
+                PDFListContentView(viewModel: viewModel, onSelect: { pdf in
+                    navigationPath.append(PDFNavigationRoute.viewer(pdf))
+                })
+                .overlay(
+                    CustomLoaderView(isShowing: $viewModel.isLoading, title: viewModel.loadingMessage)
+                )
                 .navigationTitle(viewModel.selectedSortOption.rawValue)
 
                 .navigationDestination(for: PDFNavigationRoute.self) { route in
@@ -82,7 +79,10 @@ struct PDFListView: View {
                     }
                 }
                 .sheet(isPresented: $showFilePicker) {
-                    DocumentPickerRepresentable(mode: .file) { [weak viewModel] urls in
+                    DocumentPickerRepresentable(mode: .file, onStart: {
+                        viewModel.isLoading = true
+                        viewModel.loadingMessage = "Preparing data..."
+                    }) { [weak viewModel] urls in
                         viewModel?.importPDFsAndForget(bookmarkDatas: urls)
                     }
                 }

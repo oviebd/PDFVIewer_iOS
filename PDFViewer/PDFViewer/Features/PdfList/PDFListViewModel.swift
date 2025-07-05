@@ -19,6 +19,7 @@ final class PDFListViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     @Published var isLoading = false
+    @Published var loadingMessage: String = ""
     @Published var errorMessage: String?
 
     init(repository: PDFRepositoryProtocol) {
@@ -65,39 +66,50 @@ final class PDFListViewModel: ObservableObject {
     }
     
     func importPDFs(bookmarkDatas: [BookmarkDataClass]) -> AnyPublisher<Void, Error> {
-        let pdfCoreDataList = bookmarkDatas.compactMap { url -> PDFModelData? in
-            return PDFModelData(key: url.key, bookmarkData: url.data, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
-//            do {
-//               // let bookmark = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
-////                let bookmark = try url.bookmarkData(
-////                    options: .withSecurityScope,
-////                    includingResourceValuesForKeys: nil,
-////                    relativeTo: nil
-////                )
-//                //let key = Self.generatePDFKey(for: url)
-//
-//                return PDFModelData(key: url.key, bookmarkData: url.data, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
-//            } catch {
-//                return nil
-//            }
+        let totalToImport = bookmarkDatas.count
+        var importedCount = 0
+
+        let pdfsToInsert = bookmarkDatas.map {
+            PDFModelData(key: $0.key, bookmarkData: $0.data, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
         }
 
-        return repository.insert(pdfDatas: pdfCoreDataList)
-            .receive(on: DispatchQueue.main)
-            .flatMap { [weak self] _ -> AnyPublisher<[PDFModelData], Error> in
-                guard let self = self else {
-                    return Fail(error: URLError(.badServerResponse)).eraseToAnyPublisher()
-                }
-                return self.loadPDFs()
+        let initialPublisher = Just(()).setFailureType(to: Error.self).eraseToAnyPublisher()
+
+        let combinedPublisher = pdfsToInsert.reduce(initialPublisher) { (previousPublisher, pdfData) in
+            return previousPublisher.flatMap { _ -> AnyPublisher<Void, Error> in
+                self.repository.insert(pdfDatas: [pdfData])
+                    .receive(on: DispatchQueue.main)
+                    .handleEvents(receiveOutput: { _ in
+                        importedCount += 1
+                        self.loadingMessage = "Importing \(pdfData.title ?? "") (\(importedCount)/\(totalToImport))"
+                    })
+                    .map { _ in () }
+                    .eraseToAnyPublisher()
+            }.eraseToAnyPublisher()
+        }
+
+        return combinedPublisher.flatMap { [weak self] _ -> AnyPublisher<Void, Error> in
+            guard let self = self else {
+                return Fail(error: URLError(.badServerResponse)).eraseToAnyPublisher()
             }
-            .map { _ in () } // return Void instead of model list
-            .eraseToAnyPublisher()
+            return self.loadPDFs().map { _ in () }.eraseToAnyPublisher()
+        }
+        .eraseToAnyPublisher()
     }
 
-    
     func importPDFsAndForget(bookmarkDatas: [BookmarkDataClass]) {
+        // isLoading is already true from the onStart closure in the View
+        self.loadingMessage = "Importing 0/\(bookmarkDatas.count)"
+
         importPDFs(bookmarkDatas: bookmarkDatas)
-            .sink(receiveCompletion: { _ in }, receiveValue: { _ in })
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completion in
+                self?.isLoading = false
+                self?.loadingMessage = ""
+                if case let .failure(error) = completion {
+                    self?.errorMessage = error.localizedDescription
+                }
+            }, receiveValue: { _ in })
             .store(in: &cancellables)
     }
 
