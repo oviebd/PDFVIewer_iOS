@@ -116,6 +116,7 @@ extension PDFDrawer: DrawingGestureRecognizerDelegate {
         // Erasing
         if getAnnotationType() == .eraser {
             removeAnnotationAtPoint(point: convertedPoint, page: page)
+            onAnnotationDrawingCompleted?()
             return
         }
         
