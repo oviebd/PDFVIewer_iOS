@@ -157,6 +157,7 @@ extension PDFDrawer: DrawingGestureRecognizerDelegate {
     }
 
     
+
     
     
     private func createFinalAnnotation(path: UIBezierPath, page: PDFPage) -> PDFAnnotation {
@@ -200,7 +201,7 @@ extension PDFDrawer: DrawingGestureRecognizerDelegate {
         }
     }
     private func forceRedraw(annotation: PDFAnnotation, onPage: PDFPage) {
-        onPage.removeAnnotation(annotation)
+       // onPage.removeAnnotation(annotation)
         onPage.addAnnotation(annotation)
     }
 }
