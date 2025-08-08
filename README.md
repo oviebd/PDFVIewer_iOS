@@ -1,6 +1,7 @@
 # PDF Viewer for iOS
 
-This is a feature-rich, high-performance PDF viewer application for iOS, designed with a modern architecture and a focus on user experience, scalability, and testability. It serves as an excellent showcase of advanced iOS development techniques and best practices.
+This is a feature-rich, high-performance, simple PDF viewer application for iOS, designed with a modern architecture and a focus on user experience, scalability, and testability. It serves as an excellent showcase of advanced iOS development techniques and best practices.
+
 
 ## 🚀 Key Features
 
@@ -18,6 +19,16 @@ This is a feature-rich, high-performance PDF viewer application for iOS, designe
 *   **Modern & Intuitive UI:**
     *   Built with SwiftUI for a declarative and responsive user interface.
     *   Custom UI components for a unique and polished look.
+ 
+
+<p align="center">
+<img src="https://github.com/oviebd/PDFVIewer_iOS/blob/main/Demo/annotation_setting.PNG" width="200"/>
+<img src="https://github.com/oviebd/PDFVIewer_iOS/blob/main/Demo/annotation_with_seipa .PNG" width="200"/>
+   <img src="https://github.com/oviebd/PDFVIewer_iOS/blob/main/Demo/readingMode.PNG" width="200"/>
+<img src="https://github.com/oviebd/PDFVIewer_iOS/blob/main/Demo/sorting_menu.PNG" width="200"/>
+</p>
+
+  
 
 ## 🏗️ Architecture & Design
 
@@ -34,7 +45,6 @@ This project is built upon a solid architectural foundation, ensuring it is both
 The project is committed to quality and reliability, with a comprehensive testing suite:
 
 *   **Unit Tests:** The `PDFViewerTests` target contains extensive unit tests for ViewModels and data-layer components, ensuring the business logic is correct and bug-free.
-*   **UI Tests:** The `PDFViewerUITests` target includes UI tests to verify user flows and interactions, guaranteeing a seamless user experience.
 *   **Memory Leak Detection:** Custom extensions are in place to check for memory leaks in tests, ensuring the app is memory-efficient.
 
 ##  scalability
@@ -45,14 +55,6 @@ The application is designed with scalability in mind:
 *   **Extensible Components:** The use of reusable SwiftUI views and a clear component hierarchy allows for easy extension and customization.
 *   **SOLID Principles:** The codebase adheres to SOLID principles, making it more robust and easier to understand and maintain over time.
 
-## Getting Started
-
-To run the project, you will need Xcode and an iOS simulator or device.
-
-1.  Clone the repository.
-2.  Open `PDFViewer.xcodeproj` in Xcode.
-3.  Select a simulator and run the app.
-
 ## Contact
 
-For any inquiries, please contact [Your Name/Email].
+For any inquiries, please [`contact me in LinkedIn`](http://www.linkedin.com/in/habibur-rahman-32547b109)
