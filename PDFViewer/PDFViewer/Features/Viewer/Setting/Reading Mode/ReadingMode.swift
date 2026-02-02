@@ -6,7 +6,7 @@
 //
 
 
-import SwiftUICore
+import SwiftUI
 
 enum ReadingMode: String, CaseIterable, Identifiable {
     case normal
