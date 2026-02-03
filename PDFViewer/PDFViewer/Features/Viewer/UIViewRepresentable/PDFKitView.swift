@@ -7,6 +7,7 @@
 
 import Combine
 import PDFKit
+import PencilKit
 import SwiftUI
 
 class PDFKitViewActions: ObservableObject {
@@ -67,51 +68,62 @@ struct PDFKitView: UIViewRepresentable {
     @ObservedObject var actions: PDFKitViewActions
 
     func makeCoordinator() -> Coordinator {
-        Coordinator()
+        Coordinator(actions: actions)
     }
     
 
-    func makeUIView(context: Context) -> PDFView {
+    func makeUIView(context: Context) -> UIView {
+        let containerView = UIView()
+        containerView.clipsToBounds = true
+        
         let pdfView = PDFView()
         pdfView.document = PDFDocument(url: pdfURL)
+        pdfView.translatesAutoresizingMaskIntoConstraints = false
         applySettings(to: pdfView)
+        containerView.addSubview(pdfView)
 
-        context.coordinator.drawer?.pdfView = pdfView
-        context.coordinator.gestureRecognizer = DrawingGestureRecognizer()
-        context.coordinator.gestureRecognizer?.drawingDelegate = context.coordinator.drawer
-        pdfView.addGestureRecognizer(context.coordinator.gestureRecognizer!)
+        let canvasContainerView = UIView()
+        canvasContainerView.backgroundColor = .clear
+        canvasContainerView.isUserInteractionEnabled = false
+        canvasContainerView.clipsToBounds = true
+        canvasContainerView.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(canvasContainerView)
+
+        NSLayoutConstraint.activate([
+            pdfView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            pdfView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            pdfView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            pdfView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+            
+            canvasContainerView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            canvasContainerView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            canvasContainerView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            canvasContainerView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
+        ])
+
         context.coordinator.pdfView = pdfView
+        context.coordinator.canvasContainerView = canvasContainerView
+        context.coordinator.containerView = containerView
+        context.coordinator.pdfURL = pdfURL
+        context.coordinator.setup()
 
-        context.coordinator.drawer?.onAnnotationDrawingCompleted = { [weak coordinator = context.coordinator] in
-            coordinator?.actions?.notifyAnnotationEditingFinished()
-        }
-
-        // ✅ Connect the coordinator to actions
         actions.coordinator = context.coordinator
-        context.coordinator.actions = actions
-
-        // Start polling and assign the callback
         context.coordinator.startPollingPageChanges()
 
-        return pdfView
+        return containerView
     }
 
-    func updateUIView(_ pdfView: PDFView, context: Context) {
-        // print("P>> Update Ui View ")
-        // If the PDF has changed, reload it
+    func updateUIView(_ uiView: UIView, context: Context) {
+        guard let pdfView = context.coordinator.pdfView else { return }
+        context.coordinator.pdfURL = pdfURL
+        
         if pdfView.document?.documentURL != pdfURL {
             pdfView.document = PDFDocument(url: pdfURL)
+            context.coordinator.refreshDocument()
         }
 
-        // Reapply settings
         applySettings(to: pdfView)
-
-        if let gesture = context.coordinator.gestureRecognizer {
-            gesture.isEnabled = mode.annotationTool != .none
-        }
-
-        // ✅ Update the drawing tool and color here
-        context.coordinator.drawer?.annotationSetting = mode
+        context.coordinator.updateTool(mode)
     }
 
     private func applySettings(to pdfView: PDFView) {
@@ -122,98 +134,187 @@ struct PDFKitView: UIViewRepresentable {
 
     // MARK: - Coordinator Keeps Objects Alive
 
-    class Coordinator: NSObject {
-        var drawer :  PDFDrawer?
-        var gestureRecognizer: DrawingGestureRecognizer?
+    class Coordinator: NSObject, PKCanvasViewDelegate, UIGestureRecognizerDelegate {
         var pdfView: PDFView?
+        var canvasContainerView: UIView?
+        var containerView: UIView?
         weak var actions: PDFKitViewActions?
-
-        var lastPageIndex: Int?
-        //  private var pageRefreshTimer: RepeatingTimer?
-        private var timerPublisher: AnyCancellable?
+        var pdfURL: URL?
+        private let annotationManager = PDFAnnotationManager()
         
+        var canvasViews: [Int: PKCanvasView] = [:]
+        var pageOriginalSizes: [Int: CGSize] = [:]
+        var displayLink: CADisplayLink?
+        private var timerPublisher: AnyCancellable?
         private let pdfSaveQueue = DispatchQueue(label: "com.yourapp.pdfSaveQueue")
 
-        override init() {
+        init(actions: PDFKitViewActions) {
+            self.actions = actions
             super.init()
-            self.drawer = PDFDrawer()
+        }
+
+        func setup() {
+            guard let pdfView = pdfView else { return }
+            
+            refreshDocument()
+            
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(pdfViewChanged),
+                name: .PDFViewPageChanged,
+                object: pdfView
+            )
+            
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(pdfViewChanged),
+                name: .PDFViewScaleChanged,
+                object: pdfView
+            )
+            
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(pdfViewChanged),
+                name: .PDFViewVisiblePagesChanged,
+                object: pdfView
+            )
+            
+            startDisplayLink()
         }
         
-
-        func startPollingPageChanges() {
-            // Cancel existing timer
-            timerPublisher?.cancel()
-
-            // Start a new Combine timer
-            timerPublisher = Timer.publish(every: 0.1, on: .main, in: .common)
-                .autoconnect()
-                .map { [weak self] _ -> Int? in
-                    guard let self = self else { return nil }
-                    return self.getCurrentPageNumber()
+        func refreshDocument() {
+            guard let document = pdfView?.document else { return }
+            
+            // Clear old canvases
+            canvasViews.values.forEach { $0.removeFromSuperview() }
+            canvasViews.removeAll()
+            pageOriginalSizes.removeAll()
+            
+            // Store original sizes and create canvases
+            for pageIndex in 0..<document.pageCount {
+                if let page = document.page(at: pageIndex) {
+                    let originalSize = page.bounds(for: .mediaBox).size
+                    pageOriginalSizes[pageIndex] = originalSize
+                    
+                    let canvasView = PKCanvasView()
+                    canvasView.backgroundColor = .clear
+                    canvasView.isOpaque = false
+                    canvasView.drawingPolicy = .anyInput
+                    canvasView.delegate = self
+                    canvasView.isUserInteractionEnabled = false
+                    canvasView.bounds = CGRect(origin: .zero, size: originalSize)
+                    
+                    canvasContainerView?.addSubview(canvasView)
+                    canvasViews[pageIndex] = canvasView
                 }
-                .compactMap { $0 } // Remove nils
-                .removeDuplicates() // Only emit when the page changes
-                .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
-                .sink { [weak self] currentIndex in
-                    guard let self = self else { return }
-                    self.lastPageIndex = currentIndex
-                    self.actions?.notifyPageChange(currentIndex)
-                }
+            }
+            
+            // Load from disk (sidecar file)
+            if let url = pdfURL {
+                annotationManager.loadAnnotationsData(pdfURL: url, into: canvasViews)
+            }
+            
+            updateCanvasFrames()
         }
 
-        func stopPolling() {
-            timerPublisher?.cancel()
-            print("U>> timer deinit")
-        }
-
-        deinit {
-            stopPolling()
-            drawer = nil
+        func startDisplayLink() {
+            displayLink = CADisplayLink(target: self, selector: #selector(updateCanvasFrames))
+            displayLink?.add(to: .main, forMode: .common)
         }
         
-        func saveAnnotatedPDF(to url: URL, completion: @escaping (Bool) -> Void) {
-            pdfSaveQueue.async {
-                guard let pdfView = self.pdfView,
-                      let document = pdfView.document else {
-                    DispatchQueue.main.async {
-                        completion(false)
-                    }
-                    return
-                }
-
-                // Keep a strong reference during save
-              //  _ = pdfView.bounds
-
-                let success = document.write(to: url)
-
-                DispatchQueue.main.async {
-                    completion(success)
-                }
+        func stopDisplayLink() {
+            displayLink?.invalidate()
+            displayLink = nil
+        }
+        
+        @objc func pdfViewChanged() {
+            updateCanvasFrames()
+            if let page = getCurrentPageNumber() {
+                actions?.notifyPageChange(page)
             }
         }
         
-//        func saveAnnotatedPDF(to url: URL, completion: @escaping (Bool) -> Void) {
-//            DispatchQueue.global(qos: .userInitiated).async {
-//                guard let document = self.pdfView?.document else {
-//                    // print("No PDF document found in PDFView")
-//                    DispatchQueue.main.async {
-//                        completion(false)
-//                    }
-//                    return
-//                }
-//
-//                let success = document.write(to: url)
-//
-//                DispatchQueue.main.async {
-//                    if success {
-//                        // print("PDF saved successfully to \(url)")
-//                    } else {
-//                        // print("Failed to save PDF")
-//                    }
-//                    completion(success)
-//                }
-//            }
-//        }
+        @objc func updateCanvasFrames() {
+            guard let pdfView = pdfView, let containerView = containerView else { return }
+            let visibleBounds = containerView.bounds
+            
+            for (pageIndex, canvasView) in canvasViews {
+                guard let page = pdfView.document?.page(at: pageIndex),
+                      let originalSize = pageOriginalSizes[pageIndex] else { continue }
+                
+                let displayedPageFrame = pdfView.convert(page.bounds(for: .mediaBox), from: page)
+                let isPageVisible = visibleBounds.intersects(displayedPageFrame)
+                
+                if !isPageVisible {
+                    canvasView.isHidden = true
+                } else {
+                    canvasView.isHidden = false
+                    let scaleX = displayedPageFrame.width / originalSize.width
+                    let scaleY = displayedPageFrame.height / originalSize.height
+                    
+                    canvasView.center = CGPoint(x: displayedPageFrame.midX, y: displayedPageFrame.midY)
+                    canvasView.transform = CGAffineTransform(scaleX: scaleX, y: scaleY)
+                }
+            }
+        }
+
+        func startPollingPageChanges() {
+            timerPublisher?.cancel()
+            timerPublisher = Timer.publish(every: 0.1, on: .main, in: .common)
+                .autoconnect()
+                .map { [weak self] _ -> Int? in
+                    self?.getCurrentPageNumber()
+                }
+                .compactMap { $0 }
+                .removeDuplicates()
+                .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+                .sink { [weak self] currentIndex in
+                    self?.actions?.notifyPageChange(currentIndex)
+                }
+        }
+
+        func updateTool(_ setting: PDFAnnotationSetting) {
+            let tool: PKTool
+            let isDrawingEnabled = setting.annotationTool != .none
+            
+            switch setting.annotationTool {
+            case .pen:
+                tool = PKInkingTool(.pen, color: setting.color, width: setting.lineWidth)
+            case .highlighter:
+                tool = PKInkingTool(.marker, color: setting.color, width: setting.lineWidth)
+            case .eraser:
+                tool = PKEraserTool(.vector)
+            default:
+                tool = PKInkingTool(.pen, color: .clear, width: 0)
+            }
+            
+            pdfView?.isUserInteractionEnabled = !isDrawingEnabled
+            canvasContainerView?.isUserInteractionEnabled = isDrawingEnabled
+            
+            for canvasView in canvasViews.values {
+                canvasView.tool = tool
+                canvasView.isUserInteractionEnabled = isDrawingEnabled
+            }
+        }
+
+        func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
+            if let url = pdfURL {
+                // Also save to cache for instant recovery
+                annotationManager.saveToCache(canvasViews: canvasViews, pdfURL: url)
+            }
+            actions?.notifyAnnotationEditingFinished()
+        }
+
+        func saveAnnotatedPDF(to url: URL, completion: @escaping (Bool) -> Void) {
+            // We now use sidecar saving instead of rewriting the PDF.
+            // This avoids locking/password issues with security-sensitive PDFs.
+            pdfSaveQueue.async {
+                let savedURL = self.annotationManager.saveAnnotationsData(canvasViews: self.canvasViews, pdfURL: url)
+                DispatchQueue.main.async {
+                    completion(savedURL != nil)
+                }
+            }
+        }
 
         func setZoomSscale(scaleFactor: CGFloat) {
             pdfView?.scaleFactor = scaleFactor
@@ -224,14 +325,11 @@ struct PDFKitView: UIViewRepresentable {
                   let document = pdfView.document,
                   number > 0, number <= document.pageCount,
                   let page = document.page(at: number - 1) else { return }
-
             pdfView.go(to: page)
         }
 
         func getTotalPageNumber() -> Int? {
-            guard let pdfView = pdfView,
-                  let document = pdfView.document else { return nil }
-            return document.pageCount
+            return pdfView?.document?.pageCount
         }
 
         func getCurrentPageNumber() -> Int? {
@@ -240,6 +338,12 @@ struct PDFKitView: UIViewRepresentable {
                 return nil
             }
             return index + 1
+        }
+
+        deinit {
+            stopDisplayLink()
+            timerPublisher?.cancel()
+            NotificationCenter.default.removeObserver(self)
         }
     }
 }

@@ -26,7 +26,6 @@ struct PDFViewerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // PDFViewerView()
             PDFListView()
             .environmentObject(drawingToolManager)
         }

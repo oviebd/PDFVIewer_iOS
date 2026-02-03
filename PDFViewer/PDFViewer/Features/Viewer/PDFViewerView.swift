@@ -35,6 +35,8 @@ struct PDFViewerView: View {
 
             readingOverlay
 
+            overlayControls
+
             Color.black
                 .opacity(viewModel.getBrightnessOpacity())
                 .edgesIgnoringSafeArea(.all)
@@ -110,12 +112,12 @@ extension PDFViewerView {
         }
     }
 
-//    var overlayControls: some View {
-//        VStack(spacing: 0) {
-//            Spacer()
-//            floatingButtons
-//        }
-//    }
+    var overlayControls: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            floatingButtons
+        }
+    }
 }
 
 extension PDFViewerView {
@@ -166,17 +168,17 @@ extension PDFViewerView {
         )
     }
 
-//    var floatingButtons: some View {
-//        HStack {
-//            Spacer()
-//            VStack(spacing: 16) {
-//                ControlButton(systemName: "minus.magnifyingglass", action: viewModel.zoomOut)
-//                ControlButton(systemName: "plus.magnifyingglass", action: viewModel.zoomIn)
-//                ControlButton(systemName: "square.and.arrow.down", color: .green, foreground: .white, action: viewModel.savePDFWithAnnotation)
-//            }
-//            .padding()
-//        }
-//    }
+    var floatingButtons: some View {
+        HStack {
+            Spacer()
+            VStack(spacing: 16) {
+                ControlButton(systemName: "minus.magnifyingglass", action: viewModel.zoomOut)
+                ControlButton(systemName: "plus.magnifyingglass", action: viewModel.zoomIn)
+                ControlButton(systemName: "square.and.arrow.down", color: .green, foreground: .white, action: viewModel.savePDFWithAnnotation)
+            }
+            .padding()
+        }
+    }
 
     @ToolbarContentBuilder
     func toolbarContent() -> some ToolbarContent {
