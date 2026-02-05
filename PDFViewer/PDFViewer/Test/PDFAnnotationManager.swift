@@ -12,90 +12,85 @@ import PencilKit
 
 // MARK: - Annotation Manager
 class PDFAnnotationManager {
-    static var annotationsCache: [URL: [Int: Data]] = [:]
+    static var annotationsCache: [String: [Int: Data]] = [:]
     
-    // MARK: - Annotation Persistence
+    private func getCacheKey(for url: URL) -> String {
+        return url.lastPathComponent
+    }
     
-    /// Save PencilKit drawings as separate data (JSON Sidecar)
-    @discardableResult
-    func saveAnnotationsData(canvasViews: [Int: PKCanvasView], pdfURL: URL) -> URL? {
-        // 1. Sync active views to cache
-        if PDFAnnotationManager.annotationsCache[pdfURL] == nil {
-            PDFAnnotationManager.annotationsCache[pdfURL] = [:]
-        }
-        
-        for (pageIndex, canvasView) in canvasViews {
-            if let data = try? canvasView.drawing.dataRepresentation() {
-                PDFAnnotationManager.annotationsCache[pdfURL]?[pageIndex] = data
-            }
-        }
-        
-        // 2. Prepare data for serialization
-        guard let pageData = PDFAnnotationManager.annotationsCache[pdfURL], !pageData.isEmpty else {
+    // MARK: - Annotation Persistence (Core Data)
+    
+    /// Serialize cached drawings into binary Data for DB storage
+    func getSerializedAnnotations(for pdfURL: URL) -> Data? {
+        let key = getCacheKey(for: pdfURL)
+        guard let pageData = PDFAnnotationManager.annotationsCache[key], !pageData.isEmpty else {
             return nil
         }
         
-        var annotationsData: [String: String] = [:]
+        var annotationsDict: [String: String] = [:]
         for (pageIndex, data) in pageData {
-            annotationsData["page_\(pageIndex)"] = data.base64EncodedString()
+            annotationsDict["page_\(pageIndex)"] = data.base64EncodedString()
         }
         
-        // 3. Write to file
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let pdfName = pdfURL.deletingPathExtension().lastPathComponent
-        let annotationURL = documentsPath.appendingPathComponent("\(pdfName)_annotations.json")
-        
         do {
-            let jsonData = try JSONSerialization.data(withJSONObject: annotationsData)
-            try jsonData.write(to: annotationURL)
-            print("✅ Annotations saved: \(annotationURL.lastPathComponent)")
-            return annotationURL
+            return try JSONSerialization.data(withJSONObject: annotationsDict)
         } catch {
-            print("❌ Save error: \(error)")
+            print("❌ Serialization error: \(error)")
             return nil
         }
     }
     
-    /// Load PencilKit drawings from saved data into caching memory
-    func loadAnnotationsToCache(pdfURL: URL) {
-        if PDFAnnotationManager.annotationsCache[pdfURL] != nil { return }
-        
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let pdfName = pdfURL.deletingPathExtension().lastPathComponent
-        let annotationURL = documentsPath.appendingPathComponent("\(pdfName)_annotations.json")
-        
-        var pageDataMap: [Int: Data] = [:]
-        
-        if FileManager.default.fileExists(atPath: annotationURL.path),
-           let jsonData = try? Data(contentsOf: annotationURL),
-           let annotationsDict = try? JSONSerialization.jsonObject(with: jsonData) as? [String: String] {
-            
-            for (key, base64String) in annotationsDict {
-                if let pageIndexStr = key.split(separator: "_").last,
-                   let pageIndex = Int(pageIndexStr),
-                   let drawingData = Data(base64Encoded: base64String) {
-                    pageDataMap[pageIndex] = drawingData
-                }
-            }
-            print("✅ Annotations loaded: \(pdfName)")
+    /// Load annotations from binary Data into memory cache
+    func loadAnnotations(from data: Data?, for pdfURL: URL) {
+        // Hydrate or refresh cache from binary data
+        let key = getCacheKey(for: pdfURL)
+        guard let data = data,
+              let annotationsDict = try? JSONSerialization.jsonObject(with: data) as? [String: String] else {
+            PDFAnnotationManager.annotationsCache[key] = [:]
+            return
         }
         
-        PDFAnnotationManager.annotationsCache[pdfURL] = pageDataMap
+        var pageDataMap: [Int: Data] = [:]
+        for (pageKey, base64String) in annotationsDict {
+            if let pageIndexStr = pageKey.split(separator: "_").last,
+               let pageIndex = Int(pageIndexStr),
+               let drawingData = Data(base64Encoded: base64String) {
+                pageDataMap[pageIndex] = drawingData
+            }
+        }
+        PDFAnnotationManager.annotationsCache[key] = pageDataMap
+    }
+    
+    /// Legacy support or helper to sync active views before DB save
+    func syncViewsToCache(canvasViews: [Int: PKCanvasView], pdfURL: URL) {
+        let key = getCacheKey(for: pdfURL)
+        if PDFAnnotationManager.annotationsCache[key] == nil {
+            PDFAnnotationManager.annotationsCache[key] = [:]
+        }
+        for (pageIndex, canvasView) in canvasViews {
+            if let data = try? canvasView.drawing.dataRepresentation() {
+                PDFAnnotationManager.annotationsCache[key]?[pageIndex] = data
+            }
+        }
     }
     
     /// Get drawing for a specific page from cache
     func getDrawing(for pageIndex: Int, pdfURL: URL) -> PKDrawing? {
-        guard let pageData = PDFAnnotationManager.annotationsCache[pdfURL]?[pageIndex] else { return nil }
+        let key = getCacheKey(for: pdfURL)
+        guard let pageData = PDFAnnotationManager.annotationsCache[key]?[pageIndex] else { 
+            return nil 
+        }
         return try? PKDrawing(data: pageData)
     }
     
     /// Helper to update a single page in cache (used during live editing)
     func updateCache(for pageIndex: Int, canvasView: PKCanvasView, pdfURL: URL) {
-        if PDFAnnotationManager.annotationsCache[pdfURL] == nil {
-            PDFAnnotationManager.annotationsCache[pdfURL] = [:]
+        let key = getCacheKey(for: pdfURL)
+        if PDFAnnotationManager.annotationsCache[key] == nil {
+            PDFAnnotationManager.annotationsCache[key] = [:]
         }
         if let data = try? canvasView.drawing.dataRepresentation() {
-            PDFAnnotationManager.annotationsCache[pdfURL]?[pageIndex] = data
+            PDFAnnotationManager.annotationsCache[key]?[pageIndex] = data
         }
     }
     

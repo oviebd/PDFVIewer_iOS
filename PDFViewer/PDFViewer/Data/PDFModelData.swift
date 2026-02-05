@@ -15,7 +15,7 @@ class PDFModelData: Identifiable {
     var title: String?
     var author: String?
     let bookmarkData: Data?
-    let annotationdata : Data?
+    var annotationdata : Data?
     var isFavorite: Bool
     var lastOpenedPage: Int
     var lastOpenTime: Date?

@@ -57,6 +57,7 @@ class PDFLocalDataStore {
                 entity.key = model.key
                 entity.bookmarkData = model.bookmarkData
                 entity.isFavourite = model.isFavourite
+                entity.annotationData = model.annotationdata
             }
             do {
                 try context.save()
@@ -108,11 +109,14 @@ class PDFLocalDataStore {
     func filter(parameters: [String: Any]) -> AnyPublisher<[PDFEntity], Error> {
         perform { context in
             let request: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
-            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates:
-                parameters.map { NSPredicate(format: "%K == %@", $0.key, "\($0.value)") }
-            )
+            let predicates = parameters.map { NSPredicate(format: "%K == %@", $0.key, $0.value as! CVarArg) }
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
             request.fetchLimit = 1
-            return try context.fetch(request)
+            let results = try context.fetch(request)
+            if results.isEmpty {
+                print("⚠️ DB Filter: No results for \(parameters)")
+            }
+            return results
         }
     }
 

@@ -45,6 +45,7 @@ extension PDFCoreDataModel {
         entityData.lastOpenedPage = Int16(lastOpenedPage)
         entityData.lastOpenTime = lastOpenTime
         entityData.bookmarkData = bookmarkData
+        entityData.annotationData = annotationdata
 
         return entityData
     }

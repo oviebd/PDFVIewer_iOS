@@ -28,9 +28,13 @@ class PDFKitViewActions: ObservableObject {
     }
 
     func save(completion: ((Bool) -> Void)? = nil) {
-        coordinator?.saveAnnotatedPDF(completion: completion)
+        coordinator?.saveToDB(completion: completion)
     }
 
+    func loadAnnotations(from data: Data?, for url: URL) {
+        coordinator?.loadAnnotations(from: data, for: url)
+    }
+    
     func setZoomScale(scaleFactor: CGFloat) {
         coordinator?.setZoomSscale(scaleFactor: scaleFactor)
     }
@@ -190,10 +194,8 @@ struct PDFKitView: UIViewRepresentable {
             canvasViews.removeAll()
             pageOriginalSizes.removeAll() // We don't need this pre-calculated anymore
             
-            // Load annotations metadata to memory cache (doesn't create views yet)
-            if let url = pdfURL {
-                annotationManager.loadAnnotationsToCache(pdfURL: url)
-            }
+            // Refresh canvases from memory cache (in case they were loaded by ViewModel)
+            refreshCanvasesFromCache()
             
             // Initial layout update
             updateCanvasFrames()
@@ -351,19 +353,36 @@ struct PDFKitView: UIViewRepresentable {
             actions?.notifyAnnotationEditingFinished()
         }
 
-        func saveAnnotatedPDF(completion: ((Bool) -> Void)? = nil) {
+        func loadAnnotations(from data: Data?, for url: URL) {
+            // Relaxed check: always attempt to load/update cache if data is provided,
+            // even if the URL already exists in the cache.
+            // If data is nil, it will clear annotations for the given URL.
+            annotationManager.loadAnnotations(from: data, for: url)
+            refreshCanvasesFromCache()
+        }
+
+        private func refreshCanvasesFromCache() {
+            guard let url = pdfURL else { return }
+            for (pageIndex, canvasView) in canvasViews {
+                if let drawing = annotationManager.getDrawing(for: pageIndex, pdfURL: url) {
+                    canvasView.drawing = drawing
+                }
+            }
+        }
+
+        func saveToDB(completion: ((Bool) -> Void)? = nil) {
             guard let url = pdfURL else {
                 completion?(false)
                 return
             }
             
-            pdfSaveQueue.async { [weak self] in
-                guard let self = self else { return }
-                let savedURL = self.annotationManager.saveAnnotationsData(canvasViews: self.canvasViews, pdfURL: url)
-                DispatchQueue.main.async {
-                    completion?(savedURL != nil)
-                }
-            }
+            // Sync active views to cache first
+            annotationManager.syncViewsToCache(canvasViews: canvasViews, pdfURL: url)
+            
+            // Trigger the ViewModel to save to DB
+            // We can do this via the actions publisher or a callback
+            actions?.onAnnotationEditFinished?()
+            completion?(true)
         }
 
         func setZoomSscale(scaleFactor: CGFloat) {
@@ -395,8 +414,11 @@ struct PDFKitView: UIViewRepresentable {
             timerPublisher?.cancel()
             NotificationCenter.default.removeObserver(self)
             
-            // Final save on close
-            saveAnnotatedPDF()
+            // Final sync on close
+            if let url = pdfURL {
+                annotationManager.syncViewsToCache(canvasViews: canvasViews, pdfURL: url)
+                actions?.onAnnotationEditFinished?()
+            }
         }
     }
 }

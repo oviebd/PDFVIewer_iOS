@@ -40,14 +40,24 @@ class PDFViewerViewModel: ObservableObject {
       //  currentPDF = URL(string: pdfFile.urlPath ?? "")!
         self.repository = repository
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            self.unloadPdfData()
-        }
+        // REMOVED: This was clearing cancellables after 1s, which could cancel the DB fetch
+        // DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        //    self.unloadPdfData()
+        // }
         
     //    UserDefaultsHelper.shared.savedBrightness = 0
         readingMode = ReadingMode(rawValue: UserDefaultsHelper.shared.savedReadingMode ?? "") ?? .normal
         displayBrightness = UserDefaultsHelper.shared.savedBrightness
-     //   print("U>> saved brightness \(displayBrightness)")
+        
+        if let url = currentPDF {
+            repository.getSingleData(pdfKey: pdfData.key)
+                .receive(on: DispatchQueue.main)
+                .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] updatedModel in
+                    self?.pdfData.annotationdata = updatedModel.annotationdata
+                    self?.actions.loadAnnotations(from: updatedModel.annotationdata, for: url)
+                })
+                .store(in: &cancellables)
+        }
     }
     
     deinit {
@@ -82,12 +92,12 @@ class PDFViewerViewModel: ObservableObject {
     }
 
     func savePDFWithAnnotation() {
-        actions.save { success in
-            if success {
-                print("✅ Annotations saved successfully")
-            } else {
-                print("❌ Failed to save annotations")
-            }
+        guard let url = currentPDF else { return }
+        let manager = PDFAnnotationManager()
+        if let data = manager.getSerializedAnnotations(for: url) {
+            pdfData.annotationdata = data
+            saveToDB()
+            print("✅ Annotations saved to DB")
         }
     }
 
@@ -138,10 +148,9 @@ extension PDFViewerViewModel {
             self?.saveLastOpenedPageNumberInDb()
         }
         
-        // No longer needed as PDFKitViewActions handles it internally with debounce
-//        actions.onAnnotationEditFinished = { [weak self] in
-//             self?.savePDFWithAnnotation()
-//        }
+        actions.onAnnotationEditFinished = { [weak self] in
+             self?.savePDFWithAnnotation()
+        }
     }
 
     func goToPage() {

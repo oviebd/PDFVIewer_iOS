@@ -13,6 +13,7 @@ import PDFKit
 protocol PDFRepositoryProtocol {
     func insert(pdfDatas: [PDFModelData]) -> AnyPublisher<Bool, Error>
     func retrieve() -> AnyPublisher<[PDFModelData], Error>
+    func getSingleData(pdfKey: String) -> AnyPublisher<PDFModelData, Error>
     func update(updatedPdfData: PDFModelData) -> AnyPublisher<PDFModelData, Error>
     func delete(pdfKey: String) -> AnyPublisher<Bool, Error>
 }
@@ -47,6 +48,17 @@ final class PDFLocalRepositoryImpl: PDFRepositoryProtocol {
     
     func delete(pdfKey: String) -> AnyPublisher<Bool, any Error> {
         store.delete(pdfKey: pdfKey)
+    }
+
+    func getSingleData(pdfKey: String) -> AnyPublisher<PDFModelData, any Error> {
+        store.filter(parameters: ["key": pdfKey])
+            .tryMap { entities in
+                guard let singleEntity = entities.first else {
+                    throw NSError(domain: "Repository", code: 404, userInfo: [NSLocalizedDescriptionKey: "PDF Item not found"])
+                }
+                return singleEntity.toCoreDataModel().toPDfModelData()
+            }
+            .eraseToAnyPublisher()
     }
 
     func update(updatedPdfData: PDFModelData) -> AnyPublisher<PDFModelData, any Error> {
