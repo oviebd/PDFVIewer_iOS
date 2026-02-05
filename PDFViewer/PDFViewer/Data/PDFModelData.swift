@@ -15,6 +15,7 @@ class PDFModelData: Identifiable {
     var title: String?
     var author: String?
     let bookmarkData: Data?
+    let annotationdata : Data?
     var isFavorite: Bool
     var lastOpenedPage: Int
     var lastOpenTime: Date?
@@ -24,6 +25,7 @@ class PDFModelData: Identifiable {
 
     init(key: String,
          bookmarkData: Data?,
+         annotationdata : Data?,
          isFavorite: Bool,
          lastOpenedPage: Int,
          lastOpenTime: Date?) {
@@ -33,6 +35,7 @@ class PDFModelData: Identifiable {
         self.isFavorite = isFavorite
         self.lastOpenedPage = lastOpenedPage
         self.lastOpenTime = lastOpenTime
+        self.annotationdata = annotationdata
 
         decomposeBookmarkData()
     }
@@ -98,6 +101,7 @@ extension PDFModelData {
     func toCoereDataModel() -> PDFCoreDataModel {
         return PDFCoreDataModel(key: key,
                                 bookmarkData: bookmarkData,
+                                annotationdata: annotationdata,
                                 isFavourite: isFavorite,
                                 lastOpenPage: lastOpenedPage,
                                 lastOpenTime: lastOpenTime)
@@ -106,7 +110,7 @@ extension PDFModelData {
 
 let sampleUrl: URL = Bundle.main.url(forResource: "sample1", withExtension: "pdf")!
 
-let samplePDFModelData = PDFModelData(key: "sample_pdf_001", bookmarkData: sampleUrl.toBookmarData(), isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
+let samplePDFModelData = PDFModelData(key: "sample_pdf_001", bookmarkData: sampleUrl.toBookmarData(), annotationdata: nil, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
 
 // let samplePDFFile = PDFModelData(
 //    name: "Sample Document",

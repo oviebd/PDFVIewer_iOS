@@ -20,15 +20,15 @@ class PDFKitViewActions: ObservableObject {
 
     init() {
         annotationEditFinishedPublisher
-            .debounce(for: .milliseconds(2000), scheduler: RunLoop.main)
+            .debounce(for: .seconds(5), scheduler: RunLoop.main)
             .sink { [weak self] _ in
-                self?.onAnnotationEditFinished?()
+                self?.save()
             }
             .store(in: &cancellables)
     }
 
-    func saveAnnotatedPDFInBackground(to url: URL, completion: @escaping (Bool) -> Void) {
-        coordinator?.saveAnnotatedPDF(to: url, completion: completion)
+    func save(completion: ((Bool) -> Void)? = nil) {
+        coordinator?.saveAnnotatedPDF(completion: completion)
     }
 
     func setZoomScale(scaleFactor: CGFloat) {
@@ -185,38 +185,20 @@ struct PDFKitView: UIViewRepresentable {
         func refreshDocument() {
             guard let document = pdfView?.document else { return }
             
-            // Clear old canvases
+            // Clear all current canvases
             canvasViews.values.forEach { $0.removeFromSuperview() }
             canvasViews.removeAll()
-            pageOriginalSizes.removeAll()
+            pageOriginalSizes.removeAll() // We don't need this pre-calculated anymore
             
-            // Store original sizes and create canvases
-            for pageIndex in 0..<document.pageCount {
-                if let page = document.page(at: pageIndex) {
-                    let originalSize = page.bounds(for: .mediaBox).size
-                    pageOriginalSizes[pageIndex] = originalSize
-                    
-                    let canvasView = PKCanvasView()
-                    canvasView.backgroundColor = .clear
-                    canvasView.isOpaque = false
-                    canvasView.drawingPolicy = .anyInput
-                    canvasView.delegate = self
-                    canvasView.isUserInteractionEnabled = false
-                    canvasView.bounds = CGRect(origin: .zero, size: originalSize)
-                    
-                    canvasContainerView?.addSubview(canvasView)
-                    canvasViews[pageIndex] = canvasView
-                }
-            }
-            
-            // Load from disk (sidecar file)
+            // Load annotations metadata to memory cache (doesn't create views yet)
             if let url = pdfURL {
-                annotationManager.loadAnnotationsData(pdfURL: url, into: canvasViews)
+                annotationManager.loadAnnotationsToCache(pdfURL: url)
             }
             
+            // Initial layout update
             updateCanvasFrames()
         }
-
+        
         func startDisplayLink() {
             displayLink = CADisplayLink(target: self, selector: #selector(updateCanvasFrames))
             displayLink?.add(to: .main, forMode: .common)
@@ -235,28 +217,90 @@ struct PDFKitView: UIViewRepresentable {
         }
         
         @objc func updateCanvasFrames() {
-            guard let pdfView = pdfView, let containerView = containerView else { return }
-            let visibleBounds = containerView.bounds
+            guard let pdfView = pdfView, let containerView = containerView, let document = pdfView.document else { return }
             
-            for (pageIndex, canvasView) in canvasViews {
-                guard let page = pdfView.document?.page(at: pageIndex),
-                      let originalSize = pageOriginalSizes[pageIndex] else { continue }
+            // 1. Identify currently visible pages
+            let visiblePages = pdfView.visiblePages
+            var visiblePageIndices = Set<Int>()
+            
+            for page in visiblePages {
+                let index = document.index(for: page)
+                if index != NSNotFound {
+                    visiblePageIndices.insert(index)
+                }
+            }
+            
+            // 2. Remove canvases for pages that are no longer visible
+            let currentIndices = Set(canvasViews.keys)
+            let indicesToRemove = currentIndices.subtracting(visiblePageIndices)
+            
+            for index in indicesToRemove {
+                if let canvasView = canvasViews[index] {
+                    // Save latest changes to cache before removing view
+                    if let url = pdfURL {
+                        annotationManager.updateCache(for: index, canvasView: canvasView, pdfURL: url)
+                    }
+                    canvasView.removeFromSuperview()
+                    canvasViews.removeValue(forKey: index)
+                }
+            }
+            
+            // 3. Add/Update canvases for visible pages
+            for pageIndex in visiblePageIndices {
+                guard let page = document.page(at: pageIndex) else { continue }
+                let pageBounds = page.bounds(for: .mediaBox)
+                let displayedPageFrame = pdfView.convert(pageBounds, from: page)
                 
-                let displayedPageFrame = pdfView.convert(page.bounds(for: .mediaBox), from: page)
-                let isPageVisible = visibleBounds.intersects(displayedPageFrame)
-                
-                if !isPageVisible {
-                    canvasView.isHidden = true
-                } else {
-                    canvasView.isHidden = false
-                    let scaleX = displayedPageFrame.width / originalSize.width
-                    let scaleY = displayedPageFrame.height / originalSize.height
+                // Create canvas if needed
+                if canvasViews[pageIndex] == nil {
+                    let canvasView = PKCanvasView()
+                    canvasView.backgroundColor = .clear
+                    canvasView.isOpaque = false
+                    canvasView.drawingPolicy = .anyInput
+                    canvasView.delegate = self
                     
-                    canvasView.center = CGPoint(x: displayedPageFrame.midX, y: displayedPageFrame.midY)
-                    canvasView.transform = CGAffineTransform(scaleX: scaleX, y: scaleY)
+                    // Set correct tool (we need to access the current mode logic here)
+                    // Since 'mode' is not directly accessible in Coordinator, we rely on updateTool being called or default
+                    // We can re-apply the current tool state if we had access to it.
+                    // Ideally, we store the current tool in the Coordinator.
+                    if let tool = self.currentTool {
+                        canvasView.tool = tool
+                        canvasView.isUserInteractionEnabled = self.isDrawingEnabled
+                    } else {
+                        canvasView.isUserInteractionEnabled = false
+                    }
+
+                    canvasView.bounds = CGRect(origin: .zero, size: pageBounds.size)
+                    
+                    // Load drawing from cache
+                    if let url = pdfURL, let drawing = annotationManager.getDrawing(for: pageIndex, pdfURL: url) {
+                        canvasView.drawing = drawing
+                    }
+                    
+                    canvasContainerView?.addSubview(canvasView)
+                    canvasViews[pageIndex] = canvasView
+                }
+                
+                // Update frame
+                if let canvasView = canvasViews[pageIndex] {
+                     let visibleBounds = containerView.bounds
+                     // Optimization: Only show if actually intersecting visible area (though visiblePages check covers mostly)
+                     if visibleBounds.intersects(displayedPageFrame) {
+                         canvasView.isHidden = false
+                         let scaleX = displayedPageFrame.width / pageBounds.width
+                         let scaleY = displayedPageFrame.height / pageBounds.height
+                         canvasView.center = CGPoint(x: displayedPageFrame.midX, y: displayedPageFrame.midY)
+                         canvasView.transform = CGAffineTransform(scaleX: scaleX, y: scaleY)
+                     } else {
+                         canvasView.isHidden = true
+                     }
                 }
             }
         }
+
+        // We need to store current tool state to apply to new canvases
+        var currentTool: PKTool?
+        var isDrawingEnabled: Bool = false
 
         func startPollingPageChanges() {
             timerPublisher?.cancel()
@@ -276,6 +320,7 @@ struct PDFKitView: UIViewRepresentable {
         func updateTool(_ setting: PDFAnnotationSetting) {
             let tool: PKTool
             let isDrawingEnabled = setting.annotationTool != .none
+            self.isDrawingEnabled = isDrawingEnabled
             
             switch setting.annotationTool {
             case .pen:
@@ -287,6 +332,7 @@ struct PDFKitView: UIViewRepresentable {
             default:
                 tool = PKInkingTool(.pen, color: .clear, width: 0)
             }
+            self.currentTool = tool
             
             pdfView?.isUserInteractionEnabled = !isDrawingEnabled
             canvasContainerView?.isUserInteractionEnabled = isDrawingEnabled
@@ -298,20 +344,24 @@ struct PDFKitView: UIViewRepresentable {
         }
 
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-            if let url = pdfURL {
-                // Also save to cache for instant recovery
-                annotationManager.saveToCache(canvasViews: canvasViews, pdfURL: url)
+            // Find page index for this canvas
+            if let index = canvasViews.first(where: { $0.value === canvasView })?.key, let url = pdfURL {
+                 annotationManager.updateCache(for: index, canvasView: canvasView, pdfURL: url)
             }
             actions?.notifyAnnotationEditingFinished()
         }
 
-        func saveAnnotatedPDF(to url: URL, completion: @escaping (Bool) -> Void) {
-            // We now use sidecar saving instead of rewriting the PDF.
-            // This avoids locking/password issues with security-sensitive PDFs.
-            pdfSaveQueue.async {
+        func saveAnnotatedPDF(completion: ((Bool) -> Void)? = nil) {
+            guard let url = pdfURL else {
+                completion?(false)
+                return
+            }
+            
+            pdfSaveQueue.async { [weak self] in
+                guard let self = self else { return }
                 let savedURL = self.annotationManager.saveAnnotationsData(canvasViews: self.canvasViews, pdfURL: url)
                 DispatchQueue.main.async {
-                    completion(savedURL != nil)
+                    completion?(savedURL != nil)
                 }
             }
         }
@@ -344,6 +394,9 @@ struct PDFKitView: UIViewRepresentable {
             stopDisplayLink()
             timerPublisher?.cancel()
             NotificationCenter.default.removeObserver(self)
+            
+            // Final save on close
+            saveAnnotatedPDF()
         }
     }
 }

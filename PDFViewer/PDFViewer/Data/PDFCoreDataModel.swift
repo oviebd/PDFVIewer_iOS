@@ -10,11 +10,14 @@ import Foundation
 class PDFCoreDataModel {
     let key: String
     let bookmarkData: Data?
+    let annotationdata : Data?
     var isFavourite: Bool
     let lastOpenedPage: Int
     let lastOpenTime: Date?
 
-    init(key: String, bookmarkData: Data?,
+    init(key: String,
+         bookmarkData: Data?,
+         annotationdata : Data?,
          isFavourite: Bool,
          lastOpenPage: Int,
          lastOpenTime: Date?) {
@@ -22,13 +25,14 @@ class PDFCoreDataModel {
         self.isFavourite = isFavourite
         self.bookmarkData = bookmarkData
         self.lastOpenTime = lastOpenTime
+        self.annotationdata = annotationdata
         lastOpenedPage = lastOpenPage
     }
 }
 
 extension PDFCoreDataModel {
     func toPDfModelData() -> PDFModelData {
-        let modelData = PDFModelData(key: key, bookmarkData: bookmarkData, isFavorite: isFavourite, lastOpenedPage: lastOpenedPage, lastOpenTime: lastOpenTime)
+        let modelData = PDFModelData(key: key, bookmarkData: bookmarkData, annotationdata: annotationdata, isFavorite: isFavourite, lastOpenedPage: lastOpenedPage, lastOpenTime: lastOpenTime)
 
         return modelData
     }

@@ -184,6 +184,7 @@ extension PDFEntity {
     func toCoreDataModel() -> PDFCoreDataModel {
         return PDFCoreDataModel(key: key ?? "",
                                 bookmarkData: bookmarkData,
+                                annotationdata: annotationData,
                                 isFavourite: isFavourite,
                                 lastOpenPage: Int(lastOpenedPage),
                                 lastOpenTime: lastOpenTime)

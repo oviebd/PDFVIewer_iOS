@@ -75,7 +75,7 @@ final class PDFListViewModel: ObservableObject {
 //                )
                 //let key = Self.generatePDFKey(for: url)
 
-                return PDFModelData(key: url.key, bookmarkData: url.data, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
+                return PDFModelData(key: url.key, bookmarkData: url.data, annotationdata: nil, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
             } catch {
                 return nil
             }

@@ -82,15 +82,13 @@ class PDFViewerViewModel: ObservableObject {
     }
 
     func savePDFWithAnnotation() {
-        guard let currentPDF = currentPDF else { return }
-        actions.saveAnnotatedPDFInBackground(to: currentPDF) {[weak self] success in
+        actions.save { success in
             if success {
-                // Show success UI or alert
+                print("✅ Annotations saved successfully")
             } else {
-                // Show failure UI or retry option
+                print("❌ Failed to save annotations")
             }
         }
-        //  _ = actions.saveAnnotedPdf(url: currentPDF)
     }
 
     func getBrightnessOpacity() -> CGFloat {
@@ -140,9 +138,10 @@ extension PDFViewerViewModel {
             self?.saveLastOpenedPageNumberInDb()
         }
         
-        actions.onAnnotationEditFinished = { [weak self] in
-             self?.savePDFWithAnnotation()
-        }
+        // No longer needed as PDFKitViewActions handles it internally with debounce
+//        actions.onAnnotationEditFinished = { [weak self] in
+//             self?.savePDFWithAnnotation()
+//        }
     }
 
     func goToPage() {

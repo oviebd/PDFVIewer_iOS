@@ -70,60 +70,6 @@ struct PDFAnnotationView: View {
                 }
                 .padding()
                 
-                // Zoom Controls
-                VStack(spacing: 12) {
-                    Button(action: {
-                        zoomScale = min(zoomScale + 0.25, 5.0)
-                    }) {
-                        Image(systemName: "plus.magnifyingglass")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                            .background(Color.blue)
-                            .clipShape(Circle())
-                            .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 2)
-                    }
-                    .disabled(zoomScale >= 5.0)
-                    .opacity(zoomScale >= 5.0 ? 0.5 : 1.0)
-                    
-                    Text("\(Int(zoomScale * 100))%")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(Color.black.opacity(0.75))
-                        .cornerRadius(12)
-                        .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 2)
-                    
-                    Button(action: {
-                        zoomScale = max(zoomScale - 0.25, 0.5)
-                    }) {
-                        Image(systemName: "minus.magnifyingglass")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                            .background(Color.blue)
-                            .clipShape(Circle())
-                            .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 2)
-                    }
-                    .disabled(zoomScale <= 0.5)
-                    .opacity(zoomScale <= 0.5 ? 0.5 : 1.0)
-                    
-                    Button(action: {
-                        zoomScale = 1.0
-                    }) {
-                        Image(systemName: "arrow.counterclockwise")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
-                            .background(Color.gray.opacity(0.8))
-                            .clipShape(Circle())
-                            .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 2)
-                    }
-                }
-                .padding(.trailing, 20)
-                .padding(.bottom, 30)
-                
                 // PDF with PencilKit overlay
                 PDFKitAnnotationView(
                     document: pdfDocument,
@@ -133,7 +79,59 @@ struct PDFAnnotationView: View {
                 )
             }
             
-          
+            // Zoom Controls
+            VStack(spacing: 12) {
+                Button(action: {
+                    zoomScale = min(zoomScale + 0.25, 5.0)
+                }) {
+                    Image(systemName: "plus.magnifyingglass")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .background(Color.blue)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 2)
+                }
+                .disabled(zoomScale >= 5.0)
+                .opacity(zoomScale >= 5.0 ? 0.5 : 1.0)
+                
+                Text("\(Int(zoomScale * 100))%")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.black.opacity(0.75))
+                    .cornerRadius(12)
+                    .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 2)
+                
+                Button(action: {
+                    zoomScale = max(zoomScale - 0.25, 0.5)
+                }) {
+                    Image(systemName: "minus.magnifyingglass")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .background(Color.blue)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 2)
+                }
+                .disabled(zoomScale <= 0.5)
+                .opacity(zoomScale <= 0.5 ? 0.5 : 1.0)
+                
+                Button(action: {
+                    zoomScale = 1.0
+                }) {
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 36, height: 36)
+                        .background(Color.gray.opacity(0.8))
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 2)
+                }
+            }
+            .padding(.trailing, 20)
+            .padding(.bottom, 30)
         }
     }
 }
@@ -188,6 +186,13 @@ struct PDFKitAnnotationView: UIViewRepresentable {
         canvasContainerView.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(canvasContainerView)
         
+        // Invisible overlay for text annotation taps
+        let textAnnotationOverlay = UIView()
+        textAnnotationOverlay.backgroundColor = .clear
+        textAnnotationOverlay.isUserInteractionEnabled = false
+        textAnnotationOverlay.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(textAnnotationOverlay)
+        
         NSLayoutConstraint.activate([
             pdfView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
             pdfView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
@@ -197,12 +202,22 @@ struct PDFKitAnnotationView: UIViewRepresentable {
             canvasContainerView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
             canvasContainerView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
             canvasContainerView.topAnchor.constraint(equalTo: containerView.topAnchor),
-            canvasContainerView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
+            canvasContainerView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+            
+            textAnnotationOverlay.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            textAnnotationOverlay.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            textAnnotationOverlay.topAnchor.constraint(equalTo: containerView.topAnchor),
+            textAnnotationOverlay.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
         ])
+        
+        // Add tap gesture for text annotation
+        let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTextAnnotationTap(_:)))
+        textAnnotationOverlay.addGestureRecognizer(tapGesture)
         
         context.coordinator.pdfView = pdfView
         context.coordinator.canvasContainerView = canvasContainerView
         context.coordinator.containerView = containerView
+        context.coordinator.textAnnotationOverlay = textAnnotationOverlay
         context.coordinator.setup()
         
         return containerView
@@ -218,18 +233,23 @@ struct PDFKitAnnotationView: UIViewRepresentable {
         Coordinator(document: document, currentPage: $currentPage, zoomScale: $zoomScale)
     }
     
-    class Coordinator: NSObject, PKCanvasViewDelegate, UIGestureRecognizerDelegate {
+    class Coordinator: NSObject, PKCanvasViewDelegate, UIGestureRecognizerDelegate, UITextFieldDelegate {
         let document: PDFDocument
         var pdfView: PDFView?
         var canvasContainerView: UIView?
         var containerView: UIView?
+        var textAnnotationOverlay: UIView?
         var canvasViews: [Int: PKCanvasView] = [:]
         var doubleTapGestures: [Int: UITapGestureRecognizer] = [:]
         var pageOriginalSizes: [Int: CGSize] = [:]
+        var currentTextField: UITextField?
+        var currentTextAnnotation: PDFAnnotation?
+        
         @Binding var currentPage: Int
         @Binding var zoomScale: CGFloat
         
         var displayLink: CADisplayLink?
+        var isTextAnnotationMode = false
         
         init(document: PDFDocument, currentPage: Binding<Int>, zoomScale: Binding<CGFloat>) {
             self.document = document
@@ -272,6 +292,119 @@ struct PDFKitAnnotationView: UIViewRepresentable {
             createCanvasViews()
             updateCanvasFrames()
             startDisplayLink()
+        }
+        
+        @objc func handleTextAnnotationTap(_ gesture: UITapGestureRecognizer) {
+            guard isTextAnnotationMode,
+                  let pdfView = pdfView,
+                  let containerView = containerView else { return }
+            
+            // Get tap location in container view
+            let tapLocation = gesture.location(in: containerView)
+            
+            // Find which page was tapped
+            var tappedPage: PDFPage?
+            var pageFrame: CGRect = .zero
+            
+            for pageIndex in 0..<document.pageCount {
+                if let page = pdfView.document?.page(at: pageIndex) {
+                    let frame = pdfView.convert(page.bounds(for: .mediaBox), from: page)
+                    if frame.contains(tapLocation) {
+                        tappedPage = page
+                        pageFrame = frame
+                        break
+                    }
+                }
+            }
+            
+            guard let page = tappedPage else { return }
+            
+            // Convert tap location to PDF page coordinates
+            let locationInPDFView = containerView.convert(tapLocation, to: pdfView)
+            let locationInPage = pdfView.convert(locationInPDFView, to: page)
+            
+            // Show text input at tap location
+            showTextInput(at: tapLocation, page: page, pageLocation: locationInPage)
+        }
+        
+        func showTextInput(at screenLocation: CGPoint, page: PDFPage, pageLocation: CGPoint) {
+            // Create text field for input
+            let textField = UITextField()
+            textField.frame = CGRect(x: screenLocation.x, y: screenLocation.y, width: 200, height: 40)
+            textField.backgroundColor = UIColor.yellow.withAlphaComponent(0.9)
+            textField.borderStyle = .roundedRect
+            textField.placeholder = "Enter text..."
+            textField.delegate = self
+            textField.autocorrectionType = .no
+            
+            // Store reference
+            currentTextField = textField
+            
+            // Add to container
+            containerView?.addSubview(textField)
+            textField.becomeFirstResponder()
+            
+            // Store the page and location for when text is entered
+            textField.tag = document.index(for: page)
+            textField.accessibilityHint = "\(pageLocation.x),\(pageLocation.y)"
+        }
+        
+        // UITextFieldDelegate
+        func textFieldDidEndEditing(_ textField: UITextField) {
+            guard let text = textField.text, !text.isEmpty else {
+                textField.removeFromSuperview()
+                currentTextField = nil
+                return
+            }
+            
+            // Get stored location
+            let pageIndex = textField.tag
+            guard let page = document.page(at: pageIndex),
+                  let locationString = textField.accessibilityHint,
+                  let pdfView = pdfView else {
+                textField.removeFromSuperview()
+                currentTextField = nil
+                return
+            }
+            
+            // Parse location
+            let coords = locationString.split(separator: ",")
+            guard coords.count == 2,
+                  let x = Double(coords[0]),
+                  let y = Double(coords[1]) else {
+                textField.removeFromSuperview()
+                currentTextField = nil
+                return
+            }
+            
+            // Create text annotation at the tapped location
+            let textSize = (text as NSString).size(withAttributes: [
+                .font: UIFont.systemFont(ofSize: 14)
+            ])
+            
+            let bounds = CGRect(
+                x: x - 5,
+                y: y - textSize.height - 5,
+                width: textSize.width + 10,
+                height: textSize.height + 10
+            )
+            
+            let annotation = PDFAnnotation(bounds: bounds, forType: .freeText, withProperties: nil)
+            annotation.contents = text
+            annotation.backgroundColor = UIColor.yellow.withAlphaComponent(0.3)
+            annotation.color = .black
+            annotation.font = UIFont.systemFont(ofSize: 14)
+            
+            page.addAnnotation(annotation)
+            
+            // Clean up
+            textField.removeFromSuperview()
+            currentTextField = nil
+        }
+        
+        func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+            textField.resignFirstResponder()
+            return true
         }
         
         func startDisplayLink() {
@@ -397,7 +530,9 @@ struct PDFKitAnnotationView: UIViewRepresentable {
         func enableScrollMode() {
             pdfView?.isUserInteractionEnabled = true
             canvasContainerView?.isUserInteractionEnabled = false
+            textAnnotationOverlay?.isUserInteractionEnabled = false
             canvasViews.values.forEach { $0.isUserInteractionEnabled = false }
+            isTextAnnotationMode = false
         }
         
         func updateTool(_ tool: AnnotationTool_PencilKit) {
@@ -420,8 +555,7 @@ struct PDFKitAnnotationView: UIViewRepresentable {
                 setToolForAllCanvases(PKEraserTool(.vector))
                 
             case .text:
-                disableDrawing()
-                addTextAnnotation(to: pdfView)
+                enableTextAnnotation()
                 
             case .highlight:
                 disableDrawing()
@@ -437,16 +571,28 @@ struct PDFKitAnnotationView: UIViewRepresentable {
             }
         }
         
+        func enableTextAnnotation() {
+            pdfView?.isUserInteractionEnabled = false
+            canvasContainerView?.isUserInteractionEnabled = false
+            textAnnotationOverlay?.isUserInteractionEnabled = true
+            canvasViews.values.forEach { $0.isUserInteractionEnabled = false }
+            isTextAnnotationMode = true
+        }
+        
         func enableDrawing() {
             pdfView?.isUserInteractionEnabled = false
             canvasContainerView?.isUserInteractionEnabled = true
+            textAnnotationOverlay?.isUserInteractionEnabled = false
             canvasViews.values.forEach { $0.isUserInteractionEnabled = true }
+            isTextAnnotationMode = false
         }
         
         func disableDrawing() {
             pdfView?.isUserInteractionEnabled = true
             canvasContainerView?.isUserInteractionEnabled = false
+            textAnnotationOverlay?.isUserInteractionEnabled = false
             canvasViews.values.forEach { $0.isUserInteractionEnabled = false }
+            isTextAnnotationMode = false
         }
         
         func setToolForAllCanvases(_ tool: PKTool) {
@@ -455,18 +601,6 @@ struct PDFKitAnnotationView: UIViewRepresentable {
         
         func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
             return true
-        }
-        
-        func addTextAnnotation(to pdfView: PDFView) {
-            guard let page = pdfView.currentPage else { return }
-            
-            let bounds = CGRect(x: 100, y: 100, width: 200, height: 50)
-            let annotation = PDFAnnotation(bounds: bounds, forType: .freeText, withProperties: nil)
-            annotation.contents = "Text annotation"
-            annotation.color = .yellow
-            annotation.font = UIFont.systemFont(ofSize: 14)
-            
-            page.addAnnotation(annotation)
         }
         
         func addHighlightAnnotation(to pdfView: PDFView) {

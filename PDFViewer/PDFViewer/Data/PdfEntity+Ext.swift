@@ -16,5 +16,6 @@ extension PDFEntity {
         self.lastOpenedPage = Int16(coreData.lastOpenedPage)
         self.lastOpenTime = coreData.lastOpenTime
         self.bookmarkData = coreData.bookmarkData
+        self.annotationData = coreData.annotationdata
     }
 }
