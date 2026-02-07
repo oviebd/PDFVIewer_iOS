@@ -9,11 +9,37 @@ import Combine
 import CryptoKit
 import Foundation
 
+enum PDFListSelection: Equatable, Hashable {
+    case all
+    case favorite
+    case recent
+    case folder(FolderModelData)
+    
+    var title: String {
+        switch self {
+        case .all: return "All"
+        case .favorite: return "Favorite"
+        case .recent: return "Recent"
+        case .folder(let folder): return folder.title
+        }
+    }
+    
+    var iconName: String {
+        switch self {
+        case .all: return "tray.full.fill"
+        case .favorite: return "heart.fill"
+        case .recent: return "clock.fill"
+        case .folder: return "folder.fill"
+        }
+    }
+}
+
 final class PDFListViewModel: ObservableObject {
     
-    @Published var selectedSortOption: PDFSortOption = .all
+    @Published var currentSelection: PDFListSelection = .all
     @Published var allPdfModels: [PDFModelData] = []
     @Published var visiblePdfModels: [PDFModelData] = []
+    @Published var folders: [FolderModelData] = []
 
     private var repository: PDFRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
@@ -23,6 +49,90 @@ final class PDFListViewModel: ObservableObject {
 
     init(repository: PDFRepositoryProtocol) {
         self.repository = repository
+        loadFolders()
+    }
+
+    func loadFolders() {
+        repository.retrieveFolders()
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] folders in
+                self?.folders = folders
+            })
+            .store(in: &cancellables)
+    }
+
+    func createFolder(title: String) {
+        let newFolder = FolderModelData(title: title)
+        repository.insertFolders(folders: [newFolder])
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] success in
+                if success {
+                    self?.loadFolders()
+                }
+            })
+            .store(in: &cancellables)
+    }
+
+    func renameFolder(_ folder: FolderModelData, newTitle: String) {
+        folder.title = newTitle
+        updateFolder(folder)
+    }
+
+    func updateFolder(_ folder: FolderModelData) {
+        folder.updatedAt = Date()
+        repository.updateFolder(updatedFolder: folder)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] _ in
+                self?.loadFolders()
+            })
+            .store(in: &cancellables)
+    }
+
+    func deleteFolder(_ folder: FolderModelData) {
+        repository.deleteFolder(folderId: folder.id)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] success in
+                if success {
+                if success {
+                    if case .folder(let selected) = self?.currentSelection, selected.id == folder.id {
+                        self?.currentSelection = .all
+                    }
+                    self?.loadFolders()
+                }
+                }
+            })
+            .store(in: &cancellables)
+    }
+
+    func selectFolder(_ folder: FolderModelData?) {
+        if let folder = folder {
+            currentSelection = .folder(folder)
+        } else {
+            currentSelection = .all
+        }
+        applySelection()
+    }
+
+    func movePDF(_ pdf: PDFModelData, to folder: FolderModelData?) {
+        // Remove from current folder if any
+        for f in folders {
+            if let index = f.pdfIds.firstIndex(of: pdf.key) {
+                var updatedPdfIds = f.pdfIds
+                updatedPdfIds.remove(at: index)
+                f.pdfIds = updatedPdfIds
+                updateFolder(f)
+            }
+        }
+
+        // Add to new folder
+        if let targetFolder = folder {
+            var updatedPdfIds = targetFolder.pdfIds
+            if !updatedPdfIds.contains(pdf.key) {
+                updatedPdfIds.append(pdf.key)
+                targetFolder.pdfIds = updatedPdfIds
+                updateFolder(targetFolder)
+            }
+        }
     }
 
     func loadPDFs() -> AnyPublisher<[PDFModelData], Error> {
@@ -32,7 +142,7 @@ final class PDFListViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .handleEvents(receiveOutput: { [weak self] models in
                 self?.allPdfModels = models
-                self?.updateSortOption(.all)
+                self?.applySelection()
             }, receiveCompletion: { [weak self] completion in
                 self?.isLoading = false
                 if case let .failure(error) = completion {
@@ -66,19 +176,7 @@ final class PDFListViewModel: ObservableObject {
     
     func importPDFs(bookmarkDatas: [BookmarkDataClass]) -> AnyPublisher<Void, Error> {
         let pdfCoreDataList = bookmarkDatas.compactMap { url -> PDFModelData? in
-            do {
-               // let bookmark = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
-//                let bookmark = try url.bookmarkData(
-//                    options: .withSecurityScope,
-//                    includingResourceValuesForKeys: nil,
-//                    relativeTo: nil
-//                )
-                //let key = Self.generatePDFKey(for: url)
-
-                return PDFModelData(key: url.key, bookmarkData: url.data, annotationdata: nil, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
-            } catch {
-                return nil
-            }
+            return PDFModelData(key: url.key, bookmarkData: url.data, annotationdata: nil, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
         }
 
         return repository.insert(pdfDatas: pdfCoreDataList)
@@ -87,6 +185,19 @@ final class PDFListViewModel: ObservableObject {
                 guard let self = self else {
                     return Fail(error: URLError(.badServerResponse)).eraseToAnyPublisher()
                 }
+                
+                if case .folder(let currentFolder) = self.currentSelection {
+                    let newKeys = pdfCoreDataList.map { $0.key }
+                    var updatedPdfIds = currentFolder.pdfIds
+                    for key in newKeys {
+                        if !updatedPdfIds.contains(key) {
+                            updatedPdfIds.append(key)
+                        }
+                    }
+                    currentFolder.pdfIds = updatedPdfIds
+                    self.updateFolder(currentFolder)
+                }
+                
                 return self.loadPDFs()
             }
             .map { _ in () } // return Void instead of model list
@@ -172,20 +283,21 @@ final class PDFListViewModel: ObservableObject {
 
 extension PDFListViewModel {
     
-    func updateSortOption(_ option: PDFSortOption) {
-        selectedSortOption = option
-        applySorting(option)
+    func updateSelection(_ selection: PDFListSelection) {
+        currentSelection = selection
+        applySelection()
     }
 
-    private func applySorting(_ option: PDFSortOption) {
-        switch option {
+    private func applySelection() {
+        switch currentSelection {
         case .all:
-            // Load all PDFs
-           visiblePdfModels  = allPdfModels
+            visiblePdfModels = allPdfModels
         case .favorite:
             visiblePdfModels = allPdfModels.filter { $0.isFavorite }
         case .recent:
-            visiblePdfModels = getRecentFiles()
+            visiblePdfModels = allPdfModels.sorted(by: { $0.lastOpenTime ?? .distantPast > $1.lastOpenTime ?? .distantPast })
+        case .folder(let folder):
+            visiblePdfModels = allPdfModels.filter { folder.pdfIds.contains($0.key) }
         }
     }
     

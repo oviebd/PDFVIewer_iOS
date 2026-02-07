@@ -16,6 +16,10 @@ protocol PDFRepositoryProtocol {
     func getSingleData(pdfKey: String) -> AnyPublisher<PDFModelData, Error>
     func update(updatedPdfData: PDFModelData) -> AnyPublisher<PDFModelData, Error>
     func delete(pdfKey: String) -> AnyPublisher<Bool, Error>
+    func insertFolders(folders: [FolderModelData]) -> AnyPublisher<Bool, Error>
+    func retrieveFolders() -> AnyPublisher<[FolderModelData], Error>
+    func updateFolder(updatedFolder: FolderModelData) -> AnyPublisher<FolderModelData, Error>
+    func deleteFolder(folderId: String) -> AnyPublisher<Bool, Error>
 }
 
 final class PDFLocalRepositoryImpl: PDFRepositoryProtocol {
@@ -66,5 +70,28 @@ final class PDFLocalRepositoryImpl: PDFRepositoryProtocol {
             .tryMap {
                 $0.toPDfModelData()
             }.eraseToAnyPublisher()
+    }
+
+    func insertFolders(folders: [FolderModelData]) -> AnyPublisher<Bool, Error> {
+        let coreDataModels = folders.map { $0.toCoreDataModel() }
+        return store.insertFolders(folders: coreDataModels)
+    }
+
+    func retrieveFolders() -> AnyPublisher<[FolderModelData], Error> {
+        return store.retrieveFolders()
+            .map { coreDataList in
+                coreDataList.map { $0.toFolderModelData() }
+            }
+            .eraseToAnyPublisher()
+    }
+
+    func updateFolder(updatedFolder: FolderModelData) -> AnyPublisher<FolderModelData, Error> {
+        return store.updateFolder(updatedData: updatedFolder.toCoreDataModel())
+            .map { $0.toFolderModelData() }
+            .eraseToAnyPublisher()
+    }
+
+    func deleteFolder(folderId: String) -> AnyPublisher<Bool, Error> {
+        return store.deleteFolder(folderId: folderId)
     }
 }

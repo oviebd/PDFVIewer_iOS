@@ -10,11 +10,12 @@ import Foundation
 
 func createPDFModelData(key : String,
                         bookmarkData : Data? = nil,
+                        annotationdata: Data? = nil,
                         isFavorite : Bool = false,
                         lastOenedPage : Int = 0,
                         lastOpenTime : Date? = nil
 ) -> PDFModelData {
-    return PDFModelData(key: key, bookmarkData: bookmarkData, isFavorite: isFavorite, lastOpenedPage: lastOenedPage, lastOpenTime: lastOpenTime)
+    return PDFModelData(key: key, bookmarkData: bookmarkData, annotationdata: annotationdata, isFavorite: isFavorite, lastOpenedPage: lastOenedPage, lastOpenTime: lastOpenTime)
 }
 
 extension PDFModelData {

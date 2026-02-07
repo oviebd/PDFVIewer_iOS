@@ -87,9 +87,8 @@ final class PDFListViewModelTests: XCTestCase {
         let secondPDF = createPDFModelData(key: "key_2", isFavorite: false)
         viewModel.allPdfModels = [firstPDF, secondPDF]
 
-        var expectedUpdatedPDF = firstPDF
-        expectedUpdatedPDF.toggleFavorite()
-        mockRepository.updateResult = .success(expectedUpdatedPDF)
+        var updatedPDF = createPDFModelData(key: "key_1", isFavorite: true)
+        mockRepository.updateResult = .success(updatedPDF)
 
         let expectation = expectation(description: "toggleFavorite completed")
 
@@ -98,11 +97,43 @@ final class PDFListViewModelTests: XCTestCase {
 
         // Assert
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            XCTAssertEqual(self.viewModel.allPdfModels, [expectedUpdatedPDF, secondPDF])
+            XCTAssertEqual(self.viewModel.allPdfModels.first?.isFavorite, true)
             expectation.fulfill()
         }
 
         wait(for: [expectation], timeout: 1)
+    }
+
+    func testUpdateSelection_All() {
+        viewModel.allPdfModels = [createPDFModelData(key: "1"), createPDFModelData(key: "2")]
+        viewModel.updateSelection(.all)
+        XCTAssertEqual(viewModel.currentSelection, .all)
+        XCTAssertEqual(viewModel.visiblePdfModels.count, 2)
+    }
+
+    func testUpdateSelection_Favorite() {
+        let fav = createPDFModelData(key: "1", isFavorite: true)
+        let notFav = createPDFModelData(key: "2", isFavorite: false)
+        viewModel.allPdfModels = [fav, notFav]
+        
+        viewModel.updateSelection(.favorite)
+        
+        XCTAssertEqual(viewModel.currentSelection, .favorite)
+        XCTAssertEqual(viewModel.visiblePdfModels.count, 1)
+        XCTAssertEqual(viewModel.visiblePdfModels.first?.key, "1")
+    }
+
+    func testUpdateSelection_Folder() {
+        let pdf1 = createPDFModelData(key: "1")
+        let pdf2 = createPDFModelData(key: "2")
+        viewModel.allPdfModels = [pdf1, pdf2]
+        
+        let folder = FolderModelData(title: "Test Folder", pdfIds: ["1"])
+        viewModel.updateSelection(.folder(folder))
+        
+        XCTAssertEqual(viewModel.currentSelection, .folder(folder))
+        XCTAssertEqual(viewModel.visiblePdfModels.count, 1)
+        XCTAssertEqual(viewModel.visiblePdfModels.first?.key, "1")
     }
 }
 

@@ -106,6 +106,63 @@ class PDFLocalDataStore {
             .eraseToAnyPublisher()
     }
 
+    // MARK: - Folder Operations
+
+    func insertFolders(folders: [FolderCoreDataModel]) -> AnyPublisher<Bool, Error> {
+        perform { context in
+            folders.forEach { model in
+                let entity = FolderEntity(context: context)
+                entity.convertFromCoreDataModel(coreData: model)
+            }
+            do {
+                try context.save()
+                return true
+            } catch {
+                return false
+            }
+        }
+    }
+
+    func retrieveFolders() -> AnyPublisher<[FolderCoreDataModel], Error> {
+        perform { context in
+            let request: NSFetchRequest<FolderEntity> = FolderEntity.fetchRequest()
+            let results = try context.fetch(request)
+            return results.map { $0.toCoreDataModel() }
+        }
+    }
+
+    func updateFolder(updatedData: FolderCoreDataModel) -> AnyPublisher<FolderCoreDataModel, Error> {
+        filterFolders(parameters: ["id": updatedData.id])
+            .tryMap { [weak self] entities in
+                guard let self, let singleEntity = entities.first else { throw NSError(domain: "UpdateError", code: 404) }
+                singleEntity.convertFromCoreDataModel(coreData: updatedData)
+                try context.save()
+                return updatedData
+            }
+            .eraseToAnyPublisher()
+    }
+
+    func deleteFolder(folderId: String) -> AnyPublisher<Bool, Error> {
+        filterFolders(parameters: ["id": folderId])
+            .tryMap { [weak self] entities in
+                guard let self, let object = entities.first else { throw NSError(domain: "DeleteError", code: 404) }
+                context.delete(object)
+                try context.save()
+                return true
+            }
+            .eraseToAnyPublisher()
+    }
+
+    func filterFolders(parameters: [String: Any]) -> AnyPublisher<[FolderEntity], Error> {
+        perform { context in
+            let request: NSFetchRequest<FolderEntity> = FolderEntity.fetchRequest()
+            let predicates = parameters.map { NSPredicate(format: "%K == %@", $0.key, $0.value as! CVarArg) }
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+            let results = try context.fetch(request)
+            return results
+        }
+    }
+
     func filter(parameters: [String: Any]) -> AnyPublisher<[PDFEntity], Error> {
         perform { context in
             let request: NSFetchRequest<PDFEntity> = PDFEntity.fetchRequest()
@@ -192,5 +249,23 @@ extension PDFEntity {
                                 isFavourite: isFavourite,
                                 lastOpenPage: Int(lastOpenedPage),
                                 lastOpenTime: lastOpenTime)
+    }
+}
+
+extension FolderEntity {
+    func toCoreDataModel() -> FolderCoreDataModel {
+        return FolderCoreDataModel(id: id ?? "",
+                                   title: title ?? "",
+                                   pdfIds: FolderCoreDataModel.parsePdfIds(pdfIds),
+                                   createdAt: createdAt ?? Date(),
+                                   updatedAt: updatedAt ?? Date())
+    }
+
+    func convertFromCoreDataModel(coreData: FolderCoreDataModel) {
+        self.id = coreData.id
+        self.title = coreData.title
+        self.pdfIds = coreData.pdfIdsString
+        self.createdAt = coreData.createdAt
+        self.updatedAt = coreData.updatedAt
     }
 }
