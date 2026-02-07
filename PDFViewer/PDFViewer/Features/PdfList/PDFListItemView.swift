@@ -11,10 +11,9 @@ struct PDFListItemView: View {
     let pdf: PDFModelData
     let toggleFavorite: () -> Void
 
-    
     var body: some View {
-        HStack(spacing: 16) {
-            // Thumbnail with Shadow and Border
+        HStack(spacing: 12) {
+            // Thumbnail with enhanced shadow and border
             ZStack {
                 if let image = pdf.thumbImage {
                     Image(uiImage: image)
@@ -22,73 +21,86 @@ struct PDFListItemView: View {
                         .aspectRatio(contentMode: .fill)
                 } else {
                     ZStack {
-                        Color.gray.opacity(0.1)
+                        LinearGradient(
+                            colors: [Color(.systemGray6), Color(.systemGray5)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                         Image(systemName: "doc.fill")
                             .font(.system(size: 24))
-                            .foregroundColor(.gray.opacity(0.4))
+                            .foregroundColor(Color(.systemGray3))
                     }
                 }
             }
-            .frame(width: 60, height: 84)
+            .frame(width: 55, height: 75)
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                    .stroke(
+                        LinearGradient(
+                            colors: [Color(.separator).opacity(0.3), Color(.separator).opacity(0.1)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 0.5
+                    )
             )
-            .shadow(color: Color.black.opacity(0.1), radius: 6, x: 0, y: 3)
+            .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 3)
 
             // Info Section
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(pdf.title ?? "Untitled Document")
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
+                    .font(.headline)
+                    .foregroundColor(Color(.label))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                 
-                HStack(spacing: 8) {
+                // Author and page count
+                HStack(spacing: 4) {
                     if let author = pdf.author, author != "Unknown" {
                         Text(author)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.secondary)
+                            .font(.subheadline)
+                            .foregroundColor(Color(.secondaryLabel))
                             .lineLimit(1)
                         
-                        Circle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: 3, height: 3)
+                        Text("•")
+                            .font(.subheadline)
+                            .foregroundColor(Color(.tertiaryLabel))
                     }
                     
                     Text("\(pdf.totalPageCount) Pages")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.blue.opacity(0.8))
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(Color(.secondaryLabel))
                 }
                 
+                // Last opened time
                 if let lastOpened = pdf.lastOpenTime {
                     Text("Opened \(lastOpened.timeAgoDisplay())")
-                        .font(.system(size: 11))
-                        .foregroundColor(.gray)
+                        .font(.caption)
+                        .foregroundColor(Color(.tertiaryLabel))
                 }
             }
 
             Spacer()
 
-            // Favorite Button with subtle background
+            // Favorite Button
             Button(action: toggleFavorite) {
                 Image(systemName: pdf.isFavorite ? "heart.fill" : "heart")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(pdf.isFavorite ? .red : .gray.opacity(0.4))
-                    .padding(10)
-                    .background(pdf.isFavorite ? Color.red.opacity(0.08) : Color.clear)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(pdf.isFavorite ? Color(.systemRed) : Color(.systemGray3))
+                    .padding(8)
+                    .background(Color.white)
                     .clipShape(Circle())
+                    .shadow(color: Color.black.opacity(0.08), radius: 4, x: 0, y: 2)
             }
             .buttonStyle(BorderlessButtonStyle())
         }
-        .padding(12)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
-        .padding(.horizontal, 4)
-        .padding(.vertical, 6)
+        .padding(.vertical, 8)
+        .background(Color.clear)
     }
 }
+
 
 extension Date {
     func timeAgoDisplay() -> String {
@@ -101,7 +113,9 @@ extension Date {
 
 
 #Preview {
-    PDFListItemView(pdf:samplePDFModelData, toggleFavorite: {
-        
-    })
+    PDFListItemView(
+        pdf: samplePDFModelData,
+        toggleFavorite: {}
+    )
 }
+

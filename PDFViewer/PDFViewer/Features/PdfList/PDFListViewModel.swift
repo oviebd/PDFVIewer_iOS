@@ -304,6 +304,13 @@ extension PDFListViewModel {
     func getRecentFiles() -> [PDFModelData] {
         allPdfModels.sorted(by: { $0.lastOpenTime ?? .distantPast > $1.lastOpenTime ?? .distantPast })
     }
+
+    var lastOpenedPdf: PDFModelData? {
+        allPdfModels
+            .filter { $0.lastOpenTime != nil }
+            .sorted { $0.lastOpenTime! > $1.lastOpenTime! }
+            .first
+    }
 }
 
 extension PDFModelData {

@@ -29,122 +29,120 @@ struct PDFListView: View {
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
-            ZStack {
+            ZStack(alignment: .bottomTrailing) {
                 Group {
                     if viewModel.isLoading {
                         ProgressView()
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
-                        VStack(spacing: 0) {
-                            FolderRowView(
-                                folders: viewModel.folders,
-                                currentSelection: viewModel.currentSelection,
-                                onCreate: {
-                                    newFolderName = ""
-                                    showCreateFolderAlert = true
-                                },
-                                onSelect: { viewModel.updateSelection($0) },
-                                onDelete: { viewModel.deleteFolder($0) }
-                            )
-
-                            Color.gray.opacity(0.05)
-                                .frame(height: 1)
-
-                            PDFListContentView(viewModel: viewModel, onSelect: { pdf in
+                        PDFListContentView(
+                            viewModel: viewModel,
+                            onSelect: { pdf in
                                 navigationPath.append(PDFNavigationRoute.viewer(pdf))
-                            }, onMove: { pdf in
+                            },
+                            onMove: { pdf in
                                 pdfToMove = pdf
                                 showMoveToFolderSheet = true
-                            })
-                            .background(Color(red: 0.98, green: 0.98, blue: 1.0))
-                        }
-                    }
-                }
-                .navigationTitle(viewModel.currentSelection.title)
-
-                .navigationDestination(for: PDFNavigationRoute.self) { route in
-                    switch route {
-                    case let .viewer(pdf):
-                        PDFViewerView(pdfFile: pdf)
-                    }
-                }
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        HStack {
-                            ImportButton {
-                                showFilePicker.toggle()
+                            },
+                            onCreateFolder: {
+                                newFolderName = ""
+                                showCreateFolderAlert = true
                             }
+                        )
+                    }
+                }
+                .navigationTitle("Library")
+                .navigationBarTitleDisplayMode(.large)
+                
+                // Floating Action Button
+                if let lastOpened = viewModel.lastOpenedPdf {
+                    Button(action: {
+                        navigationPath.append(PDFNavigationRoute.viewer(lastOpened))
+                    }) {
+                        Image(systemName: "book.fill")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 60, height: 60)
+                            .background(
+                                Circle()
+                                    .fill(LinearGradient(
+                                        colors: [Color.blue, Color.blue.opacity(0.8)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ))
+                                    .shadow(color: Color.blue.opacity(0.3), radius: 10, x: 0, y: 5)
+                            )
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 30)
+                    .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .background(Color.white.ignoresSafeArea())
+            .navigationDestination(for: PDFNavigationRoute.self) { route in
+                switch route {
+                case let .viewer(pdf):
+                    PDFViewerView(pdfFile: pdf)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { showFilePicker.toggle() }) {
+                        Image(systemName: "square.and.arrow.down")
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        // Search functionality - placeholder
+                    }) {
+                        Image(systemName: "magnifyingglass")
+                    }
+                }
+            }
+            .sheet(isPresented: $showFilePicker) {
+                DocumentPickerRepresentable(mode: .file) { [weak viewModel] urls in
+                    viewModel?.importPDFsAndForget(urls: urls)
+                }
+            }
+            .onAppear {
+                viewModel.loadPDFsAndForget()
+            }
+            .alert("New Folder", isPresented: $showCreateFolderAlert) {
+                TextField("Folder Name", text: $newFolderName)
+                Button("Cancel", role: .cancel) { }
+                Button("Create") {
+                    if !newFolderName.isEmpty {
+                        viewModel.createFolder(title: newFolderName)
+                    }
+                }
+            }
+            .sheet(isPresented: $showMoveToFolderSheet) {
+                NavigationStack {
+                    List {
+                        Button("No Folder") {
+                            if let pdf = pdfToMove {
+                                viewModel.movePDF(pdf, to: nil)
+                            }
+                            showMoveToFolderSheet = false
                         }
-                    }
-                }
-                .sheet(isPresented: $showFilePicker) {
-                    DocumentPickerRepresentable(mode: .file) { [weak viewModel] urls in
-                        viewModel?.importPDFsAndForget(urls: urls)
-                    }
-                }
-                .onAppear {
-                    viewModel.loadPDFsAndForget()
-                }
-                .alert("New Folder", isPresented: $showCreateFolderAlert) {
-                    TextField("Folder Name", text: $newFolderName)
-                    Button("Cancel", role: .cancel) { }
-                    Button("Create") {
-                        if !newFolderName.isEmpty {
-                            viewModel.createFolder(title: newFolderName)
-                        }
-                    }
-                }
-                .sheet(isPresented: $showMoveToFolderSheet) {
-                    NavigationStack {
-                        List {
-                            Button("No Folder") {
+                        ForEach(viewModel.folders) { folder in
+                            Button(folder.title) {
                                 if let pdf = pdfToMove {
-                                    viewModel.movePDF(pdf, to: nil)
+                                    viewModel.movePDF(pdf, to: folder)
                                 }
                                 showMoveToFolderSheet = false
                             }
-                            ForEach(viewModel.folders) { folder in
-                                Button(folder.title) {
-                                    if let pdf = pdfToMove {
-                                        viewModel.movePDF(pdf, to: folder)
-                                    }
-                                    showMoveToFolderSheet = false
-                                }
-                            }
-                        }
-                        .navigationTitle("Move to Folder")
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) {
-                                Button("Close") { showMoveToFolderSheet = false }
-                            }
                         }
                     }
-                    .presentationDetents([.medium, .large])
-                }
-
-                // Floating Book Button
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Button(action: {
-                            // Add your action here
-                            if let firstPDF = viewModel.getRecentFiles().first {
-                                navigationPath.append(PDFNavigationRoute.viewer(firstPDF))
-                            }
-                        }) {
-                            Image(systemName: "book")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.blue)
-                                .padding()
-                                .background(Color.white)
-                                .clipShape(Circle())
-                                .shadow(color: Color.blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                    .navigationTitle("Move to Folder")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Close") { showMoveToFolderSheet = false }
                         }
-                        .padding()
                     }
                 }
+                .presentationDetents([.medium, .large])
             }
         }
     }
@@ -156,181 +154,72 @@ struct PDFListView: View {
     }
 }
 
-struct ImportButton: View {
-    var action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: "square.and.arrow.down")
-                .font(.subheadline)
-        }
-    }
-}
-
 struct PDFListContentView: View {
     @ObservedObject var viewModel: PDFListViewModel
     var onSelect: (PDFModelData) -> Void
     var onMove: (PDFModelData) -> Void
+    var onCreateFolder: () -> Void
+    
+    @State private var pdfToDelete: PDFModelData?
+    @State private var showDeleteConfirmation = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(viewModel.visiblePdfModels, id: \.id) { pdf in
-                        Button(action: {
-                            onSelect(pdf)
-                        }) {
-                            PDFListItemView(
-                                pdf: pdf,
-                                toggleFavorite: { viewModel.toggleFavorite(for: pdf) }
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .contextMenu {
-                            Button {
-                                onMove(pdf)
-                            } label: {
-                                Label("Move to Folder", systemImage: "folder.badge.plus")
-                            }
-                        }
-                        .swipeActions(edge: .leading) {
-                            Button {
-                                onMove(pdf)
-                            } label: {
-                                Label("Move", systemImage: "folder.badge.plus")
-                            }
-                            .tint(.blue)
-                        }
-                    }
-                    .onDelete(perform: viewModel.deletePdf)
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 100)
-            }
-        }
-    }
-}
-
-struct FolderRowView: View {
-    let folders: [FolderModelData]
-    let currentSelection: PDFListSelection
-    let onCreate: () -> Void
-    let onSelect: (PDFListSelection) -> Void
-    let onDelete: (FolderModelData) -> Void
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 16) {
-                // "All" folder
-                FolderItem(
-                    title: "All",
-                    icon: "tray.full.fill",
-                    color: .blue,
-                    isSelected: currentSelection == .all,
-                    action: { onSelect(.all) }
+        Group {
+            if viewModel.allPdfModels.isEmpty {
+                PDFListEmptyView(
+                    viewModel: viewModel,
+                    onCreateFolder: onCreateFolder
                 )
-
-                // "Favorite" folder
-                FolderItem(
-                    title: "Favorite",
-                    icon: "heart.fill",
-                    color: .red,
-                    isSelected: currentSelection == .favorite,
-                    action: { onSelect(.favorite) }
-                )
-
-                // "Recent" folder
-                FolderItem(
-                    title: "Recent",
-                    icon: "clock.fill",
-                    color: .green,
-                    isSelected: currentSelection == .recent,
-                    action: { onSelect(.recent) }
-                )
-
-                ForEach(Array(folders.enumerated()), id: \.element.id) { index, folder in
-                    FolderItem(
-                        title: folder.title,
-                        icon: "folder.fill",
-                        color: folderColor(for: index),
-                        isSelected: currentSelection == .folder(folder),
-                        action: { onSelect(.folder(folder)) }
+            } else {
+                List {
+                    PDFListHeaderView(
+                        viewModel: viewModel,
+                        onCreateFolder: onCreateFolder
                     )
-                    .contextMenu {
-                        Button(role: .destructive) {
-                            onDelete(folder)
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    }
-                }
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.white)
 
-                // Add Button
-                Button(action: onCreate) {
-                    VStack(spacing: 8) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.gray.opacity(0.1))
-                                .frame(width: 52, height: 52)
-                            Image(systemName: "plus")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.gray)
-                        }
-                        Text("New")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.secondary)
+                    ForEach(viewModel.visiblePdfModels, id: \.id) { pdf in
+                        PDFListRowContainer(
+                                pdf: pdf,
+                                viewModel: viewModel,
+                                onSelect: onSelect,
+                                onMove: onMove,
+                                onDelete: { pdf in
+                                    pdfToDelete = pdf
+                                    showDeleteConfirmation = true
+                                }
+                            )
                     }
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .background(Color.white)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
         }
-        .background(Color(red: 0.98, green: 0.98, blue: 1.0))
-    }
-
-    private func folderColor(for index: Int) -> Color {
-        let colors: [Color] = [.blue, .purple, .orange, .teal, .pink, .indigo]
-        return colors[index % colors.count]
-    }
-}
-
-struct FolderItem: View {
-    let title: String
-    let icon: String
-    let color: Color
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 10) {
-                ZStack {
-                    if isSelected {
-                        Circle()
-                            .fill(color)
-                            .frame(width: 52, height: 52)
-                            .shadow(color: color.opacity(0.3), radius: 8, x: 0, y: 4)
-
-                        Image(systemName: icon)
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.white)
-                    } else {
-                        Circle()
-                            .fill(color.opacity(0.1))
-                            .frame(width: 52, height: 52)
-
-                        Image(systemName: icon)
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(color)
-                    }
-                }
-
-                Text(title)
-                    .font(.system(size: 11, weight: isSelected ? .bold : .medium))
-                    .foregroundColor(isSelected ? color : .primary.opacity(0.7))
-                    .lineLimit(1)
+        .alert("Delete PDF?", isPresented: $showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {
+                pdfToDelete = nil
             }
-            .frame(width: 64)
+            Button("Delete", role: .destructive) {
+                if let pdf = pdfToDelete,
+                   let index = viewModel.visiblePdfModels.firstIndex(where: { $0.key == pdf.key }) {
+                    viewModel.deletePdf(indexSet: IndexSet(integer: index))
+                }
+                pdfToDelete = nil
+            }
+        } message: {
+            if let pdf = pdfToDelete {
+                Text("Are you sure you want to delete '\(pdf.title ?? "this PDF")'? This action cannot be undone.")
+            }
         }
     }
 }
+
+
+
+
+
+
+
