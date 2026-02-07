@@ -141,7 +141,7 @@ final class PDFListViewModel: ObservableObject {
         return repository.retrieve()
             .receive(on: DispatchQueue.main)
             .handleEvents(receiveOutput: { [weak self] models in
-                self?.allPdfModels = models
+                self?.allPdfModels = models.sorted(by: { $0.lastOpenTime ?? .distantPast > $1.lastOpenTime ?? .distantPast })
                 self?.applySelection()
             }, receiveCompletion: { [weak self] completion in
                 self?.isLoading = false
@@ -306,7 +306,7 @@ extension PDFListViewModel {
     }
 
     var lastOpenedPdf: PDFModelData? {
-        allPdfModels
+        visiblePdfModels
             .filter { $0.lastOpenTime != nil }
             .sorted { $0.lastOpenTime! > $1.lastOpenTime! }
             .first

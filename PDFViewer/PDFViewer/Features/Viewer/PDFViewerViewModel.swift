@@ -28,6 +28,8 @@ class PDFViewerViewModel: ObservableObject {
 
     private var repository: PDFRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
+    private var backgroundCancellables = Set<AnyCancellable>()
+    private let pageChangeSubject = PassthroughSubject<Int, Never>()
 
 
     init(pdfFile: PDFModelData, repository: PDFRepositoryProtocol) {
@@ -55,12 +57,30 @@ class PDFViewerViewModel: ObservableObject {
         if let url = currentPDF {
             repository.getSingleData(pdfKey: pdfData.key)
                 .receive(on: DispatchQueue.main)
-                .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] updatedModel in
+                .sink(receiveCompletion: { completion in
+                    if case .failure(let error) = completion {
+                    }
+                }, receiveValue: { [weak self] updatedModel in
                     self?.pdfData.annotationdata = updatedModel.annotationdata
+                    self?.pdfData.lastOpenedPage = updatedModel.lastOpenedPage
+                    self?.pdfData.lastOpenTime = updatedModel.lastOpenTime
+                    
+                    // Update last opened time NOW that we have synced
+                    self?.pdfData.lastOpenTime = Date()
+                    self?.saveToDB()
+                    
                     self?.actions.loadAnnotations(from: updatedModel.annotationdata, for: url)
+                    self?.goToPage()
                 })
                 .store(in: &cancellables)
         }
+
+        pageChangeSubject
+            .debounce(for: .seconds(5), scheduler: RunLoop.main)
+            .sink { [weak self] page in
+                self?.saveLastOpenedPageNumberInDb()
+            }
+            .store(in: &cancellables)
     }
     
     deinit {
@@ -69,6 +89,7 @@ class PDFViewerViewModel: ObservableObject {
     }
     
     func unloadPdfData(){
+        saveLastOpenedPageNumberInDb(isFinal: true)
         currentPDF?.stopAccessingSecurityScopedResource()
         cancellables.removeAll()
     }
@@ -150,20 +171,27 @@ extension PDFViewerViewModel {
         saveToDB()
     }
 
-    func saveLastOpenedPageNumberInDb() {
+    func saveLastOpenedPageNumberInDb(isFinal: Bool = false) {
         if let lastOpenedPageNumber = actions.getCurrentPageNumber() {
             pdfData.lastOpenedPage = lastOpenedPageNumber
-            saveToDB()
+            saveToDB(isFinal: isFinal)
         }
     }
 
-    func saveToDB() {
-        repository.update(updatedPdfData: pdfData)
+    func saveToDB(isFinal: Bool = false) {
+        let publisher = repository.update(updatedPdfData: pdfData)
             .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { _ in }, receiveValue: { _ in
-                //  self?.UpdatePdfList(updatedModel: updatedModel)
+            .sink(receiveCompletion: { completion in
+                if case .failure(let error) = completion {
+                }
+            }, receiveValue: { updatedModel in
             })
-            .store(in: &cancellables)
+        
+        if isFinal {
+            publisher.store(in: &backgroundCancellables)
+        } else {
+            publisher.store(in: &cancellables)
+        }
     }
 }
 

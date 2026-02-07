@@ -58,6 +58,8 @@ class PDFLocalDataStore {
                 entity.bookmarkData = model.bookmarkData
                 entity.isFavourite = model.isFavourite
                 entity.annotationData = model.annotationdata
+                entity.lastOpenedPage = Int16(model.lastOpenedPage)
+                entity.lastOpenTime = model.lastOpenTime
             }
             do {
                 try context.save()
