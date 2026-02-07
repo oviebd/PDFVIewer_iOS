@@ -91,13 +91,6 @@ struct PDFListView: View {
                         Image(systemName: "square.and.arrow.down")
                     }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        // Search functionality - placeholder
-                    }) {
-                        Image(systemName: "magnifyingglass")
-                    }
-                }
             }
             .sheet(isPresented: $showFilePicker) {
                 DocumentPickerRepresentable(mode: .file) { [weak viewModel] urls in

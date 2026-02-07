@@ -12,14 +12,17 @@ struct PDFListHeaderView: View {
     var onCreateFolder: () -> Void
 
     var body: some View {
-        FilterSegmentView(
-            folders: viewModel.folders,
-            currentSelection: viewModel.currentSelection,
-            onCreate: onCreateFolder,
-            onSelect: { viewModel.updateSelection($0) },
-            onDelete: { viewModel.deleteFolder($0) },
-            viewModel: viewModel
-        )
+        VStack(spacing: 0) {
+            FilterSegmentView(
+                folders: viewModel.folders,
+                currentSelection: viewModel.currentSelection,
+                onCreate: onCreateFolder,
+                onSelect: { viewModel.updateSelection($0) },
+                onDelete: { viewModel.deleteFolder($0) },
+                viewModel: viewModel
+            )
+            Divider()
+        }
         .listRowInsets(EdgeInsets())
         .background(Color.white)
     }
