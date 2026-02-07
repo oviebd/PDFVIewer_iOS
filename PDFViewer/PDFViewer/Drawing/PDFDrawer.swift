@@ -11,9 +11,11 @@ import PDFKit
 
 enum AnnotationTool : Int {
     case none = -1
-    case eraser = 0
     case pen = 2
+    case pencil = 4
     case highlighter = 3
+    case text = 5
+    case eraser = 0
     
     var alpha: CGFloat {
         switch self {

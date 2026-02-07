@@ -13,6 +13,7 @@ class PDFViewerViewModel: ObservableObject {
     @Published var pdfData: PDFModelData
     @Published var currentPDF: URL?
     @Published var annotationSettingData: PDFAnnotationSetting = .noneData()
+    @Published var lastDrawingColor: UIColor = .red
     @Published var zoomScale: CGFloat = 1.0
     @Published var readingMode: ReadingMode = .normal
     @Published var showPalette = false
@@ -22,6 +23,8 @@ class PDFViewerViewModel: ObservableObject {
     @Published var settings = PDFSettings()
     @Published var displayBrightness: CGFloat = 100
     @Published var pageProgressText: String = ""
+    @Published var canUndo: Bool = false
+    @Published var canRedo: Bool = false
 
     private var repository: PDFRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
@@ -75,10 +78,27 @@ class PDFViewerViewModel: ObservableObject {
         self.readingMode = readingMode
     }
 
-    func updateAnnotationSetting(_ setting: PDFAnnotationSetting, manager: DrawingToolManager) {
-        annotationSettingData = setting
-        manager.selectePdfdSetting = setting
-        manager.updatePdfSettingData(newSetting: setting)
+    func selectTool(_ setting: PDFAnnotationSetting, manager: DrawingToolManager) {
+        withAnimation {
+            let newSetting = (annotationSettingData.annotationTool == setting.annotationTool) ? .noneData() : setting
+            annotationSettingData = newSetting
+            if newSetting.annotationTool != .none && newSetting.annotationTool != .eraser {
+                lastDrawingColor = newSetting.color
+            }
+            manager.selectePdfdSetting = newSetting
+            manager.updatePdfSettingData(newSetting: newSetting)
+        }
+    }
+
+    func updateAnnotationData(_ setting: PDFAnnotationSetting, manager: DrawingToolManager) {
+        withAnimation {
+            annotationSettingData = setting
+            if setting.annotationTool != .none && setting.annotationTool != .eraser {
+                lastDrawingColor = setting.color
+            }
+            manager.selectePdfdSetting = setting
+            manager.updatePdfSettingData(newSetting: setting)
+        }
     }
 
     func zoomIn() {
@@ -89,6 +109,14 @@ class PDFViewerViewModel: ObservableObject {
     func zoomOut() {
         zoomScale = max(zoomScale - 0.2, 0.5)
         actions.setZoomScale(scaleFactor: zoomScale)
+    }
+
+    func undo() {
+        actions.undo()
+    }
+
+    func redo() {
+        actions.redo()
     }
 
     func savePDFWithAnnotation() {
@@ -151,6 +179,16 @@ extension PDFViewerViewModel {
         actions.onAnnotationEditFinished = { [weak self] in
              self?.savePDFWithAnnotation()
         }
+
+        actions.$canUndo
+            .receive(on: RunLoop.main)
+            .assign(to: \.canUndo, on: self)
+            .store(in: &cancellables)
+
+        actions.$canRedo
+            .receive(on: RunLoop.main)
+            .assign(to: \.canRedo, on: self)
+            .store(in: &cancellables)
     }
 
     func goToPage() {

@@ -30,8 +30,10 @@ class DrawingToolManager: ObservableObject {
 extension DrawingToolManager {
     static func dummyData() -> DrawingToolManager {
         DrawingToolManager(pdfSettings: [PDFAnnotationSetting(annotationTool: .none, lineWidth: 0.0, color: .clear, isExpandable: false),
-                                         PDFAnnotationSetting(annotationTool: .pen, lineWidth: 1.0, color: .red, isExpandable: true),
-                                         PDFAnnotationSetting(annotationTool: .highlighter, lineWidth: 10.0, color: .blue, isExpandable: true),
+                                         PDFAnnotationSetting(annotationTool: .pen, lineWidth: 2.0, color: .red, isExpandable: true),
+                                         PDFAnnotationSetting(annotationTool: .pencil, lineWidth: 1.0, color: .gray, isExpandable: true),
+                                         PDFAnnotationSetting(annotationTool: .highlighter, lineWidth: 15.0, color: .blue, isExpandable: true),
+                                         PDFAnnotationSetting(annotationTool: .text, lineWidth: 1.0, color: .black, isExpandable: false),
                                          PDFAnnotationSetting(annotationTool: .eraser, lineWidth: 1.0, color: .yellow, isExpandable: false)],
                            selectePdfdSetting: .noneData())
     }

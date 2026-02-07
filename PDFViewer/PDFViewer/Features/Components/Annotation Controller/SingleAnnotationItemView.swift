@@ -25,42 +25,23 @@ struct SingleAnnotationItemView: View {
                 onDrawingToolSelected?(itemAnnotationSetting)
             }) {
                 ZStack {
-                    Circle()
-                        .fill(Color.gray.opacity(0.1))
-                        .frame(width: 25, height: 25)
-                        .overlay(
-                            Circle()
-                                .stroke(getSelectedColor(), lineWidth: isSelected ? 3 : 1)
-                        )
-                        .overlay(
-                            Image(systemName: itemAnnotationSetting.annotationTool.iconName)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(getSelectedColor())
-                        )
-                        .scaleEffect(isSelected ? 1.1 : 1.0)
-                        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
-                }
-            }
-
-            if isSelected && isExpandable() {
-                Button(action: {
-                    onPalettePressed?(itemAnnotationSetting)
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.gray)
-                        Image(systemName: "paintpalette.fill") //
-                            .resizable()
-                            .scaledToFit()
-                            .padding(5)
-                            .foregroundColor(.white)
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(red: 255/255, green: 87/255, blue: 34/255)) // Orange-red color from image
+                            .frame(width: 44, height: 44)
+                            .shadow(color: Color(red: 255/255, green: 87/255, blue: 34/255).opacity(0.3), radius: 8, x: 0, y: 4)
                     }
-                    .frame(width: 25, height: 25)
+                    
+                    Image(systemName: itemAnnotationSetting.annotationTool.iconName)
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(isSelected ? .white : Color(red: 0.2, green: 0.25, blue: 0.35))
                 }
-                .transition(.scale.combined(with: .opacity))
+                .frame(width: 44, height: 44)
+                .scaleEffect(isSelected ? 1.05 : 1.0)
+                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
             }
         }
-        .padding(4)
+        .padding(2)
     }
 
     func isExpandable() -> Bool {
@@ -84,13 +65,17 @@ extension AnnotationTool {
     var iconName: String {
         switch self {
         case .none:
-            return "nosign" // A clear, universal "disable" symbol
+            return "nosign"
         case .pen:
-            return "pencil.tip" // Represents a precise drawing pen
+            return "pencil.tip"
+        case .pencil:
+            return "pencil"
         case .highlighter:
-            return "highlighter" // SF Symbol specifically for highlighters (introduced in iOS 16+)
+            return "highlighter"
+        case .text:
+            return "textformat"
         case .eraser:
-            return "eraser.fill" // Commonly used eraser icon
+            return "eraser.line.dashed"
         }
     }
 }

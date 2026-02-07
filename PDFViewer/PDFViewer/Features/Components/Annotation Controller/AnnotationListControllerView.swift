@@ -10,7 +10,6 @@ import SwiftUI
 struct AnnotationListControllerView: View {
     var annotationSettingItems: [PDFAnnotationSetting]
 
-    @State private var itemAnnotationSetting: PDFAnnotationSetting? = .dummyData()
 
     var onDrawingToolSelected: ((PDFAnnotationSetting) -> Void)?
     var onPalettePressed: ((PDFAnnotationSetting) -> Void)?
@@ -26,16 +25,13 @@ struct AnnotationListControllerView: View {
     }
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 4) {
             ForEach(annotationSettingItems, id: \.self) { tool in
                 if tool.annotationTool != .none {
                     SingleAnnotationItemView(
                         itemAnnotationSetting: tool,
-                        onDrawingToolSelected: { tool in
-                            withAnimation {
-                                itemAnnotationSetting = (itemAnnotationSetting == tool) ? PDFAnnotationSetting.noneData() : tool
-                                onDrawingToolSelected?(itemAnnotationSetting!)
-                            }
+                        onDrawingToolSelected: { tappedTool in
+                             onDrawingToolSelected?(tappedTool)
                         },
                         onPalettePressed: onPalettePressed
                     )

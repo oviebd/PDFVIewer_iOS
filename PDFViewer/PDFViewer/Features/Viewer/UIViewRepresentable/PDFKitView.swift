@@ -15,6 +15,9 @@ class PDFKitViewActions: ObservableObject {
     fileprivate let annotationEditFinishedPublisher = PassthroughSubject<Void, Never>()
     private var cancellables = Set<AnyCancellable>()
 
+    @Published var canUndo: Bool = false
+    @Published var canRedo: Bool = false
+
     var onPageChanged: ((Int) -> Void)?
     var onAnnotationEditFinished: (() -> Void)?
 
@@ -43,6 +46,14 @@ class PDFKitViewActions: ObservableObject {
         coordinator?.goToPage(pageNumber)
     }
 
+    func undo() {
+        coordinator?.undo()
+    }
+
+    func redo() {
+        coordinator?.redo()
+    }
+
     func getCurrentPageNumber() -> Int? {
         return coordinator?.getCurrentPageNumber()
     }
@@ -61,6 +72,13 @@ class PDFKitViewActions: ObservableObject {
     
     deinit{
         cancellables.removeAll()
+    }
+}
+
+class UndoableCanvasView: PKCanvasView {
+    var injectedUndoManager: UndoManager?
+    override var undoManager: UndoManager? {
+        return injectedUndoManager ?? super.undoManager
     }
 }
 
@@ -151,6 +169,7 @@ struct PDFKitView: UIViewRepresentable {
         var displayLink: CADisplayLink?
         private var timerPublisher: AnyCancellable?
         private let pdfSaveQueue = DispatchQueue(label: "com.yourapp.pdfSaveQueue")
+        private let annotationUndoManager = UndoManager()
 
         init(actions: PDFKitViewActions) {
             self.actions = actions
@@ -255,7 +274,8 @@ struct PDFKitView: UIViewRepresentable {
                 
                 // Create canvas if needed
                 if canvasViews[pageIndex] == nil {
-                    let canvasView = PKCanvasView()
+                    let canvasView = UndoableCanvasView()
+                    canvasView.injectedUndoManager = annotationUndoManager
                     canvasView.backgroundColor = .clear
                     canvasView.isOpaque = false
                     canvasView.drawingPolicy = .anyInput
@@ -327,6 +347,8 @@ struct PDFKitView: UIViewRepresentable {
             switch setting.annotationTool {
             case .pen:
                 tool = PKInkingTool(.pen, color: setting.color, width: setting.lineWidth)
+            case .pencil:
+                tool = PKInkingTool(.pencil, color: setting.color, width: setting.lineWidth)
             case .highlighter:
                 tool = PKInkingTool(.marker, color: setting.color, width: setting.lineWidth)
             case .eraser:
@@ -350,6 +372,7 @@ struct PDFKitView: UIViewRepresentable {
             if let index = canvasViews.first(where: { $0.value === canvasView })?.key, let url = pdfURL {
                  annotationManager.updateCache(for: index, canvasView: canvasView, pdfURL: url)
             }
+            updateUndoRedoStates()
             actions?.notifyAnnotationEditingFinished()
         }
 
@@ -397,8 +420,23 @@ struct PDFKitView: UIViewRepresentable {
             pdfView.go(to: page)
         }
 
+        func updateUndoRedoStates() {
+            actions?.canUndo = annotationUndoManager.canUndo
+            actions?.canRedo = annotationUndoManager.canRedo
+        }
+
         func getTotalPageNumber() -> Int? {
             return pdfView?.document?.pageCount
+        }
+
+        func undo() {
+            annotationUndoManager.undo()
+            updateUndoRedoStates()
+        }
+
+        func redo() {
+            annotationUndoManager.redo()
+            updateUndoRedoStates()
         }
 
         func getCurrentPageNumber() -> Int? {
