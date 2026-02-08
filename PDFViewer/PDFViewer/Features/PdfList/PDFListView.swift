@@ -26,6 +26,7 @@ struct PDFListView: View {
     @State private var newFolderName = ""
     @State private var pdfToMove: PDFModelData?
     @State private var showMoveToFolderSheet = false
+    @State private var showMultiDeleteConfirmation = false
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
@@ -76,6 +77,28 @@ struct PDFListView: View {
                     .padding(.bottom, 30)
                     .transition(.scale.combined(with: .opacity))
                 }
+                
+                // Toast Message Overlay
+                if let message = viewModel.toastMessage {
+                    VStack {
+                        Spacer()
+                        Text(message)
+                            .font(.subheadline)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(
+                                Capsule()
+                                    .fill(Color.black.opacity(0.8))
+                                    .shadow(radius: 4)
+                            )
+                            .padding(.bottom, viewModel.isMultiSelectMode ? 100 : 40)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .animation(.spring(), value: viewModel.toastMessage)
+                    .zIndex(100)
+                }
             }
             .navigationTitle("Library")
             .navigationBarTitleDisplayMode(.large)
@@ -87,9 +110,26 @@ struct PDFListView: View {
                 }
             }
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showFilePicker.toggle() }) {
-                        Image(systemName: "square.and.arrow.down")
+                if viewModel.isMultiSelectMode {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel") {
+                            viewModel.exitMultiSelectMode()
+                        }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(viewModel.selectedPDFKeys.count == viewModel.visiblePdfModels.count ? "Deselect All" : "Select All") {
+                            if viewModel.selectedPDFKeys.count == viewModel.visiblePdfModels.count {
+                                viewModel.deselectAll()
+                            } else {
+                                viewModel.selectAll()
+                            }
+                        }
+                    }
+                } else {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: { showFilePicker.toggle() }) {
+                            Image(systemName: "square.and.arrow.down")
+                        }
                     }
                 }
             }
@@ -119,14 +159,18 @@ struct PDFListView: View {
                 NavigationStack {
                     List {
                         Button("No Folder") {
-                            if let pdf = pdfToMove {
+                            if viewModel.isMultiSelectMode {
+                                viewModel.moveSelectedPDFs(to: nil)
+                            } else if let pdf = pdfToMove {
                                 viewModel.movePDF(pdf, to: nil)
                             }
                             showMoveToFolderSheet = false
                         }
                         ForEach(viewModel.folders) { folder in
                             Button(folder.title) {
-                                if let pdf = pdfToMove {
+                                if viewModel.isMultiSelectMode {
+                                    viewModel.moveSelectedPDFs(to: folder)
+                                } else if let pdf = pdfToMove {
                                     viewModel.movePDF(pdf, to: folder)
                                 }
                                 showMoveToFolderSheet = false
@@ -142,6 +186,41 @@ struct PDFListView: View {
                     }
                 }
                 .presentationDetents([.medium, .large])
+            }
+            .safeAreaInset(edge: .bottom) {
+                if viewModel.isMultiSelectMode {
+                    VStack(spacing: 0) {
+                        Divider()
+                        HStack {
+                            Button(role: .destructive) {
+                                showMultiDeleteConfirmation = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            .disabled(viewModel.selectedPDFKeys.isEmpty)
+                            
+                            Spacer()
+                            
+                            Button {
+                                showMoveToFolderSheet = true
+                            } label: {
+                                Label("Move", systemImage: "folder.badge.plus")
+                            }
+                            .disabled(viewModel.selectedPDFKeys.isEmpty)
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial)
+                    }
+                    .transition(.move(edge: .bottom))
+                }
+            }
+            .alert("Delete Selected PDFs?", isPresented: $showMultiDeleteConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) {
+                    viewModel.deleteSelectedPDFs()
+                }
+            } message: {
+                Text("Are you sure you want to delete \(viewModel.selectedPDFKeys.count) selected PDFs? This action cannot be undone.")
             }
         }
     }
@@ -182,6 +261,7 @@ struct PDFListContentView: View {
                     ForEach(viewModel.visiblePdfModels, id: \.id) { pdf in
                         PDFListRowContainer(
                                 pdf: pdf,
+                                viewModel: viewModel,
                                 onSelect: onSelect,
                                 onMove: onMove,
                                 onDelete: { pdf in

@@ -9,10 +9,19 @@ import SwiftUI
 
 struct PDFListItemView: View {
     let pdf: PDFModelData
+    let isMultiSelectMode: Bool
+    let isSelected: Bool
     let toggleFavorite: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
+            if isMultiSelectMode {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 24))
+                    .foregroundColor(isSelected ? .blue : .gray)
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+            }
+
             // Thumbnail with enhanced shadow and border
             ZStack {
                 if let image = pdf.thumbImage {
@@ -115,6 +124,8 @@ extension Date {
 #Preview {
     PDFListItemView(
         pdf: samplePDFModelData,
+        isMultiSelectMode: false,
+        isSelected: false,
         toggleFavorite: {}
     )
 }

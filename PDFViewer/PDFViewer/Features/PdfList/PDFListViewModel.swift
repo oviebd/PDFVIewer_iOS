@@ -44,11 +44,15 @@ final class PDFListViewModel: ObservableObject {
     @Published var importViewModel: PDFImportViewModel?
     @Published var isShowingImportProgress = false
 
+    @Published var isMultiSelectMode: Bool = false
+    @Published var selectedPDFKeys: Set<String> = []
+
     private var repository: PDFRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
 
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var toastMessage: String?
 
     init(repository: PDFRepositoryProtocol) {
         self.repository = repository
@@ -117,24 +121,42 @@ final class PDFListViewModel: ObservableObject {
     }
 
     func movePDF(_ pdf: PDFModelData, to folder: FolderModelData?) {
-        // Remove from current folder if any
-        for f in folders {
-            if let index = f.pdfIds.firstIndex(of: pdf.key) {
-                var updatedPdfIds = f.pdfIds
-                updatedPdfIds.remove(at: index)
-                f.pdfIds = updatedPdfIds
-                updateFolder(f)
+        movePDFs([pdf], to: folder)
+    }
+
+    func movePDFs(_ pdfs: [PDFModelData], to folder: FolderModelData?) {
+        for pdf in pdfs {
+            // Remove from current folder if any
+            for f in folders {
+                if let index = f.pdfIds.firstIndex(of: pdf.key) {
+                    var updatedPdfIds = f.pdfIds
+                    updatedPdfIds.remove(at: index)
+                    f.pdfIds = updatedPdfIds
+                    updateFolder(f)
+                }
+            }
+
+            // Add to new folder
+            if let targetFolder = folder {
+                var updatedPdfIds = targetFolder.pdfIds
+                if !updatedPdfIds.contains(pdf.key) {
+                    updatedPdfIds.append(pdf.key)
+                    targetFolder.pdfIds = updatedPdfIds
+                    updateFolder(targetFolder)
+                }
             }
         }
-
-        // Add to new folder
-        if let targetFolder = folder {
-            var updatedPdfIds = targetFolder.pdfIds
-            if !updatedPdfIds.contains(pdf.key) {
-                updatedPdfIds.append(pdf.key)
-                targetFolder.pdfIds = updatedPdfIds
-                updateFolder(targetFolder)
-            }
+        
+        // Immediate list update
+        applySelection()
+        
+        // Confirmation Toast
+        let folderName = folder?.title ?? "No Folder"
+        let count = pdfs.count
+        toastMessage = count == 1 ? "Moved '\(pdfs[0].title ?? "PDF")' to \(folderName)" : "Moved \(count) items to \(folderName)"
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            self.toastMessage = nil
         }
     }
 
@@ -225,17 +247,18 @@ final class PDFListViewModel: ObservableObject {
     }
 
     func deletePdf(indexSet: IndexSet) {
-        if let index = indexSet.first {
-            
-            let pdfToDelete = visiblePdfModels[index]
+        let pdfsToDelete = indexSet.map { visiblePdfModels[$0] }
+        deletePdfs(pdfsToDelete)
+    }
 
-            repository.delete(pdfKey: pdfToDelete.key)
+    func deletePdfs(_ pdfs: [PDFModelData]) {
+        for pdf in pdfs {
+            repository.delete(pdfKey: pdf.key)
                 .receive(on: DispatchQueue.main)
                 .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] isSuccess in
-
                     if isSuccess {
-                        self?.visiblePdfModels.remove(at: index)
-                        self?.allPdfModels.removeAll { $0.key == pdfToDelete.key }
+                        self?.visiblePdfModels.removeAll { $0.key == pdf.key }
+                        self?.allPdfModels.removeAll { $0.key == pdf.key }
                     }
                 })
                 .store(in: &cancellables)
@@ -276,6 +299,50 @@ extension PDFListViewModel {
             .filter { $0.lastOpenTime != nil }
             .sorted { $0.lastOpenTime! > $1.lastOpenTime! }
             .first
+    }
+
+    // MARK: - Multi-Select Actions
+
+    func enterMultiSelectMode(with pdfKey: String? = nil) {
+        isMultiSelectMode = true
+        selectedPDFKeys.removeAll()
+        if let key = pdfKey {
+            selectedPDFKeys.insert(key)
+        }
+    }
+
+    func exitMultiSelectMode() {
+        isMultiSelectMode = false
+        selectedPDFKeys.removeAll()
+    }
+
+    func toggleSelection(for pdfKey: String) {
+        if selectedPDFKeys.contains(pdfKey) {
+            selectedPDFKeys.remove(pdfKey)
+        } else {
+            selectedPDFKeys.insert(pdfKey)
+        }
+    }
+
+    func selectAll() {
+        let allVisibleKeys = visiblePdfModels.map { $0.key }
+        selectedPDFKeys = Set(allVisibleKeys)
+    }
+
+    func deselectAll() {
+        selectedPDFKeys.removeAll()
+    }
+
+    func deleteSelectedPDFs() {
+        let pdfsToDelete = visiblePdfModels.filter { selectedPDFKeys.contains($0.key) }
+        deletePdfs(pdfsToDelete)
+        exitMultiSelectMode()
+    }
+
+    func moveSelectedPDFs(to folder: FolderModelData?) {
+        let pdfsToMove = visiblePdfModels.filter { selectedPDFKeys.contains($0.key) }
+        movePDFs(pdfsToMove, to: folder)
+        exitMultiSelectMode()
     }
 }
 
