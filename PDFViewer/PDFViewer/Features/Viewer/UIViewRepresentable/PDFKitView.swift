@@ -217,9 +217,7 @@ struct PDFKitView: UIViewRepresentable {
         }
         
         func refreshDocument() {
-            guard let document = pdfView?.document else { return }
-            
-            // Clear all current canvases
+          
             canvasViews.values.forEach { $0.removeFromSuperview() }
             canvasViews.removeAll()
             pageOriginalSizes.removeAll() // We don't need this pre-calculated anymore

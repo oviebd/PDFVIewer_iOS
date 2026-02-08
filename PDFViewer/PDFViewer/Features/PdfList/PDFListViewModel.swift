@@ -40,6 +40,9 @@ final class PDFListViewModel: ObservableObject {
     @Published var allPdfModels: [PDFModelData] = []
     @Published var visiblePdfModels: [PDFModelData] = []
     @Published var folders: [FolderModelData] = []
+    
+    @Published var importViewModel: PDFImportViewModel?
+    @Published var isShowingImportProgress = false
 
     private var repository: PDFRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
@@ -191,52 +194,34 @@ final class PDFListViewModel: ObservableObject {
         }
     }
     
-    func importPDFs(bookmarkDatas: [BookmarkDataClass]) -> AnyPublisher<Void, Error> {
-        let existingKeys = Set(allPdfModels.map { $0.key })
-        
-        let newPDFModels = bookmarkDatas.compactMap { data -> PDFModelData? in
-            if existingKeys.contains(data.key) {
-                return nil
-            }
-            return PDFModelData(key: data.key, bookmarkData: data.data, annotationdata: nil, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
-        }
-
-        if newPDFModels.isEmpty {
-            return Just(())
-                .setFailureType(to: Error.self)
-                .eraseToAnyPublisher()
-        }
-
-        return repository.insert(pdfDatas: newPDFModels)
-            .receive(on: DispatchQueue.main)
-            .map { [weak self] _ in
-                guard let self = self else { return }
-                
-                // Locally update the list
-                self.allPdfModels.append(contentsOf: newPDFModels)
-                
-                // Update folder if needed
-                if case .folder(let currentFolder) = self.currentSelection {
-                    let newKeys = newPDFModels.map { $0.key }
-                    var updatedPdfIds = currentFolder.pdfIds
-                    for key in newKeys {
-                        if !updatedPdfIds.contains(key) {
-                            updatedPdfIds.append(key)
-                        }
-                    }
-                    currentFolder.pdfIds = updatedPdfIds
-                    self.updateFolder(currentFolder)
-                }
-                
-                self.applySelection()
-            }
-            .eraseToAnyPublisher()
-    }
-
     func importPDFsAndForget(urls: [BookmarkDataClass]) {
-        importPDFs(bookmarkDatas: urls)
-            .sink(receiveCompletion: { _ in }, receiveValue: { _ in })
-            .store(in: &cancellables)
+        let existingKeys = Set(allPdfModels.map { $0.key })
+        let vm = PDFImportViewModel(bookmarkDatas: urls, repository: repository, existingKeys: existingKeys)
+        
+        vm.onCompletion = { [weak self] newModels in
+            guard let self = self else { return }
+            
+            // Locally update the list
+            self.allPdfModels.append(contentsOf: newModels)
+            
+            // Update folder if needed
+            if case .folder(let currentFolder) = self.currentSelection {
+                let newKeys = newModels.map { $0.key }
+                var updatedPdfIds = currentFolder.pdfIds
+                for key in newKeys {
+                    if !updatedPdfIds.contains(key) {
+                        updatedPdfIds.append(key)
+                    }
+                }
+                currentFolder.pdfIds = updatedPdfIds
+                self.updateFolder(currentFolder)
+            }
+            
+            self.applySelection()
+        }
+        
+        self.importViewModel = vm
+        self.isShowingImportProgress = true
     }
 
     func deletePdf(indexSet: IndexSet) {

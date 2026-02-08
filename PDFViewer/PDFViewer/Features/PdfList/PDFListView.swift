@@ -98,6 +98,11 @@ struct PDFListView: View {
                     viewModel?.importPDFsAndForget(urls: urls)
                 }
             }
+            .sheet(isPresented: $viewModel.isShowingImportProgress) {
+                if let importVM = viewModel.importViewModel {
+                    PDFImportView(viewModel: importVM)
+                }
+            }
             .onAppear {
                 viewModel.onViewAppear()
             }

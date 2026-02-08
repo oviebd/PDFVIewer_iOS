@@ -58,7 +58,7 @@ class PDFViewerViewModel: ObservableObject {
             repository.getSingleData(pdfKey: pdfData.key)
                 .receive(on: DispatchQueue.main)
                 .sink(receiveCompletion: { completion in
-                    if case .failure(let error) = completion {
+                    if case .failure(_) = completion {
                     }
                 }, receiveValue: { [weak self] updatedModel in
                     self?.pdfData.annotationdata = updatedModel.annotationdata
@@ -182,7 +182,7 @@ extension PDFViewerViewModel {
         let publisher = repository.update(updatedPdfData: pdfData)
             .receive(on: DispatchQueue.main)
             .sink(receiveCompletion: { completion in
-                if case .failure(let error) = completion {
+                if case .failure(_) = completion {
                 }
             }, receiveValue: { updatedModel in
             })
