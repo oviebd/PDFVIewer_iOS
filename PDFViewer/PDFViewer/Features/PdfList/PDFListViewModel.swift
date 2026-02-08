@@ -192,21 +192,32 @@ final class PDFListViewModel: ObservableObject {
     }
     
     func importPDFs(bookmarkDatas: [BookmarkDataClass]) -> AnyPublisher<Void, Error> {
-        let pdfCoreDataList = bookmarkDatas.compactMap { url -> PDFModelData? in
-            return PDFModelData(key: url.key, bookmarkData: url.data, annotationdata: nil, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
+        let existingKeys = Set(allPdfModels.map { $0.key })
+        
+        let newPDFModels = bookmarkDatas.compactMap { data -> PDFModelData? in
+            if existingKeys.contains(data.key) {
+                return nil
+            }
+            return PDFModelData(key: data.key, bookmarkData: data.data, annotationdata: nil, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
         }
 
-        return repository.insert(pdfDatas: pdfCoreDataList)
+        if newPDFModels.isEmpty {
+            return Just(())
+                .setFailureType(to: Error.self)
+                .eraseToAnyPublisher()
+        }
+
+        return repository.insert(pdfDatas: newPDFModels)
             .receive(on: DispatchQueue.main)
             .map { [weak self] _ in
                 guard let self = self else { return }
                 
                 // Locally update the list
-                self.allPdfModels.append(contentsOf: pdfCoreDataList)
+                self.allPdfModels.append(contentsOf: newPDFModels)
                 
                 // Update folder if needed
                 if case .folder(let currentFolder) = self.currentSelection {
-                    let newKeys = pdfCoreDataList.map { $0.key }
+                    let newKeys = newPDFModels.map { $0.key }
                     var updatedPdfIds = currentFolder.pdfIds
                     for key in newKeys {
                         if !updatedPdfIds.contains(key) {
@@ -243,19 +254,6 @@ final class PDFListViewModel: ObservableObject {
                     }
                 })
                 .store(in: &cancellables)
-        }
-    }
-
-    private static func generatePDFKey(for url: URL) -> String {
-        do {
-            let resourceValues = try url.resourceValues(forKeys: [.fileSizeKey, .creationDateKey])
-            let fileSize = resourceValues.fileSize ?? 0
-            let creationDate = resourceValues.creationDate?.timeIntervalSince1970 ?? 0
-            let combinedString = "\(fileSize)-\(creationDate)"
-            let hash = SHA256.hash(data: Data(combinedString.utf8))
-            return hash.map { String(format: "%02x", $0) }.joined()
-        } catch {
-            return UUID().uuidString
         }
     }
     

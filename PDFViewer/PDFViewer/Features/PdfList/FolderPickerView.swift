@@ -55,7 +55,7 @@ struct DocumentPickerRepresentable: UIViewControllerRepresentable {
                         // ⬅️ Create bookmark while access is active
                         let bookmark = try url.bookmarkData()
                         
-                        let key = UUID().uuidString
+                        let key = url.generatePDFKey()//UUID().uuidString
                         let bookmarklDataClass = BookmarkDataClass(data: bookmark, key: key)
                         
                         bookMarks.append(bookmarklDataClass)

@@ -135,6 +135,36 @@ final class PDFListViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.visiblePdfModels.count, 1)
         XCTAssertEqual(viewModel.visiblePdfModels.first?.key, "1")
     }
+
+    func testImportPDFs_IgnoreDuplicates() {
+        // Arrange
+        let existingPDF = createPDFModelData(key: "existing_key")
+        viewModel.allPdfModels = [existingPDF]
+        
+        let bookmarkData = BookmarkDataClass(data: Data(), key: "existing_key")
+        let newBookmarkData = BookmarkDataClass(data: Data(), key: "new_key")
+        
+        mockRepository.insertResult = .success(true)
+        
+        let expectation = XCTestExpectation(description: "Import completed")
+        
+        // Act
+        viewModel.importPDFs(bookmarkDatas: [bookmarkData, newBookmarkData])
+            .sink(receiveCompletion: { completion in
+                if case let .failure(error) = completion {
+                    XCTFail("Expected success, got failure: \(error)")
+                }
+            }, receiveValue: { _ in
+                // Assert
+                XCTAssertEqual(self.viewModel.allPdfModels.count, 2)
+                XCTAssertTrue(self.viewModel.allPdfModels.contains(where: { $0.key == "existing_key" }))
+                XCTAssertTrue(self.viewModel.allPdfModels.contains(where: { $0.key == "new_key" }))
+                expectation.fulfill()
+            })
+            .store(in: &cancellables)
+            
+        wait(for: [expectation], timeout: 1)
+    }
 }
 
 class MockPDFRepository: PDFRepositoryProtocol {
