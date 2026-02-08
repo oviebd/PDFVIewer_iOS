@@ -11,45 +11,43 @@ struct EmptyStateView: View {
     let onImport: () -> Void
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: AppSpacing.lg) {
             Spacer()
             
             // Icon
-            Image(systemName: "doc.fill")
-                .font(.system(size: 64))
-                .foregroundColor(Color(.systemGray3))
+            Image(systemName: AppImages.document)
+                .font(AppFonts.iconXLarge)
+                .foregroundColor(AppColors.placeholder)
             
             // Title and subtitle
-            VStack(spacing: 8) {
-                Text("No PDFs yet")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(Color(.label))
+            VStack(spacing: AppSpacing.xs) {
+                Text(AppStrings.EmptyState.title)
+                    .emptyStateTitleStyle()
                 
-                Text("Import your first PDF to start reading")
-                    .font(.subheadline)
-                    .foregroundColor(Color(.secondaryLabel))
+                Text(AppStrings.EmptyState.subtitle)
+                    .font(AppFonts.subheadline)
+                    .foregroundColor(AppColors.textSecondary)
                     .multilineTextAlignment(.center)
             }
             
             // Import button
             Button(action: onImport) {
-                Text("Import PDF")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
+                Text(AppStrings.EmptyState.importButton)
+                    .font(AppFonts.headline)
+                    .foregroundColor(AppColors.onPrimary)
+                    .padding(.horizontal, AppSpacing.xl)
+                    .padding(.vertical, AppSpacing.sm)
                     .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color(.systemBlue))
+                        RoundedRectangle(cornerRadius: AppSpacing.cornerRadiusMD)
+                            .fill(AppColors.primary)
                     )
             }
-            .padding(.top, 8)
+            .padding(.top, AppSpacing.xs)
             
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white)
+        .background(AppColors.background)
     }
 }
 

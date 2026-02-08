@@ -62,22 +62,22 @@ struct PDFListView: View {
                     Button(action: {
                         navigationPath.append(PDFNavigationRoute.viewer(lastOpened))
                     }) {
-                        Image(systemName: "book.fill")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 60, height: 60)
+                        Image(systemName: AppImages.book)
+                            .font(AppFonts.iconLarge)
+                            .foregroundColor(AppColors.onPrimary)
+                            .frame(width: AppSpacing.fabSize, height: AppSpacing.fabSize)
                             .background(
                                 Circle()
                                     .fill(LinearGradient(
-                                        colors: [Color.blue, Color.blue.opacity(0.8)],
+                                        colors: AppColors.primaryGradient,
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     ))
-                                    .shadow(color: Color.blue.opacity(0.3), radius: 10, x: 0, y: 5)
+                                    .shadow(color: AppColors.shadowHeavy, radius: AppSpacing.shadowRadiusMedium, x: 0, y: 5)
                             )
                     }
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 30)
+                    .padding(.trailing, AppSpacing.lg)
+                    .padding(.bottom, AppSpacing.xxl)
                     .transition(.scale.combined(with: .opacity))
                 }
                 
@@ -86,16 +86,16 @@ struct PDFListView: View {
                     VStack {
                         Spacer()
                         Text(message)
-                            .font(.subheadline)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
+                            .font(AppFonts.subheadline)
+                            .foregroundColor(AppColors.onPrimary)
+                            .padding(.horizontal, AppSpacing.md)
+                            .padding(.vertical, AppSpacing.sm)
                             .background(
                                 Capsule()
-                                    .fill(Color.black.opacity(0.8))
-                                    .shadow(radius: 4)
+                                    .fill(AppColors.toastBackground)
+                                    .shadow(radius: AppSpacing.shadowRadiusLight)
                             )
-                            .padding(.bottom, viewModel.isMultiSelectMode ? 100 : 40)
+                            .padding(.bottom, viewModel.isMultiSelectMode ? 100 : AppSpacing.xxxl)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                     .frame(maxWidth: .infinity)
@@ -103,10 +103,10 @@ struct PDFListView: View {
                     .zIndex(100)
                 }
             }
-            .navigationTitle("Library")
+            .navigationTitle(AppStrings.Navigation.library)
             .navigationBarTitleDisplayMode(.inline)
-            .searchable(text: $viewModel.searchText, prompt: "Search by title or author")
-            .background(Color.white.ignoresSafeArea())
+            .searchable(text: $viewModel.searchText, prompt: AppStrings.PDFList.searchPrompt)
+            .background(AppColors.background.ignoresSafeArea())
             .navigationDestination(for: PDFNavigationRoute.self) { route in
                 switch route {
                 case let .viewer(pdf):
@@ -116,12 +116,12 @@ struct PDFListView: View {
             .toolbar {
                 if viewModel.isMultiSelectMode {
                     ToolbarItem(placement: .navigationBarLeading) {
-                        Button("Cancel") {
+                        Button(AppStrings.Navigation.cancel) {
                             viewModel.exitMultiSelectMode()
                         }
                     }
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(viewModel.selectedPDFKeys.count == viewModel.visiblePdfModels.count ? "Deselect All" : "Select All") {
+                        Button(viewModel.selectedPDFKeys.count == viewModel.visiblePdfModels.count ? AppStrings.PDFList.deselectAll : AppStrings.PDFList.selectAll) {
                             if viewModel.selectedPDFKeys.count == viewModel.visiblePdfModels.count {
                                 viewModel.deselectAll()
                             } else {
@@ -132,7 +132,7 @@ struct PDFListView: View {
                 } else {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button(action: { showFilePicker.toggle() }) {
-                            Image(systemName: "square.and.arrow.down")
+                            Image(systemName: AppImages.download)
                         }
                     }
                 }
@@ -150,10 +150,10 @@ struct PDFListView: View {
             .onAppear {
                 viewModel.onViewAppear()
             }
-            .alert("New Folder", isPresented: $showCreateFolderAlert) {
-                TextField("Folder Name", text: $newFolderName)
-                Button("Cancel", role: .cancel) { }
-                Button("Create") {
+            .alert(AppStrings.Folders.newFolderTitle, isPresented: $showCreateFolderAlert) {
+                TextField(AppStrings.Folders.folderNamePlaceholder, text: $newFolderName)
+                Button(AppStrings.Navigation.cancel, role: .cancel) { }
+                Button(AppStrings.Navigation.create) {
                     if !newFolderName.isEmpty {
                         viewModel.createFolder(title: newFolderName)
                     }
@@ -162,7 +162,7 @@ struct PDFListView: View {
             .sheet(isPresented: $showMoveToFolderSheet) {
                 NavigationStack {
                     List {
-                        Button("No Folder") {
+                        Button(AppStrings.Folders.noFolder) {
                             if viewModel.isMultiSelectMode {
                                 viewModel.moveSelectedPDFs(to: nil)
                             } else if let pdf = pdfToMove {
@@ -181,11 +181,11 @@ struct PDFListView: View {
                             }
                         }
                     }
-                    .navigationTitle("Move to Folder")
+                    .navigationTitle(AppStrings.Folders.moveToFolder)
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("Close") { showMoveToFolderSheet = false }
+                            Button(AppStrings.Navigation.close) { showMoveToFolderSheet = false }
                         }
                     }
                 }
@@ -199,7 +199,7 @@ struct PDFListView: View {
                             Button(role: .destructive) {
                                 showMultiDeleteConfirmation = true
                             } label: {
-                                Label("Delete", systemImage: "trash")
+                                Label(AppStrings.Actions.delete, systemImage: AppImages.trash)
                             }
                             .disabled(viewModel.selectedPDFKeys.isEmpty)
                             
@@ -208,7 +208,7 @@ struct PDFListView: View {
                             Button {
                                 showMoveToFolderSheet = true
                             } label: {
-                                Label("Move", systemImage: "folder.badge.plus")
+                                Label(AppStrings.Actions.move, systemImage: AppImages.folderAdd)
                             }
                             .disabled(viewModel.selectedPDFKeys.isEmpty)
                         }
@@ -218,13 +218,13 @@ struct PDFListView: View {
                     .transition(.move(edge: .bottom))
                 }
             }
-            .alert("Delete Selected PDFs?", isPresented: $showMultiDeleteConfirmation) {
-                Button("Cancel", role: .cancel) { }
-                Button("Delete", role: .destructive) {
+            .alert(AppStrings.Actions.deleteSelectedPDFs, isPresented: $showMultiDeleteConfirmation) {
+                Button(AppStrings.Navigation.cancel, role: .cancel) { }
+                Button(AppStrings.Actions.delete, role: .destructive) {
                     viewModel.deleteSelectedPDFs()
                 }
             } message: {
-                Text("Are you sure you want to delete \(viewModel.selectedPDFKeys.count) selected PDFs? This action cannot be undone.")
+                Text(AppStrings.Confirmation.deleteMultipleConfirmation(count: viewModel.selectedPDFKeys.count))
             }
         }
     }
@@ -262,7 +262,7 @@ struct PDFListContentView: View {
                     )
                     .listRowInsets(EdgeInsets())
                     .listRowSeparator(.hidden)
-                    .listRowBackground(Color.white)
+                    .listRowBackground(AppColors.background)
 
                     ForEach(viewModel.visiblePdfModels, id: \.id) { pdf in
                         PDFListRowContainer(
@@ -282,14 +282,14 @@ struct PDFListContentView: View {
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
-                .background(Color.white)
+                .background(AppColors.background)
             }
         }
-        .alert("Delete PDF?", isPresented: $showDeleteConfirmation) {
-            Button("Cancel", role: .cancel) {
+        .alert(AppStrings.Actions.deletePDF, isPresented: $showDeleteConfirmation) {
+            Button(AppStrings.Navigation.cancel, role: .cancel) {
                 pdfToDelete = nil
             }
-            Button("Delete", role: .destructive) {
+            Button(AppStrings.Actions.delete, role: .destructive) {
                 if let pdf = pdfToDelete,
                    let index = viewModel.visiblePdfModels.firstIndex(where: { $0.key == pdf.key }) {
                     viewModel.deletePdf(indexSet: IndexSet(integer: index))
@@ -298,7 +298,7 @@ struct PDFListContentView: View {
             }
         } message: {
             if let pdf = pdfToDelete {
-                Text("Are you sure you want to delete '\(pdf.title ?? "this PDF")'? This action cannot be undone.")
+                Text(AppStrings.Confirmation.deleteConfirmation(title: pdf.title))
             }
         }
     }

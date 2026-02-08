@@ -14,11 +14,11 @@ struct PDFListItemView: View {
     let toggleFavorite: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppSpacing.sm) {
             if isMultiSelectMode {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 24))
-                    .foregroundColor(isSelected ? .blue : .gray)
+                Image(systemName: isSelected ? AppImages.checkCircle : AppImages.circle)
+                    .font(AppFonts.selectionIcon)
+                    .foregroundColor(isSelected ? AppColors.primary : AppColors.inactive)
                     .transition(.move(edge: .leading).combined(with: .opacity))
             }
 
@@ -31,63 +31,63 @@ struct PDFListItemView: View {
                 } else {
                     ZStack {
                         LinearGradient(
-                            colors: [Color(.systemGray6), Color(.systemGray5)],
+                            colors: AppColors.thumbnailGradient,
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
-                        Image(systemName: "doc.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(Color(.systemGray3))
+                        Image(systemName: AppImages.document)
+                            .font(AppFonts.iconLarge)
+                            .foregroundColor(AppColors.placeholder)
                     }
                 }
             }
-            .frame(width: 55, height: 75)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .frame(width: AppSpacing.thumbnailWidth, height: AppSpacing.thumbnailHeight)
+            .clipShape(RoundedRectangle(cornerRadius: AppSpacing.cornerRadiusMD))
             .overlay(
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: AppSpacing.cornerRadiusMD)
                     .stroke(
                         LinearGradient(
-                            colors: [Color(.separator).opacity(0.3), Color(.separator).opacity(0.1)],
+                            colors: [AppColors.separator.opacity(0.3), AppColors.separator.opacity(0.1)],
                             startPoint: .top,
                             endPoint: .bottom
                         ),
-                        lineWidth: 0.5
+                        lineWidth: AppSpacing.borderThin
                     )
             )
-            .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 3)
+            .shadow(color: AppColors.shadowMedium, radius: AppSpacing.shadowRadiusMedium, x: 0, y: 3)
 
             // Info Section
-            VStack(alignment: .leading, spacing: 4) {
-                Text(pdf.title ?? "Untitled Document")
-                    .font(.headline)
-                    .foregroundColor(Color(.label))
+            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+                Text(pdf.title ?? AppStrings.PDFInfo.untitledDocument)
+                    .font(AppFonts.headline)
+                    .foregroundColor(AppColors.textPrimary)
                     .lineLimit(1)
                     .truncationMode(.tail)
                 
                 // Author and page count
-                HStack(spacing: 4) {
-                    if let author = pdf.author, author != "Unknown" {
+                HStack(spacing: AppSpacing.xxs) {
+                    if let author = pdf.author, author != AppStrings.PDFInfo.unknownAuthor {
                         Text(author)
-                            .font(.subheadline)
-                            .foregroundColor(Color(.secondaryLabel))
+                            .font(AppFonts.subheadline)
+                            .foregroundColor(AppColors.textSecondary)
                             .lineLimit(1)
                         
                         Text("•")
-                            .font(.subheadline)
-                            .foregroundColor(Color(.tertiaryLabel))
+                            .font(AppFonts.subheadline)
+                            .foregroundColor(AppColors.textTertiary)
                     }
                     
-                    Text("\(pdf.totalPageCount) Pages")
-                        .font(.subheadline)
+                    Text(AppStrings.PDFInfo.pageCount(pdf.totalPageCount))
+                        .font(AppFonts.subheadline)
                         .fontWeight(.medium)
-                        .foregroundColor(Color(.secondaryLabel))
+                        .foregroundColor(AppColors.textSecondary)
                 }
                 
                 // Last opened time
                 if let lastOpened = pdf.lastOpenTime {
-                    Text("Opened \(lastOpened.timeAgoDisplay())")
-                        .font(.caption)
-                        .foregroundColor(Color(.tertiaryLabel))
+                    Text("\(AppStrings.PDFInfo.opened) \(lastOpened.timeAgoDisplay())")
+                        .font(AppFonts.caption)
+                        .foregroundColor(AppColors.textTertiary)
                 }
             }
 
@@ -95,17 +95,17 @@ struct PDFListItemView: View {
 
             // Favorite Button
             Button(action: toggleFavorite) {
-                Image(systemName: pdf.isFavorite ? "heart.fill" : "heart")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(pdf.isFavorite ? Color(.systemRed) : Color(.systemGray3))
-                    .padding(8)
-                    .background(Color.white)
+                Image(systemName: pdf.isFavorite ? AppImages.heartFill : AppImages.heart)
+                    .font(AppFonts.favoriteIcon)
+                    .foregroundColor(pdf.isFavorite ? AppColors.favorite : AppColors.inactive)
+                    .padding(AppSpacing.xs)
+                    .background(AppColors.buttonBackground)
                     .clipShape(Circle())
-                    .shadow(color: Color.black.opacity(0.08), radius: 4, x: 0, y: 2)
+                    .shadow(color: AppColors.shadowLight, radius: AppSpacing.shadowRadiusLight, x: 0, y: 2)
             }
             .buttonStyle(BorderlessButtonStyle())
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, AppSpacing.xs)
         .background(Color.clear)
     }
 }

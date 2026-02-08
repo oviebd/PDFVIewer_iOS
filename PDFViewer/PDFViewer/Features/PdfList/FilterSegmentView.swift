@@ -17,30 +17,30 @@ struct FilterSegmentView: View {
     
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppSpacing.sm) {
                 // All filter
                 FilterPillWithCount(
-                    title: "All",
+                    title: AppStrings.Filters.all,
                     count: viewModel.allPdfModels.count,
-                    color: .blue,
+                    color: AppColors.filterAll,
                     isSelected: currentSelection == .all,
                     action: { onSelect(.all) }
                 )
                 
                 // Favorites filter
                 FilterPillWithCount(
-                    title: "Favorites",
+                    title: AppStrings.Filters.favorites,
                     count: viewModel.allPdfModels.filter { $0.isFavorite }.count,
-                    color: .red,
+                    color: AppColors.filterFavorite,
                     isSelected: currentSelection == .favorite,
                     action: { onSelect(.favorite) }
                 )
                 
                 // Recent filter
                 FilterPillWithCount(
-                    title: "Recent",
+                    title: AppStrings.Filters.recent,
                     count: viewModel.allPdfModels.count,
-                    color: .green,
+                    color: AppColors.filterRecent,
                     isSelected: currentSelection == .recent,
                     action: { onSelect(.recent) }
                 )
@@ -50,7 +50,7 @@ struct FilterSegmentView: View {
                     FilterPillWithCount(
                         title: folder.title,
                         count: viewModel.allPdfModels.filter { folder.pdfIds.contains($0.key) }.count,
-                        color: folderColor(for: index),
+                        color: AppColors.folderColor(for: index),
                         isSelected: currentSelection == .folder(folder),
                         action: { onSelect(.folder(folder)) }
                     )
@@ -58,39 +58,34 @@ struct FilterSegmentView: View {
                         Button(role: .destructive) {
                             onDelete(folder)
                         } label: {
-                            Label("Delete", systemImage: "trash")
+                            Label(AppStrings.Actions.delete, systemImage: AppImages.trash)
                         }
                     }
                 }
                 
                 // Add folder button
                 Button(action: onCreate) {
-                    VStack(spacing: 4) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 14, weight: .semibold))
-                            Text("New")
-                                .font(.system(size: 14, weight: .medium))
+                    VStack(spacing: AppSpacing.xxs) {
+                        HStack(spacing: AppSpacing.xxs) {
+                            Image(systemName: AppImages.addCircle)
+                                .font(AppFonts.iconSmall)
+                            Text(AppStrings.Filters.new)
+                                .font(AppFonts.iconSmall)
                         }
-                        .foregroundColor(Color(.systemGray))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
+                        .foregroundColor(AppColors.inactive)
+                        .padding(.horizontal, AppSpacing.sm)
+                        .padding(.vertical, AppSpacing.xs)
                         .background(
                             Capsule()
-                                .stroke(Color(.separator), lineWidth: 1)
+                                .stroke(AppColors.separator, lineWidth: AppSpacing.borderNormal)
                         )
                     }
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, AppSpacing.md)
+            .padding(.vertical, AppSpacing.sm)
         }
-        .background(Color.white)
-    }
-    
-    private func folderColor(for index: Int) -> Color {
-        let colors: [Color] = [.purple, .orange, .teal, .pink, .indigo, .cyan]
-        return colors[index % colors.count]
+        .background(AppColors.background)
     }
 }
 
@@ -105,16 +100,16 @@ struct FilterPillWithCount: View {
         Button(action: action) {
             Text("\(title) (\(count))")
                 .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
-                .foregroundColor(isSelected ? .white : Color(.label))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .foregroundColor(isSelected ? AppColors.onPrimary : AppColors.textPrimary)
+                .padding(.horizontal, AppSpacing.md)
+                .padding(.vertical, AppSpacing.xs)
                 .background(
                     Capsule()
-                        .fill(isSelected ? color : Color.white)
+                        .fill(isSelected ? color : AppColors.background)
                 )
                 .overlay(
                     Capsule()
-                        .stroke(isSelected ? Color.clear : color.opacity(0.5), lineWidth: 1.5)
+                        .stroke(isSelected ? Color.clear : color.opacity(0.5), lineWidth: AppSpacing.borderThick)
                 )
         }
         .animation(.easeInOut(duration: 0.2), value: isSelected)

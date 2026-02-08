@@ -24,6 +24,6 @@ struct PDFListHeaderView: View {
             Divider()
         }
         .listRowInsets(EdgeInsets())
-        .background(Color.white)
+        .background(AppColors.background)
     }
 }

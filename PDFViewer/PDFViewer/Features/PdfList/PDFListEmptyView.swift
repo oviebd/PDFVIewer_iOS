@@ -24,6 +24,6 @@ struct PDFListEmptyView: View {
             })
             Spacer()
         }
-        .background(Color.white)
+        .background(AppColors.background)
     }
 }

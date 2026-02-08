@@ -29,6 +29,7 @@ struct PDFViewerApp: App {
             PDFListView()
           //  PencilKitAnnotation()
             .environmentObject(drawingToolManager)
+            .withAppTheme()
         }
     }
 }

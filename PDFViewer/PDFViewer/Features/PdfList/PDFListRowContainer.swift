@@ -39,22 +39,22 @@ struct PDFListRowContainer: View {
                 viewModel.enterMultiSelectMode(with: pdf.key)
             }
         }
-        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-        .listRowBackground(isSelected ? Color.blue.opacity(0.1) : Color.white)
+        .listRowInsets(EdgeInsets(top: AppSpacing.xs, leading: AppSpacing.md, bottom: AppSpacing.xs, trailing: AppSpacing.md))
+        .listRowBackground(isSelected ? AppColors.primary.opacity(0.1) : AppColors.background)
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             if !viewModel.isMultiSelectMode {
                 Button(role: .destructive) {
                     onDelete(pdf)
                 } label: {
-                    Label("Delete", systemImage: "trash")
+                    Label(AppStrings.Actions.delete, systemImage: AppImages.trash)
                 }
                 
                 Button {
                     onMove(pdf)
                 } label: {
-                    Label("Move", systemImage: "folder.badge.plus")
+                    Label(AppStrings.Actions.move, systemImage: AppImages.folderAdd)
                 }
-                .tint(Color(.systemBlue))
+                .tint(AppColors.primary)
             }
         }
     }

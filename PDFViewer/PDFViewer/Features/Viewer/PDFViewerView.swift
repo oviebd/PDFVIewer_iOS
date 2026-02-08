@@ -23,7 +23,7 @@ struct PDFViewerView: View {
 
     var body: some View {
         ZStack {
-            Color(.systemGray6).ignoresSafeArea()
+            AppColors.surfaceSecondary.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 pdfContent
@@ -92,7 +92,7 @@ extension PDFViewerView {
                     }
                 }
             } else {
-                Text("No data")
+                Text(AppStrings.PDFInfo.noData)
             }
         }
     }
@@ -126,29 +126,28 @@ extension PDFViewerView {
 
 extension PDFViewerView {
     var bottomAnnotationBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppSpacing.xs) {
             // Undo/Redo Group
-            HStack(spacing: 20) {
+            HStack(spacing: AppSpacing.lg) {
                 Button(action: viewModel.undo) {
-                    Image(systemName: "arrow.uturn.backward")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(viewModel.canUndo ? .blue : Color(red: 0.2, green: 0.25, blue: 0.35).opacity(0.3))
+                    Image(systemName: AppImages.undo)
+                        .font(AppFonts.undoRedo)
+                        .foregroundColor(viewModel.canUndo ? AppColors.primary : AppColors.disabledToolColor)
                 }
                 .disabled(!viewModel.canUndo)
 
                 Button(action: viewModel.redo) {
-                    Image(systemName: "arrow.uturn.forward")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(viewModel.canRedo ? .blue : Color(red: 0.2, green: 0.25, blue: 0.35).opacity(0.3))
+                    Image(systemName: AppImages.redo)
+                        .font(AppFonts.undoRedo)
+                        .foregroundColor(viewModel.canRedo ? AppColors.primary : AppColors.disabledToolColor)
                 }
                 .disabled(!viewModel.canRedo)
             }
-            .padding(.horizontal, 24)
-            .frame(height: 56)
-            .background(Color(red: 0.96, green: 0.97, blue: 0.98))
-            .cornerRadius(16)
+            .padding(.horizontal, AppSpacing.xl)
+            .frame(height: AppSpacing.toolbarHeight)
+            .background(AppColors.surfaceLight)
+            .cornerRadius(AppSpacing.cornerRadiusLG)
 
-            // Tools Group
             HStack(spacing: 0) {
                 AnnotationListControllerView(
                     annotationSettingItems: drawingToolManager.pdfSettings,
@@ -158,12 +157,11 @@ extension PDFViewerView {
                     onPalettePressed: { _ in }
                 )
             }
-            .padding(.horizontal, 12)
-            .frame(height: 56)
-            .background(Color(red: 0.96, green: 0.97, blue: 0.98))
-            .cornerRadius(16)
+            .padding(.horizontal, AppSpacing.sm)
+            .frame(height: AppSpacing.toolbarHeight)
+            .background(AppColors.surfaceLight)
+            .cornerRadius(AppSpacing.cornerRadiusLG)
 
-            // Color Indicator Group
             HStack {
                 Button(action: {
                     if viewModel.annotationSettingData.annotationTool != .none && viewModel.annotationSettingData.annotationTool != .eraser {
@@ -174,39 +172,39 @@ extension PDFViewerView {
                         let isInactive = viewModel.annotationSettingData.annotationTool == .none || viewModel.annotationSettingData.annotationTool == .eraser
                         Circle()
                             .fill(isInactive ? Color(viewModel.lastDrawingColor) : Color(viewModel.annotationSettingData.color))
-                            .frame(width: 36, height: 36)
+                            .frame(width: AppSpacing.colorIndicatorMedium, height: AppSpacing.colorIndicatorMedium)
                             .overlay(
                                 Circle()
-                                    .stroke(Color.white.opacity(0.8), lineWidth: 2)
+                                    .stroke(AppColors.onPrimary.opacity(0.8), lineWidth: AppSpacing.circleStroke)
                             )
-                            .shadow(color: .black.opacity(isInactive ? 0 : 0.1), radius: 4, x: 0, y: 2)
+                            .shadow(color: AppColors.shadowLight.opacity(isInactive ? 0 : 1), radius: AppSpacing.shadowRadiusLight, x: 0, y: 2)
                     }
-                    .frame(width: 48, height: 48)
-                    .background(Color(red: 0.96, green: 0.97, blue: 0.98).opacity((viewModel.annotationSettingData.annotationTool == .none || viewModel.annotationSettingData.annotationTool == .eraser) ? 0.5 : 1.0))
-                    .cornerRadius(16)
+                    .frame(width: AppSpacing.colorIndicatorContainer, height: AppSpacing.colorIndicatorContainer)
+                    .background(AppColors.surfaceLight.opacity((viewModel.annotationSettingData.annotationTool == .none || viewModel.annotationSettingData.annotationTool == .eraser) ? 0.5 : 1.0))
+                    .cornerRadius(AppSpacing.cornerRadiusLG)
                     .opacity((viewModel.annotationSettingData.annotationTool == .none || viewModel.annotationSettingData.annotationTool == .eraser) ? 0.6 : 1.0)
                 }
                 .disabled(viewModel.annotationSettingData.annotationTool == .none || viewModel.annotationSettingData.annotationTool == .eraser)
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+        .padding(.horizontal, AppSpacing.sm)
+        .padding(.vertical, AppSpacing.xs)
         .background(
             Capsule()
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+                .fill(AppColors.overlayBackground)
+                .shadow(color: AppColors.shadowLight, radius: AppSpacing.shadowRadiusHeavy, x: 0, y: 10)
         )
-        .padding(.horizontal, 16)
-        .padding(.bottom, 20)
+        .padding(.horizontal, AppSpacing.md)
+        .padding(.bottom, AppSpacing.lg)
     }
 
     var floatingButtons: some View {
         HStack {
             Spacer()
-            VStack(spacing: 16) {
-                ControlButton(systemName: "minus.magnifyingglass", action: viewModel.zoomOut)
-                ControlButton(systemName: "plus.magnifyingglass", action: viewModel.zoomIn)
-                ControlButton(systemName: "square.and.arrow.down", color: .green, foreground: .white, action: viewModel.savePDFWithAnnotation)
+            VStack(spacing: AppSpacing.md) {
+                ControlButton(systemName: AppImages.zoomOut, action: viewModel.zoomOut)
+                ControlButton(systemName: AppImages.zoomIn, action: viewModel.zoomIn)
+                ControlButton(systemName: AppImages.download, color: AppColors.success, foreground: AppColors.onPrimary, action: viewModel.savePDFWithAnnotation)
             }
             .padding()
         }
@@ -216,55 +214,55 @@ extension PDFViewerView {
         VStack(spacing: 0) {
             HStack {
                 Button(action: { dismiss() }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.blue)
+                    Image(systemName: AppImages.back)
+                        .font(AppFonts.iconMedium)
+                        .foregroundColor(AppColors.primary)
                 }
                 
                 Spacer()
                 
-                VStack(spacing: 2) {
-                    Text(viewModel.pdfData.title ?? "Unknown file")
-                        .font(.headline)
-                        .foregroundColor(.black)
+                VStack(spacing: AppSpacing.xxs) {
+                    Text(viewModel.pdfData.title ?? AppStrings.PDFInfo.unknownFile)
+                        .font(AppFonts.headline)
+                        .foregroundColor(AppColors.textPrimary)
                         .lineLimit(1)
                     
                     Text(viewModel.pageProgressText)
-                        .font(.caption)
-                        .foregroundColor(.gray)
+                        .font(AppFonts.caption)
+                        .foregroundColor(AppColors.textTertiary)
                 }
-                .padding(.horizontal, 40)
+                .padding(.horizontal, AppSpacing.xxxl)
                 
                 Spacer()
                 
-                HStack(spacing: 16) {
+                HStack(spacing: AppSpacing.md) {
                     Button {
                         viewModel.showBrightnessControls = true
                     } label: {
-                        Image(systemName: "sun.max.fill")
-                            .font(.system(size: 18))
-                            .foregroundColor(.black)
+                        Image(systemName: AppImages.brightness)
+                            .font(AppFonts.iconMedium)
+                            .foregroundColor(AppColors.textPrimary)
                     }
 
                     Menu {
-                        Menu("Reading Mode") {
-                            Button("Normal") { viewModel.onReadingModeChanged(readingMode: .normal) }
-                            Button("Sepia") { viewModel.onReadingModeChanged(readingMode: .sepia) }
-                            Button("Night") { viewModel.onReadingModeChanged(readingMode: .night) }
-                            Button("Eye Comfort") { viewModel.onReadingModeChanged(readingMode: .eyeComfort) }
+                        Menu(AppStrings.ReadingMode.title) {
+                            Button(AppStrings.ReadingMode.normal) { viewModel.onReadingModeChanged(readingMode: .normal) }
+                            Button(AppStrings.ReadingMode.sepia) { viewModel.onReadingModeChanged(readingMode: .sepia) }
+                            Button(AppStrings.ReadingMode.night) { viewModel.onReadingModeChanged(readingMode: .night) }
+                            Button(AppStrings.ReadingMode.eyeComfort) { viewModel.onReadingModeChanged(readingMode: .eyeComfort) }
                         }
                     } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .font(.system(size: 18))
-                            .foregroundColor(.black)
+                        Image(systemName: AppImages.more)
+                            .font(AppFonts.iconMedium)
+                            .foregroundColor(AppColors.textPrimary)
                     }
                 }
             }
             .padding()
             .background(
-                Color.white
+                AppColors.overlayBackground
                     .ignoresSafeArea(edges: .top)
-                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                    .shadow(color: AppColors.shadowLight, radius: 2, x: 0, y: 1)
             )
         }
     }
@@ -276,17 +274,17 @@ extension PDFViewerView {
             Spacer()
             HStack {
                 Text(viewModel.pageProgressText)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.white.opacity(0.9))
-                    .cornerRadius(6)
+                    .font(AppFonts.pageProgress)
+                    .foregroundColor(AppColors.textPrimary)
+                    .padding(.horizontal, AppSpacing.xs)
+                    .padding(.vertical, AppSpacing.xxs)
+                    .background(AppColors.overlayBackground.opacity(0.9))
+                    .cornerRadius(AppSpacing.cornerRadiusSM)
                     .shadow(radius: 3)
 
                 Spacer()
             }
-            .padding([.leading, .bottom], 12)
+            .padding([.leading, .bottom], AppSpacing.sm)
         }
     }
 }

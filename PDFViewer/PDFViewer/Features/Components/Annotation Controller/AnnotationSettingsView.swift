@@ -13,12 +13,19 @@ struct AnnotationSettingsView: View {
     @Binding var annotationSetting: PDFAnnotationSetting
     var onDataChanged: (() -> Void)?
    
-    let colors: [UIColor] = [.red, .green, .blue, .yellow, .orange, .purple, .black, .gray]
+    let colors: [UIColor] = AppColors.annotationColors
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: AppSpacing.md) {
             
-            CustomSliderView(title: "Set Width", startValue: 2, endValue: 50, currentValue:  annotationSetting.lineWidth, iconName: "line.3.horizontal", iconColor: annotationSetting.color){ newValue in
+            CustomSliderView(
+                title: AppStrings.Annotation.setWidth,
+                startValue: 2,
+                endValue: 50,
+                currentValue: annotationSetting.lineWidth,
+                iconName: AppImages.lineSettings,
+                iconColor: annotationSetting.color
+            ) { newValue in
                 annotationSetting.lineWidth = newValue
             }
 
@@ -30,7 +37,7 @@ struct AnnotationSettingsView: View {
                     }) {
                         Circle()
                             .fill(Color(color))
-                            .frame(width: 25, height: 25)
+                            .frame(width: AppSpacing.colorIndicatorSmall, height: AppSpacing.colorIndicatorSmall)
                             .shadow(radius: 2)
                     }
                 }
@@ -44,18 +51,18 @@ struct AnnotationSettingsView: View {
                     showPalette = false
                 }
             }) {
-                Text("Ok")
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 20)
+                Text(AppStrings.Navigation.ok)
+                    .foregroundColor(AppColors.onPrimary)
+                    .padding(.horizontal, AppSpacing.lg)
                     .padding(.vertical, 5)
-                    .background(Color.blue)
-                    .cornerRadius(4)
+                    .background(AppColors.primary)
+                    .cornerRadius(AppSpacing.cornerRadiusXS)
             }
-            // .padding(.bottom)
-        }.padding()
+        }
+        .padding()
     }
 }
 
  #Preview {
-     AnnotationSettingsView( showPalette: .constant(true), annotationSetting: .constant(.dummyData()))
+     AnnotationSettingsView(showPalette: .constant(true), annotationSetting: .constant(.dummyData()))
  }
