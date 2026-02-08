@@ -102,6 +102,7 @@ struct PDFListView: View {
             }
             .navigationTitle("Library")
             .navigationBarTitleDisplayMode(.large)
+            .searchable(text: $viewModel.searchText, prompt: "Search by title or author")
             .background(Color.white.ignoresSafeArea())
             .navigationDestination(for: PDFNavigationRoute.self) { route in
                 switch route {

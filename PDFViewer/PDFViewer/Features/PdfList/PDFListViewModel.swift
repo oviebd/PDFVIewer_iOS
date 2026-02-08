@@ -43,6 +43,7 @@ final class PDFListViewModel: ObservableObject {
     
     @Published var importViewModel: PDFImportViewModel?
     @Published var isShowingImportProgress = false
+    @Published var searchText: String = ""
 
     @Published var isMultiSelectMode: Bool = false
     @Published var selectedPDFKeys: Set<String> = []
@@ -57,6 +58,13 @@ final class PDFListViewModel: ObservableObject {
     init(repository: PDFRepositoryProtocol) {
         self.repository = repository
         loadFolders()
+        
+        $searchText
+            .dropFirst()
+            .sink { [weak self] _ in
+                self?.applySelection()
+            }
+            .store(in: &cancellables)
     }
 
     func loadFolders() {
@@ -278,15 +286,26 @@ extension PDFListViewModel {
     }
 
     private func applySelection() {
+        let filteredModels: [PDFModelData]
         switch currentSelection {
         case .all:
-            visiblePdfModels = allPdfModels
+            filteredModels = allPdfModels
         case .favorite:
-            visiblePdfModels = allPdfModels.filter { $0.isFavorite }
+            filteredModels = allPdfModels.filter { $0.isFavorite }
         case .recent:
-            visiblePdfModels = allPdfModels.sorted(by: { $0.lastOpenTime ?? .distantPast > $1.lastOpenTime ?? .distantPast })
+            filteredModels = allPdfModels.sorted(by: { $0.lastOpenTime ?? .distantPast > $1.lastOpenTime ?? .distantPast })
         case .folder(let folder):
-            visiblePdfModels = allPdfModels.filter { folder.pdfIds.contains($0.key) }
+            filteredModels = allPdfModels.filter { folder.pdfIds.contains($0.key) }
+        }
+
+        if searchText.isEmpty {
+            visiblePdfModels = filteredModels
+        } else {
+            let query = searchText.lowercased()
+            visiblePdfModels = filteredModels.filter { pdf in
+                (pdf.title?.lowercased().contains(query) ?? false) ||
+                (pdf.author?.lowercased().contains(query) ?? false)
+            }
         }
     }
     
