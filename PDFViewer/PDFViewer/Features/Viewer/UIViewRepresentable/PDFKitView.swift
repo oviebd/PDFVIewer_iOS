@@ -101,7 +101,14 @@ struct PDFKitView: UIViewRepresentable {
         let pdfView = PDFView()
         pdfView.document = PDFDocument(url: pdfURL)
         pdfView.translatesAutoresizingMaskIntoConstraints = false
-        applySettings(to: pdfView)
+        pdfView.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Apply initial settings
+        pdfView.autoScales = settings.autoScales
+        context.coordinator.lastAutoScales = settings.autoScales
+        pdfView.displayMode = settings.displayMode
+        pdfView.displayDirection = settings.displayDirection
+        
         containerView.addSubview(pdfView)
 
         let canvasContainerView = UIView()
@@ -144,14 +151,16 @@ struct PDFKitView: UIViewRepresentable {
             context.coordinator.refreshDocument()
         }
 
-        applySettings(to: pdfView)
-        context.coordinator.updateTool(mode)
-    }
-
-    private func applySettings(to pdfView: PDFView) {
-        pdfView.autoScales = settings.autoScales
+        // Apply settings conditionally to avoid resetting zoom
+        if context.coordinator.lastAutoScales != settings.autoScales {
+            pdfView.autoScales = settings.autoScales
+            context.coordinator.lastAutoScales = settings.autoScales
+        }
+        
         pdfView.displayMode = settings.displayMode
         pdfView.displayDirection = settings.displayDirection
+        
+        context.coordinator.updateTool(mode)
     }
 
     // MARK: - Coordinator Keeps Objects Alive
@@ -170,6 +179,8 @@ struct PDFKitView: UIViewRepresentable {
         private var timerPublisher: AnyCancellable?
         private let pdfSaveQueue = DispatchQueue(label: "com.yourapp.pdfSaveQueue")
         private let annotationUndoManager = UndoManager()
+        var lastAutoScales: Bool?
+
 
         init(actions: PDFKitViewActions) {
             self.actions = actions
