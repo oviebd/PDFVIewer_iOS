@@ -9,15 +9,15 @@ import SwiftUI
 
 struct PDFListRowContainer: View {
     let pdf: PDFModelData
-    @ObservedObject var viewModel: PDFListViewModel
     var onSelect: (PDFModelData) -> Void
     var onMove: (PDFModelData) -> Void
     var onDelete: (PDFModelData) -> Void
+    var onToggleFavorite: () -> Void
 
     var body: some View {
         PDFListItemView(
             pdf: pdf,
-            toggleFavorite: { viewModel.toggleFavorite(for: pdf) }
+            toggleFavorite: onToggleFavorite
         )
         .contentShape(Rectangle())
         .onTapGesture {

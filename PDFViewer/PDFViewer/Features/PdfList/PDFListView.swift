@@ -51,8 +51,7 @@ struct PDFListView: View {
                         )
                     }
                 }
-                .navigationTitle("Library")
-                .navigationBarTitleDisplayMode(.large)
+              
                 
                 // Floating Action Button
                 if let lastOpened = viewModel.lastOpenedPdf {
@@ -78,6 +77,8 @@ struct PDFListView: View {
                     .transition(.scale.combined(with: .opacity))
                 }
             }
+            .navigationTitle("Library")
+            .navigationBarTitleDisplayMode(.large)
             .background(Color.white.ignoresSafeArea())
             .navigationDestination(for: PDFNavigationRoute.self) { route in
                 switch route {
@@ -98,7 +99,7 @@ struct PDFListView: View {
                 }
             }
             .onAppear {
-                viewModel.loadPDFsAndForget()
+                viewModel.onViewAppear()
             }
             .alert("New Folder", isPresented: $showCreateFolderAlert) {
                 TextField("Folder Name", text: $newFolderName)
@@ -176,12 +177,14 @@ struct PDFListContentView: View {
                     ForEach(viewModel.visiblePdfModels, id: \.id) { pdf in
                         PDFListRowContainer(
                                 pdf: pdf,
-                                viewModel: viewModel,
                                 onSelect: onSelect,
                                 onMove: onMove,
                                 onDelete: { pdf in
                                     pdfToDelete = pdf
                                     showDeleteConfirmation = true
+                                },
+                                onToggleFavorite: {
+                                    viewModel.toggleFavorite(for: pdf)
                                 }
                             )
                     }

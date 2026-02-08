@@ -135,6 +135,21 @@ final class PDFListViewModel: ObservableObject {
         }
     }
 
+    private var isLoaded = false
+
+    func onViewAppear() {
+        if !isLoaded {
+            loadPDFsAndMarkLoaded()
+        } else {
+            refreshList()
+        }
+    }
+    
+    func refreshList() {
+        // Re-apply selection to update sort order (e.g. for "Recent") or filter
+        applySelection()
+    }
+
     func loadPDFs() -> AnyPublisher<[PDFModelData], Error> {
         isLoading = true
 
@@ -143,6 +158,7 @@ final class PDFListViewModel: ObservableObject {
             .handleEvents(receiveOutput: { [weak self] models in
                 self?.allPdfModels = models.sorted(by: { $0.lastOpenTime ?? .distantPast > $1.lastOpenTime ?? .distantPast })
                 self?.applySelection()
+                self?.isLoaded = true
             }, receiveCompletion: { [weak self] completion in
                 self?.isLoading = false
                 if case let .failure(error) = completion {
@@ -152,7 +168,7 @@ final class PDFListViewModel: ObservableObject {
             .eraseToAnyPublisher()
     }
 
-    func loadPDFsAndForget() {
+    func loadPDFsAndMarkLoaded() {
         loadPDFs()
             .sink(receiveCompletion: { _ in }, receiveValue: { _ in })
             .store(in: &cancellables)
@@ -171,6 +187,7 @@ final class PDFListViewModel: ObservableObject {
     private func UpdatePdfList(updatedModel: PDFModelData) {
         if let index = allPdfModels.firstIndex(where: { $0.key == updatedModel.key }) {
             allPdfModels[index] = updatedModel
+            applySelection()
         }
     }
     
@@ -181,11 +198,13 @@ final class PDFListViewModel: ObservableObject {
 
         return repository.insert(pdfDatas: pdfCoreDataList)
             .receive(on: DispatchQueue.main)
-            .flatMap { [weak self] _ -> AnyPublisher<[PDFModelData], Error> in
-                guard let self = self else {
-                    return Fail(error: URLError(.badServerResponse)).eraseToAnyPublisher()
-                }
+            .map { [weak self] _ in
+                guard let self = self else { return }
                 
+                // Locally update the list
+                self.allPdfModels.append(contentsOf: pdfCoreDataList)
+                
+                // Update folder if needed
                 if case .folder(let currentFolder) = self.currentSelection {
                     let newKeys = pdfCoreDataList.map { $0.key }
                     var updatedPdfIds = currentFolder.pdfIds
@@ -198,47 +217,11 @@ final class PDFListViewModel: ObservableObject {
                     self.updateFolder(currentFolder)
                 }
                 
-                return self.loadPDFs()
+                self.applySelection()
             }
-            .map { _ in () } // return Void instead of model list
             .eraseToAnyPublisher()
     }
 
-//    func importPDFs(urls: [URL]) -> AnyPublisher<Void, Error> {
-//        let pdfCoreDataList = urls.compactMap { url -> PDFModelData? in
-//            do {
-//               // let bookmark = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
-//                let bookmark = try url.bookmarkData(
-//                    options: .withSecurityScope,
-//                    includingResourceValuesForKeys: nil,
-//                    relativeTo: nil
-//                )
-//                let key = Self.generatePDFKey(for: url)
-//
-//                return PDFModelData(key: key, bookmarkData: bookmark, isFavorite: false, lastOpenedPage: 0, lastOpenTime: nil)
-//            } catch {
-//                return nil
-//            }
-//        }
-//
-//        return repository.insert(pdfDatas: pdfCoreDataList)
-//            .receive(on: DispatchQueue.main)
-//            .flatMap { [weak self] _ -> AnyPublisher<[PDFModelData], Error> in
-//                guard let self = self else {
-//                    return Fail(error: URLError(.badServerResponse)).eraseToAnyPublisher()
-//                }
-//                return self.loadPDFs()
-//            }
-//            .map { _ in () } // return Void instead of model list
-//            .eraseToAnyPublisher()
-//    }
-
-//    func importPDFsAndForget(urls: [URL]) {
-//        importPDFs(urls: urls)
-//            .sink(receiveCompletion: { _ in }, receiveValue: { _ in })
-//            .store(in: &cancellables)
-//    }
-    
     func importPDFsAndForget(urls: [BookmarkDataClass]) {
         importPDFs(bookmarkDatas: urls)
             .sink(receiveCompletion: { _ in }, receiveValue: { _ in })
