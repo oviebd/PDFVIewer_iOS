@@ -48,6 +48,9 @@ struct PDFListView: View {
                             onCreateFolder: {
                                 newFolderName = ""
                                 showCreateFolderAlert = true
+                            },
+                            onImport: {
+                                showFilePicker = true
                             }
                         )
                     }
@@ -101,7 +104,7 @@ struct PDFListView: View {
                 }
             }
             .navigationTitle("Library")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $viewModel.searchText, prompt: "Search by title or author")
             .background(Color.white.ignoresSafeArea())
             .navigationDestination(for: PDFNavigationRoute.self) { route in
@@ -238,16 +241,18 @@ struct PDFListContentView: View {
     var onSelect: (PDFModelData) -> Void
     var onMove: (PDFModelData) -> Void
     var onCreateFolder: () -> Void
+    var onImport: () -> Void
     
     @State private var pdfToDelete: PDFModelData?
     @State private var showDeleteConfirmation = false
 
     var body: some View {
         Group {
-            if viewModel.allPdfModels.isEmpty {
+            if viewModel.visiblePdfModels.isEmpty {
                 PDFListEmptyView(
                     viewModel: viewModel,
-                    onCreateFolder: onCreateFolder
+                    onCreateFolder: onCreateFolder,
+                    onImport: onImport
                 )
             } else {
                 List {

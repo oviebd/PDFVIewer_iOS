@@ -10,6 +10,7 @@ import SwiftUI
 struct PDFListEmptyView: View {
     @ObservedObject var viewModel: PDFListViewModel
     var onCreateFolder: () -> Void
+    var onImport: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -18,7 +19,9 @@ struct PDFListEmptyView: View {
                 onCreateFolder: onCreateFolder
             )
             Divider()
-            EmptyStateView(onImport: {})
+            EmptyStateView(onImport: {
+                onImport()
+            })
             Spacer()
         }
         .background(Color.white)
