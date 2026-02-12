@@ -25,6 +25,13 @@ class PDFViewerViewModel: ObservableObject {
     @Published var pageProgressText: String = ""
     @Published var canUndo: Bool = false
     @Published var canRedo: Bool = false
+    
+    @Published var showSaveSuccess: Bool = false
+    @Published var shareURL: URL? = nil
+    @Published var successFileName: String = ""
+    @Published var successFileLocation: String = ""
+    @Published var isSavingPDF: Bool = false
+    @Published var showShareSheet: Bool = false
 
     private var repository: PDFRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
@@ -140,13 +147,74 @@ class PDFViewerViewModel: ObservableObject {
         actions.redo()
     }
 
-    func savePDFWithAnnotation() {
+    func autoSaveAnnotations() {
         guard let url = currentPDF else { return }
         let manager = PDFAnnotationManager()
         if let data = manager.getSerializedAnnotations(for: url) {
             pdfData.annotationdata = data
             saveToDB()
+            print("✅ Annotations auto-saved to DB")
+        }
+    }
+
+    func savePDFWithAnnotation() {
+        guard let url = currentPDF else { return }
+        let manager = PDFAnnotationManager()
+        isSavingPDF = true
+        
+        // 1. Save to DB first
+        if let data = manager.getSerializedAnnotations(for: url) {
+            pdfData.annotationdata = data
+            saveToDB()
             print("✅ Annotations saved to DB")
+        }
+        
+        // 2. Save annotated file copy
+        actions.saveAnnotatedCopy { [weak self] savedURL in
+            DispatchQueue.main.async {
+                self?.isSavingPDF = false
+                if let savedURL = savedURL {
+                    print("✅ PDF with annotations saved to: \(savedURL.path)")
+                    self?.shareURL = savedURL
+                    self?.successFileName = savedURL.lastPathComponent
+                    self?.successFileLocation = savedURL.deletingLastPathComponent().path
+                    self?.showSaveSuccess = true
+                    // Note: showShareSheet is NOT set here, as per user request
+                } else {
+                    print("❌ Failed to save annotated PDF")
+                }
+            }
+        }
+    }
+
+    func openSavedLocation() {
+        guard let url = shareURL else { return }
+        let folderURL = url.deletingLastPathComponent()
+        
+        print("📂 Attempting to open folder: \(folderURL.path)")
+        
+        // Start accessing security scope if it's a security-scoped URL
+        let isScoped = folderURL.startAccessingSecurityScopedResource()
+        
+        UIApplication.shared.open(folderURL, options: [:]) { [weak self] success in
+            if isScoped {
+                folderURL.stopAccessingSecurityScopedResource()
+            }
+            
+            if !success {
+                print("⚠️ Direct folder open failed, trying Files app fallback.")
+                self?.openFilesAppFallback()
+            } else {
+                print("✅ Successfully opened folder location.")
+            }
+        }
+    }
+
+    private func openFilesAppFallback() {
+        // "shareddocuments://" opens the Files app. 
+        // Note: Specific path deep-linking is limited in iOS.
+        if let filesAppURL = URL(string: "shareddocuments://") {
+            UIApplication.shared.open(filesAppURL, options: [:], completionHandler: nil)
         }
     }
 
@@ -205,7 +273,7 @@ extension PDFViewerViewModel {
         }
         
         actions.onAnnotationEditFinished = { [weak self] in
-             self?.savePDFWithAnnotation()
+             self?.autoSaveAnnotations()
         }
 
         actions.$canUndo

@@ -151,15 +151,17 @@ class PDFAnnotationManager {
     func exportFlattenedPDF(
         pdfDocument: PDFDocument,
         canvasViews: [Int: PKCanvasView],
-        pdfView: PDFView,
         originalURL: URL
     ) -> URL? {
-        let format = UIGraphicsPDFRendererFormat()
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let pdfName = originalURL.deletingPathExtension().lastPathComponent
-        let outputURL = documentsPath.appendingPathComponent("\(pdfName)_flattened.pdf")
+        let pdfName = originalURL.lastPathComponent
+        let outputURL = originalURL.deletingLastPathComponent().appendingPathComponent("copy_with_annotation_\(pdfName)")
         
-        let renderer = UIGraphicsPDFRenderer(bounds: pdfView.bounds, format: format)
+        let format = UIGraphicsPDFRendererFormat()
+        // We'll use the first page bounds as a base, but each page will have its own bounds
+        guard let firstPage = pdfDocument.page(at: 0) else { return nil }
+        let firstPageBounds = firstPage.bounds(for: .mediaBox)
+        
+        let renderer = UIGraphicsPDFRenderer(bounds: firstPageBounds, format: format)
         
         do {
             try renderer.writePDF(to: outputURL) { context in
@@ -169,24 +171,35 @@ class PDFAnnotationManager {
                     let pageBounds = page.bounds(for: .mediaBox)
                     context.beginPage(withBounds: pageBounds, pageInfo: [:])
                     
+                    guard let ctx = UIGraphicsGetCurrentContext() else { continue }
+                    
                     // Draw PDF page
-                    if let ctx = UIGraphicsGetCurrentContext() {
-                        ctx.saveGState()
-                        ctx.translateBy(x: 0, y: pageBounds.height)
-                        ctx.scaleBy(x: 1.0, y: -1.0)
-                        page.draw(with: .mediaBox, to: ctx)
-                        ctx.restoreGState()
-                        
-                        // Draw PencilKit annotations on top
-                        if let canvasView = canvasViews[pageIndex] {
-                            let drawing = canvasView.drawing
-                            let image = drawing.image(from: pageBounds, scale: UIScreen.main.scale)
+                    ctx.saveGState()
+                    // PDF coordinates have origin at bottom-left, UIKit at top-left
+                    ctx.translateBy(x: 0, y: pageBounds.height)
+                    ctx.scaleBy(x: 1.0, y: -1.0)
+                    page.draw(with: .mediaBox, to: ctx)
+                    ctx.restoreGState()
+                    
+                    // Draw PencilKit annotations on top
+                    if let canvasView = canvasViews[pageIndex] {
+                        let drawing = canvasView.drawing
+                        if !drawing.bounds.isEmpty {
+                            // Render drawing directly into the context
+                            // We need to ensure the drawing is rendered with the same bounds as the PDF page
+                            let image = drawing.image(from: pageBounds, scale: 1.0)
+                            image.draw(in: pageBounds)
+                        }
+                    } else if let cachedDrawing = getDrawing(for: pageIndex, pdfURL: originalURL) {
+                        // Also check cache for non-visible pages
+                        if !cachedDrawing.bounds.isEmpty {
+                            let image = cachedDrawing.image(from: pageBounds, scale: 1.0)
                             image.draw(in: pageBounds)
                         }
                     }
                 }
             }
-            print("✅ Flattened PDF saved to: \(outputURL)")
+            print("✅ Flattened PDF saved to: \(outputURL.path)")
             return outputURL
         } catch {
             print("❌ Error creating flattened PDF: \(error)")

@@ -70,6 +70,10 @@ class PDFKitViewActions: ObservableObject {
         annotationEditFinishedPublisher.send()
     }
     
+    func saveAnnotatedCopy(completion: @escaping (URL?) -> Void) {
+        coordinator?.saveAnnotatedCopy(completion: completion)
+    }
+    
     deinit{
         cancellables.removeAll()
     }
@@ -415,6 +419,25 @@ struct PDFKitView: UIViewRepresentable {
             // We can do this via the actions publisher or a callback
             actions?.onAnnotationEditFinished?()
             completion?(true)
+        }
+
+        func saveAnnotatedCopy(completion: @escaping (URL?) -> Void) {
+            guard let pdfView = pdfView,
+                  let document = pdfView.document,
+                  let url = pdfURL else {
+                completion(nil)
+                return
+            }
+            
+            // Sync active views to cache first to ensure latest drawings are included
+            annotationManager.syncViewsToCache(canvasViews: canvasViews, pdfURL: url)
+            
+            let savedURL = annotationManager.exportFlattenedPDF(
+                pdfDocument: document,
+                canvasViews: canvasViews,
+                originalURL: url
+            )
+            completion(savedURL)
         }
 
         func setZoomSscale(scaleFactor: CGFloat) {

@@ -38,6 +38,27 @@ struct PDFViewerView: View {
                 .edgesIgnoringSafeArea(.all)
                 .allowsHitTesting(false)
 
+            if viewModel.isSavingPDF {
+                ZStack {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                    
+                    VStack(spacing: AppSpacing.md) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .tint(.white)
+                        
+                        Text("Saving PDF...")
+                            .font(AppFonts.headline)
+                            .foregroundColor(.white)
+                    }
+                    .padding(AppSpacing.xl)
+                    .background(Color(.systemGray6).opacity(0.8))
+                    .cornerRadius(AppSpacing.cornerRadiusLG)
+                }
+                .zIndex(300)
+            }
+
             //pageProgressText
         }
         .animation(.easeInOut(duration: 0.3), value: viewModel.showControls)
@@ -60,6 +81,45 @@ struct PDFViewerView: View {
 
         .sheet(isPresented: $viewModel.showBrightnessControls) {
             brightnessSettingsSheet
+        }
+        
+        .overlay {
+            if viewModel.showSaveSuccess {
+                ZStack {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            viewModel.showSaveSuccess = false
+                        }
+                    
+                    SaveSuccessModalView(
+                        fileName: viewModel.successFileName,
+                        fileLocation: viewModel.successFileLocation,
+                        onOpenLocation: {
+                            viewModel.openSavedLocation()
+                            viewModel.showSaveSuccess = false
+                        },
+                        onShare: {
+                            viewModel.showSaveSuccess = false
+                            viewModel.showShareSheet = true
+                        },
+                        onClose: {
+                            viewModel.showSaveSuccess = false
+                            viewModel.shareURL = nil
+                            viewModel.showShareSheet = false
+                        }
+                    )
+                    .transition(.scale.combined(with: .opacity))
+                }
+                .zIndex(200)
+            }
+        }
+        .animation(.spring(), value: viewModel.showSaveSuccess)
+        
+        .sheet(isPresented: $viewModel.showShareSheet) {
+            if let url = viewModel.shareURL {
+                ActivityView(activityItems: [url])
+            }
         }
     }
 
