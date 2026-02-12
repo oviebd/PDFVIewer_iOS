@@ -38,7 +38,7 @@ struct PDFImportView: View {
                     }
                     .padding(.vertical, 32)
                     .frame(maxWidth: .infinity)
-                    .background(Color(white: 0.98))
+                    .background(AppColors.surfaceLight)
                 } else if viewModel.isCompleted {
                     VStack(spacing: 12) {
                         Image(systemName: "checkmark.circle.fill")
@@ -57,7 +57,7 @@ struct PDFImportView: View {
                     }
                     .padding(.vertical, 32)
                     .frame(maxWidth: .infinity)
-                    .background(Color(white: 0.98))
+                    .background(AppColors.surfaceLight)
                 } else if viewModel.isCancelled {
                     VStack(spacing: 12) {
                         Image(systemName: "xmark.circle.fill")
@@ -76,7 +76,7 @@ struct PDFImportView: View {
                     }
                     .padding(.vertical, 32)
                     .frame(maxWidth: .infinity)
-                    .background(Color(white: 0.98))
+                    .background(AppColors.surfaceLight)
                 }
                 
                 Divider()
