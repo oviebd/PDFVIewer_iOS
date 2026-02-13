@@ -5,41 +5,41 @@
 //  Created by Habibur_Periscope on 3/2/26.
 //
 
-
-import SwiftUI
 import PDFKit
 import PencilKit
+import SwiftUI
 
 // MARK: - Annotation Manager
+
 class PDFAnnotationManager {
     static var annotationsCache: [String: [Int: Data]] = [:]
-    
+
     private func getCacheKey(for url: URL) -> String {
         return url.lastPathComponent
     }
-    
+
     // MARK: - Annotation Persistence (Core Data)
-    
+
     /// Serialize cached drawings into binary Data for DB storage
     func getSerializedAnnotations(for pdfURL: URL) -> Data? {
         let key = getCacheKey(for: pdfURL)
         guard let pageData = PDFAnnotationManager.annotationsCache[key], !pageData.isEmpty else {
             return nil
         }
-        
+
         var annotationsDict: [String: String] = [:]
         for (pageIndex, data) in pageData {
             annotationsDict["page_\(pageIndex)"] = data.base64EncodedString()
         }
-        
+
         do {
             return try JSONSerialization.data(withJSONObject: annotationsDict)
         } catch {
-            print("❌ Serialization error: \(error)")
+            debugPrint("❌ Serialization error: \(error)")
             return nil
         }
     }
-    
+
     /// Load annotations from binary Data into memory cache
     func loadAnnotations(from data: Data?, for pdfURL: URL) {
         // Hydrate or refresh cache from binary data
@@ -49,7 +49,7 @@ class PDFAnnotationManager {
             PDFAnnotationManager.annotationsCache[key] = [:]
             return
         }
-        
+
         var pageDataMap: [Int: Data] = [:]
         for (pageKey, base64String) in annotationsDict {
             if let pageIndexStr = pageKey.split(separator: "_").last,
@@ -60,7 +60,7 @@ class PDFAnnotationManager {
         }
         PDFAnnotationManager.annotationsCache[key] = pageDataMap
     }
-    
+
     /// Legacy support or helper to sync active views before DB save
     func syncViewsToCache(canvasViews: [Int: PKCanvasView], pdfURL: URL) {
         let key = getCacheKey(for: pdfURL)
@@ -73,16 +73,16 @@ class PDFAnnotationManager {
             }
         }
     }
-    
+
     /// Get drawing for a specific page from cache
     func getDrawing(for pageIndex: Int, pdfURL: URL) -> PKDrawing? {
         let key = getCacheKey(for: pdfURL)
-        guard let pageData = PDFAnnotationManager.annotationsCache[key]?[pageIndex] else { 
-            return nil 
+        guard let pageData = PDFAnnotationManager.annotationsCache[key]?[pageIndex] else {
+            return nil
         }
         return try? PKDrawing(data: pageData)
     }
-    
+
     /// Helper to update a single page in cache (used during live editing)
     func updateCache(for pageIndex: Int, canvasView: PKCanvasView, pdfURL: URL) {
         let key = getCacheKey(for: pdfURL)
@@ -93,105 +93,75 @@ class PDFAnnotationManager {
             PDFAnnotationManager.annotationsCache[key]?[pageIndex] = data
         }
     }
-    
-    // MARK: - Option 2: Save Full PDF with Embedded Annotations
-    
-    /// Export PDF with PencilKit drawings embedded as PDF annotations
-    //    func exportPDFWithAnnotations(
-    //        pdfDocument: PDFDocument,
-    //        canvasViews: [Int: PKCanvasView],
-    //        originalURL: URL
-    //    ) -> URL? {
-    //        // Create a copy of the PDF
-    //        guard let pdfCopy = PDFDocument(url: originalURL) else {
-    //            print("❌ Could not create PDF copy")
-    //            return nil
-    //        }
-    //
-    //        // Convert PencilKit drawings to images and add as PDF annotations
-    //        for (pageIndex, canvasView) in canvasViews {
-    //            guard let page = pdfCopy.page(at: pageIndex) else { continue }
-    //
-    //            let drawing = canvasView.drawing
-    //
-    //            // Skip empty drawings
-    //            if drawing.bounds.isEmpty { continue }
-    //
-    //            // Render drawing to image
-    //            let renderer = UIGraphicsImageRenderer(bounds: canvasView.bounds)
-    //            let image = renderer.image { context in
-    //                drawing.image(from: canvasView.bounds, scale: UIScreen.main.scale).draw(in: canvasView.bounds)
-    //            }
-    //
-    //            // Create image annotation
-    //            let pageBounds = page.bounds(for: .mediaBox)
-    //            if let imageAnnotation = PDFAnnotation(bounds: pageBounds, forType: .stamp, withProperties: nil) {
-    //                imageAnnotation.setImageAsStamp(image)
-    //                page.addAnnotation(imageAnnotation)
-    //            }
-    //        }
-    //
-    //        // Save to new file
-    //        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    //        let pdfName = originalURL.deletingPathExtension().lastPathComponent
-    //        let outputURL = documentsPath.appendingPathComponent("\(pdfName)_annotated.pdf")
-    //
-    //        if pdfCopy.write(to: outputURL) {
-    //            print("✅ Annotated PDF saved to: \(outputURL)")
-    //            return outputURL
-    //        } else {
-    //            print("❌ Failed to save PDF")
-    //            return nil
-    //        }
-    //    }
-    
-    // MARK: - Option 3: Hybrid - Export Flattened PDF (Best for Sharing)
-    
-    /// Creates a new PDF with drawings permanently merged (flattened)
+
     func exportFlattenedPDF(
         pdfDocument: PDFDocument,
         canvasViews: [Int: PKCanvasView],
         originalURL: URL
     ) -> URL? {
-        let pdfName = originalURL.lastPathComponent
-        let outputURL = originalURL.deletingLastPathComponent().appendingPathComponent("copy_with_annotation_\(pdfName)")
-        
+        // Get Documents directory
+        guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            debugPrint("❌ Could not access documents directory")
+            return nil
+        }
+
+        // Create "AnnotatedPDFs" subdirectory
+        let annotatedDirectory = documentsDirectory.appendingPathComponent("AnnotatedPDFs", isDirectory: true)
+
+        // Create directory if it doesn't exist
+        if !FileManager.default.fileExists(atPath: annotatedDirectory.path) {
+            do {
+                try FileManager.default.createDirectory(at: annotatedDirectory, withIntermediateDirectories: true, attributes: nil)
+            } catch {
+                debugPrint("❌ Failed to create directory: \(error)")
+                return nil
+            }
+        }
+
+        // Generate unique filename with timestamp
+        let pdfName = originalURL.deletingPathExtension().lastPathComponent
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+        let timestamp = dateFormatter.string(from: Date())
+        let fileName = "\(pdfName)_annotated_\(timestamp).pdf"
+        let outputURL = annotatedDirectory.appendingPathComponent(fileName)
+
+        // Remove file if it already exists
+        if FileManager.default.fileExists(atPath: outputURL.path) {
+            try? FileManager.default.removeItem(at: outputURL)
+        }
+
         let format = UIGraphicsPDFRendererFormat()
-        // We'll use the first page bounds as a base, but each page will have its own bounds
         guard let firstPage = pdfDocument.page(at: 0) else { return nil }
         let firstPageBounds = firstPage.bounds(for: .mediaBox)
-        
+
         let renderer = UIGraphicsPDFRenderer(bounds: firstPageBounds, format: format)
-        
+
         do {
             try renderer.writePDF(to: outputURL) { context in
-                for pageIndex in 0..<pdfDocument.pageCount {
+                for pageIndex in 0 ..< pdfDocument.pageCount {
                     guard let page = pdfDocument.page(at: pageIndex) else { continue }
-                    
+
                     let pageBounds = page.bounds(for: .mediaBox)
                     context.beginPage(withBounds: pageBounds, pageInfo: [:])
-                    
+
                     guard let ctx = UIGraphicsGetCurrentContext() else { continue }
-                    
+
                     // Draw PDF page
                     ctx.saveGState()
-                    // PDF coordinates have origin at bottom-left, UIKit at top-left
                     ctx.translateBy(x: 0, y: pageBounds.height)
                     ctx.scaleBy(x: 1.0, y: -1.0)
                     page.draw(with: .mediaBox, to: ctx)
                     ctx.restoreGState()
-                    
+
                     // Draw PencilKit annotations on top
                     if let canvasView = canvasViews[pageIndex] {
                         let drawing = canvasView.drawing
                         if !drawing.bounds.isEmpty {
-                            // Render drawing directly into the context
-                            // We need to ensure the drawing is rendered with the same bounds as the PDF page
                             let image = drawing.image(from: pageBounds, scale: 1.0)
                             image.draw(in: pageBounds)
                         }
                     } else if let cachedDrawing = getDrawing(for: pageIndex, pdfURL: originalURL) {
-                        // Also check cache for non-visible pages
                         if !cachedDrawing.bounds.isEmpty {
                             let image = cachedDrawing.image(from: pageBounds, scale: 1.0)
                             image.draw(in: pageBounds)
@@ -199,23 +169,23 @@ class PDFAnnotationManager {
                     }
                 }
             }
-            print("✅ Flattened PDF saved to: \(outputURL.path)")
+            debugPrint("✅ Flattened PDF saved to: \(outputURL.path)")
             return outputURL
         } catch {
-            print("❌ Error creating flattened PDF: \(error)")
+            debugPrint("❌ Error creating flattened PDF: \(error)")
             return nil
         }
     }
 }
 
-
 // MARK: - Extension to PDFAnnotation for Image Stamp
+
 extension PDFAnnotation {
     func setImageAsStamp(_ image: UIImage) {
         if let imageData = image.pngData() {
             // This is a workaround - PDF annotations don't directly support images
             // We'll use appearance stream
-            self.setValue(imageData, forAnnotationKey: .appearanceDictionary)
+            setValue(imageData, forAnnotationKey: .appearanceDictionary)
         }
     }
 }

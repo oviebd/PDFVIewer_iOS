@@ -70,7 +70,7 @@ class PDFKitViewActions: ObservableObject {
         annotationEditFinishedPublisher.send()
     }
     
-    func saveAnnotatedCopy(completion: @escaping (URL?) -> Void) {
+    func exportAnnotatedPdf(completion: @escaping (URL?) -> Void) {
         coordinator?.saveAnnotatedCopy(completion: completion)
     }
     

@@ -38,26 +38,8 @@ struct PDFViewerView: View {
                 .edgesIgnoringSafeArea(.all)
                 .allowsHitTesting(false)
 
-            if viewModel.isSavingPDF {
-                ZStack {
-                    Color.black.opacity(0.3)
-                        .ignoresSafeArea()
-                    
-                    VStack(spacing: AppSpacing.md) {
-                        ProgressView()
-                            .scaleEffect(1.5)
-                            .tint(.white)
-                        
-                        Text("Saving PDF...")
-                            .font(AppFonts.headline)
-                            .foregroundColor(.white)
-                    }
-                    .padding(AppSpacing.xl)
-                    .background(Color(.systemGray6).opacity(0.8))
-                    .cornerRadius(AppSpacing.cornerRadiusLG)
-                }
-                .zIndex(300)
-            }
+            PDFAnnotationView(viewModel: viewModel.annotationViewModel, showControls: viewModel.showControls)
+                .zIndex(200)
 
             //pageProgressText
         }
@@ -75,52 +57,12 @@ struct PDFViewerView: View {
 
         .navigationBarHidden(true)
 
-        .sheet(isPresented: $viewModel.showPalette) {
-            annotationSettingsSheet
-        }
 
         .sheet(isPresented: $viewModel.showBrightnessControls) {
             brightnessSettingsSheet
         }
         
-        .overlay {
-            if viewModel.showSaveSuccess {
-                ZStack {
-                    Color.black.opacity(0.4)
-                        .ignoresSafeArea()
-                        .onTapGesture {
-                            viewModel.showSaveSuccess = false
-                        }
-                    
-                    SaveSuccessModalView(
-                        fileName: viewModel.successFileName,
-                        fileLocation: viewModel.successFileLocation,
-                        onOpenLocation: {
-                            viewModel.openSavedLocation()
-                            viewModel.showSaveSuccess = false
-                        },
-                        onShare: {
-                            viewModel.showSaveSuccess = false
-                            viewModel.showShareSheet = true
-                        },
-                        onClose: {
-                            viewModel.showSaveSuccess = false
-                            viewModel.shareURL = nil
-                            viewModel.showShareSheet = false
-                        }
-                    )
-                    .transition(.scale.combined(with: .opacity))
-                }
-                .zIndex(200)
-            }
-        }
-        .animation(.spring(), value: viewModel.showSaveSuccess)
         
-        .sheet(isPresented: $viewModel.showShareSheet) {
-            if let url = viewModel.shareURL {
-                ActivityView(activityItems: [url])
-            }
-        }
     }
 
    
@@ -140,12 +82,12 @@ extension PDFViewerView {
                 PDFKitView(
                     pdfURL: currentPDFURL,
                     settings: viewModel.settings,
-                    mode: $viewModel.annotationSettingData,
+                    mode: $viewModel.annotationViewModel.annotationSettingData,
                     actions: viewModel.actions
                 )
                 .ignoresSafeArea()
                 .onTapGesture {
-                    if viewModel.annotationSettingData.annotationTool == .none {
+                    if viewModel.annotationViewModel.annotationSettingData.annotationTool == .none {
                         withAnimation {
                             viewModel.showControls.toggle()
                         }
@@ -176,97 +118,22 @@ extension PDFViewerView {
             
             floatingButtons
             
-            if viewModel.showControls {
-                bottomAnnotationBar
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
         }
     }
 }
 
+
 extension PDFViewerView {
-    var bottomAnnotationBar: some View {
-        HStack(spacing: AppSpacing.xs) {
-            // Undo/Redo Group
-            HStack(spacing: AppSpacing.lg) {
-                Button(action: viewModel.undo) {
-                    Image(systemName: AppImages.undo)
-                        .font(AppFonts.undoRedo)
-                        .foregroundColor(viewModel.canUndo ? AppColors.primary : AppColors.disabledToolColor)
-                }
-                .disabled(!viewModel.canUndo)
-
-                Button(action: viewModel.redo) {
-                    Image(systemName: AppImages.redo)
-                        .font(AppFonts.undoRedo)
-                        .foregroundColor(viewModel.canRedo ? AppColors.primary : AppColors.disabledToolColor)
-                }
-                .disabled(!viewModel.canRedo)
-            }
-            .padding(.horizontal, AppSpacing.xl)
-            .frame(height: AppSpacing.toolbarHeight)
-            .background(AppColors.surfaceLight)
-            .cornerRadius(AppSpacing.cornerRadiusLG)
-
-            HStack(spacing: 0) {
-                AnnotationListControllerView(
-                    annotationSettingItems: drawingToolManager.pdfSettings,
-                    onDrawingToolSelected: {
-                        viewModel.selectTool($0, manager: drawingToolManager)
-                    },
-                    onPalettePressed: { _ in }
-                )
-            }
-            .padding(.horizontal, AppSpacing.sm)
-            .frame(height: AppSpacing.toolbarHeight)
-            .background(AppColors.surfaceLight)
-            .cornerRadius(AppSpacing.cornerRadiusLG)
-
-            HStack {
-                Button(action: {
-                    if viewModel.annotationSettingData.annotationTool != .none && viewModel.annotationSettingData.annotationTool != .eraser {
-                        viewModel.showPalette = true
-                    }
-                }) {
-                    ZStack {
-                        let isInactive = viewModel.annotationSettingData.annotationTool == .none || viewModel.annotationSettingData.annotationTool == .eraser
-                        Circle()
-                            .fill(isInactive ? Color(viewModel.lastDrawingColor) : Color(viewModel.annotationSettingData.color))
-                            .frame(width: AppSpacing.colorIndicatorMedium, height: AppSpacing.colorIndicatorMedium)
-                            .overlay(
-                                Circle()
-                                    .stroke(AppColors.onPrimary.opacity(0.8), lineWidth: AppSpacing.circleStroke)
-                            )
-                            .shadow(color: AppColors.shadowLight.opacity(isInactive ? 0 : 1), radius: AppSpacing.shadowRadiusLight, x: 0, y: 2)
-                    }
-                    .frame(width: AppSpacing.colorIndicatorContainer, height: AppSpacing.colorIndicatorContainer)
-                    .background(AppColors.surfaceLight.opacity((viewModel.annotationSettingData.annotationTool == .none || viewModel.annotationSettingData.annotationTool == .eraser) ? 0.5 : 1.0))
-                    .cornerRadius(AppSpacing.cornerRadiusLG)
-                    .opacity((viewModel.annotationSettingData.annotationTool == .none || viewModel.annotationSettingData.annotationTool == .eraser) ? 0.6 : 1.0)
-                }
-                .disabled(viewModel.annotationSettingData.annotationTool == .none || viewModel.annotationSettingData.annotationTool == .eraser)
-            }
-        }
-        .padding(.horizontal, AppSpacing.sm)
-        .padding(.vertical, AppSpacing.xs)
-        .background(
-            Capsule()
-                .fill(AppColors.overlayBackground)
-                .shadow(color: AppColors.shadowLight, radius: AppSpacing.shadowRadiusHeavy, x: 0, y: 10)
-        )
-        .padding(.horizontal, AppSpacing.md)
-        .padding(.bottom, AppSpacing.lg)
-    }
-
     var floatingButtons: some View {
         HStack {
             Spacer()
             VStack(spacing: AppSpacing.md) {
                 ControlButton(systemName: AppImages.zoomOut, action: viewModel.zoomOut)
                 ControlButton(systemName: AppImages.zoomIn, action: viewModel.zoomIn)
-                ControlButton(systemName: AppImages.download, color: AppColors.success, foreground: AppColors.onPrimary, action: viewModel.savePDFWithAnnotation)
+                ControlButton(systemName: AppImages.download, color: AppColors.success, foreground: AppColors.onPrimary, action: viewModel.annotationViewModel.exportPdf)
             }
             .padding()
+            .padding(.bottom,100)
         }
     }
 
@@ -300,8 +167,8 @@ extension PDFViewerView {
                         viewModel.showBrightnessControls = true
                     } label: {
                         Image(systemName: AppImages.brightness)
-                            .font(AppFonts.iconMedium)
-                            .foregroundColor(AppColors.textPrimary)
+                        .font(AppFonts.iconMedium)
+                        .foregroundColor(AppColors.textPrimary)
                     }
 
                     Menu {
@@ -350,17 +217,6 @@ extension PDFViewerView {
 }
 
 extension PDFViewerView {
-    var annotationSettingsSheet: some View {
-        AnnotationSettingsView(
-            showPalette: $viewModel.showPalette,
-            annotationSetting: $viewModel.annotationSettingData,
-            onDataChanged: {
-                viewModel.updateAnnotationData(viewModel.annotationSettingData, manager: drawingToolManager)
-            }
-        )
-        .presentationDetents([.height(250)])
-        .presentationDragIndicator(.visible)
-    }
 
     var brightnessSettingsSheet: some View {
         BrightnessSettingPopupView(showPalette: $viewModel.showBrightnessControls,
