@@ -41,6 +41,17 @@ struct PDFViewerView: View {
             PDFAnnotationView(viewModel: viewModel.annotationViewModel, showControls: viewModel.showControls)
                 .zIndex(200)
 
+            if viewModel.showGoToPageDialog {
+                GoToPageDialog(
+                    isPresented: $viewModel.showGoToPageDialog,
+                    totalPages: viewModel.getTotalPages(),
+                    onGo: { page in
+                        viewModel.jumpToPage(page)
+                    }
+                )
+                .zIndex(300)
+            }
+
             // pageProgressText
         }
         .animation(.easeInOut(duration: 0.3), value: viewModel.showControls)
@@ -146,9 +157,13 @@ extension PDFViewerView {
                         .foregroundColor(AppColors.textPrimary)
                         .lineLimit(1)
 
-                    Text(viewModel.pageProgressText)
-                        .font(AppFonts.caption)
-                        .foregroundColor(AppColors.textTertiary)
+                    Button {
+                        viewModel.showGoToPageDialog = true
+                    } label: {
+                        Text(viewModel.pageProgressText)
+                            .font(AppFonts.caption)
+                            .foregroundColor(AppColors.textTertiary)
+                    }
                 }
                 .padding(.horizontal, AppSpacing.xxxl)
 
@@ -200,14 +215,18 @@ extension PDFViewerView {
         VStack {
             Spacer()
             HStack {
-                Text(viewModel.pageProgressText)
-                    .font(AppFonts.pageProgress)
-                    .foregroundColor(AppColors.textPrimary)
-                    .padding(.horizontal, AppSpacing.xs)
-                    .padding(.vertical, AppSpacing.xxs)
-                    .background(AppColors.overlayBackground.opacity(0.9))
-                    .cornerRadius(AppSpacing.cornerRadiusSM)
-                    .shadow(radius: 3)
+                Button {
+                    viewModel.showGoToPageDialog = true
+                } label: {
+                    Text(viewModel.pageProgressText)
+                        .font(AppFonts.pageProgress)
+                        .foregroundColor(AppColors.textPrimary)
+                        .padding(.horizontal, AppSpacing.xs)
+                        .padding(.vertical, AppSpacing.xxs)
+                        .background(AppColors.overlayBackground.opacity(0.9))
+                        .cornerRadius(AppSpacing.cornerRadiusSM)
+                        .shadow(radius: 3)
+                }
 
                 Spacer()
             }

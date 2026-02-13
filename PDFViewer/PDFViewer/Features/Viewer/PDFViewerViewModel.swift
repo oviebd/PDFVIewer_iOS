@@ -21,6 +21,7 @@ class PDFViewerViewModel: ObservableObject {
     @Published var settings = PDFSettings()
     @Published var displayBrightness: CGFloat = 100
     @Published var pageProgressText: String = ""
+    @Published var showGoToPageDialog: Bool = false
 
     private var repository: PDFRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
@@ -154,5 +155,13 @@ extension PDFViewerViewModel {
 
     func goToPage() {
         actions.goPage(pageNumber: pdfData.lastOpenedPage)
+    }
+
+    func jumpToPage(_ page: Int) {
+        actions.goPage(pageNumber: page)
+    }
+
+    func getTotalPages() -> Int {
+        return actions.getTotalPageNumber() ?? 0
     }
 }
