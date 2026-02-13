@@ -13,6 +13,7 @@ enum PDFNavigationRoute: Hashable {
 
 struct PDFListView: View {
     @StateObject private var viewModel: PDFListViewModel
+    @StateObject private var subscriptionVM = SubscriptionPlanViewModel()
     @State private var showFilePicker = false
     @State private var navigationPath = NavigationPath()
 
@@ -46,11 +47,22 @@ struct PDFListView: View {
                                 showMoveToFolderSheet = true
                             },
                             onCreateFolder: {
-                                newFolderName = ""
-                                showCreateFolderAlert = true
+                                if subscriptionVM.canCreateMoreFolders(currentCount: viewModel.folders.count) {
+                                    newFolderName = ""
+                                    showCreateFolderAlert = true
+                                } else {
+                                    subscriptionVM.showPremiumAlert(message: subscriptionVM.folderLimitWarning(currentCount: viewModel.folders.count) ?? "")
+                                }
                             },
                             onImport: {
-                                showFilePicker = true
+                                if subscriptionVM.canImportMorePDFs(currentCount: viewModel.allPdfModels.count) {
+                                    showFilePicker = true
+                                } else {
+                                    subscriptionVM.showPremiumAlert(message: subscriptionVM.pdfImportLimitWarning(currentCount: viewModel.allPdfModels.count) ?? "")
+                                }
+                            },
+                            onFavoriteRestricted: {
+                                subscriptionVM.showPremiumAlert(message: subscriptionVM.favoriteRestrictedMessage)
                             }
                         )
                     }
@@ -131,7 +143,13 @@ struct PDFListView: View {
                     }
                 } else {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: { showFilePicker.toggle() }) {
+                        Button(action: { 
+                            if subscriptionVM.canImportMorePDFs(currentCount: viewModel.allPdfModels.count) {
+                                showFilePicker.toggle()
+                            } else {
+                                subscriptionVM.showPremiumAlert(message: subscriptionVM.pdfImportLimitWarning(currentCount: viewModel.allPdfModels.count) ?? "")
+                            }
+                        }) {
                             Image(systemName: AppImages.download)
                         }
                     }
@@ -226,6 +244,16 @@ struct PDFListView: View {
             } message: {
                 Text(AppStrings.Confirmation.deleteMultipleConfirmation(count: viewModel.selectedPDFKeys.count))
             }
+            .premiumFeatureAlert(
+                isPresented: $subscriptionVM.isShowingPremiumAlert,
+                title: subscriptionVM.premiumAlertTitle,
+                message: subscriptionVM.premiumAlertMessage
+            ) {
+                subscriptionVM.isShowingPaywall = true
+            }
+            .fullScreenCover(isPresented: $subscriptionVM.isShowingPaywall) {
+                PlanPage()
+            }
         }
     }
 }
@@ -242,6 +270,7 @@ struct PDFListContentView: View {
     var onMove: (PDFModelData) -> Void
     var onCreateFolder: () -> Void
     var onImport: () -> Void
+    var onFavoriteRestricted: () -> Void
     
     @State private var pdfToDelete: PDFModelData?
     @State private var showDeleteConfirmation = false
@@ -275,7 +304,15 @@ struct PDFListContentView: View {
                                     showDeleteConfirmation = true
                                 },
                                 onToggleFavorite: {
-                                    viewModel.toggleFavorite(for: pdf)
+                                    if SubscriptionManager.shared.isFavoriteAllowed {
+                                        viewModel.toggleFavorite(for: pdf)
+                                    } else {
+                                        // Since we can't easily access subscriptionVM here or pass it down,
+                                        // we can either add a closure to PDFListContentView or use the singleton
+                                        // But for the alert, it's better to bubble it up to PDFListView
+                                        // I'll add onFavoriteRestricted closure to PDFListContentView
+                                        onFavoriteRestricted()
+                                    }
                                 }
                             )
                     }

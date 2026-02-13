@@ -1,0 +1,99 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "ADF3133F",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6758733195",
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_developerTeamID" : "8LW87559X5",
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 792647104.36040401,
+    "_locale" : "en_US",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ],
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21930279",
+      "localizations" : [
+
+      ],
+      "name" : "PDFReader_Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "1.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6759079474",
+          "introductoryOffer" : null,
+          "localizations" : [
+
+          ],
+          "productID" : "com.habiburrahmanovie.PDFViewer_monthly_subscription",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "monthly_subscription",
+          "subscriptionGroupID" : "21930279",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "17.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "6759079502",
+          "introductoryOffer" : null,
+          "localizations" : [
+
+          ],
+          "productID" : "com.habiburrahmanovie.PDFViewer_yearly_subscription",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "yearly_subscription",
+          "subscriptionGroupID" : "21930279",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

@@ -94,14 +94,14 @@ struct PDFAnnotationView: View {
                         .font(AppFonts.undoRedo)
                         .foregroundColor(viewModel.canUndo ? AppColors.primary : AppColors.disabledToolColor)
                 }
-                .disabled(!viewModel.canUndo)
+                .disabled(!viewModel.canUndo && SubscriptionManager.shared.isAnnotationHistoryAllowed)
 
                 Button(action: viewModel.redo) {
                     Image(systemName: AppImages.redo)
                         .font(AppFonts.undoRedo)
                         .foregroundColor(viewModel.canRedo ? AppColors.primary : AppColors.disabledToolColor)
                 }
-                .disabled(!viewModel.canRedo)
+                .disabled(!viewModel.canRedo && SubscriptionManager.shared.isAnnotationHistoryAllowed)
             }
             .padding(.horizontal, AppSpacing.xl)
             .frame(height: AppSpacing.toolbarHeight)

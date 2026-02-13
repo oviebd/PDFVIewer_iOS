@@ -13,6 +13,7 @@ struct PDFViewerView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var drawingToolManager: DrawingToolManager
     @StateObject private var viewModel: PDFViewerViewModel
+    @StateObject private var subscriptionVM = SubscriptionPlanViewModel()
 
     init(pdfFile: PDFModelData) {
         let store = try? PDFLocalDataStore()
@@ -60,6 +61,10 @@ struct PDFViewerView: View {
             viewModel.updateLastOpenedtime()
             viewModel.startTrackingProgress()
             viewModel.goToPage()
+            
+            viewModel.annotationViewModel.onPremiumRestricted = { message in
+                subscriptionVM.showPremiumAlert(message: message)
+            }
         }
         .onDisappear {
             viewModel.unloadPdfData()
@@ -70,6 +75,16 @@ struct PDFViewerView: View {
 
         .sheet(isPresented: $viewModel.showBrightnessControls) {
             brightnessSettingsSheet
+        }
+        .premiumFeatureAlert(
+            isPresented: $subscriptionVM.isShowingPremiumAlert,
+            title: subscriptionVM.premiumAlertTitle,
+            message: subscriptionVM.premiumAlertMessage
+        ) {
+            subscriptionVM.isShowingPaywall = true
+        }
+        .fullScreenCover(isPresented: $subscriptionVM.isShowingPaywall) {
+            PlanPage()
         }
     }
 }
@@ -158,7 +173,11 @@ extension PDFViewerView {
                         .lineLimit(1)
 
                     Button {
-                        viewModel.showGoToPageDialog = true
+                        if SubscriptionManager.shared.isGoToPageAllowed {
+                            viewModel.showGoToPageDialog = true
+                        } else {
+                            subscriptionVM.showPremiumAlert(message: subscriptionVM.goToPageRestrictedMessage)
+                        }
                     } label: {
                         Text(viewModel.pageProgressText)
                             .font(AppFonts.caption)

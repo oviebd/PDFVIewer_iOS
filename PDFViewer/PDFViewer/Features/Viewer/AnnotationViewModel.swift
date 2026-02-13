@@ -23,6 +23,10 @@ class AnnotationViewModel: ObservableObject {
     @Published var successFileLocation: String = ""
     @Published var showShareSheet: Bool = false
     
+    // MARK: - Subscription Check
+    private let subscriptionManager = SubscriptionManager.shared
+    var onPremiumRestricted: ((String) -> Void)?
+    
     private let actions: PDFKitViewActions
     private let repository: PDFRepositoryProtocol
     private var pdfData: PDFModelData
@@ -86,11 +90,19 @@ class AnnotationViewModel: ObservableObject {
     }
 
     func undo() {
-        actions.undo()
+        if subscriptionManager.isAnnotationHistoryAllowed {
+            actions.undo()
+        } else {
+            onPremiumRestricted?("Undo/Redo for annotations is a Premium feature. Upgrade to enable it.")
+        }
     }
 
     func redo() {
-        actions.redo()
+        if subscriptionManager.isAnnotationHistoryAllowed {
+            actions.redo()
+        } else {
+            onPremiumRestricted?("Undo/Redo for annotations is a Premium feature. Upgrade to enable it.")
+        }
     }
 
     func autoSaveAnnotations() {
@@ -104,6 +116,11 @@ class AnnotationViewModel: ObservableObject {
     }
 
     func exportPdf() {
+        guard subscriptionManager.isExportAllowed else {
+            onPremiumRestricted?("Export is a Premium feature. Upgrade to enable PDF exporting.")
+            return
+        }
+        
         guard let url = currentPDF else { return }
         let manager = PDFAnnotationManager()
         isExportingPDF = true

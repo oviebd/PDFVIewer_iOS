@@ -6,12 +6,14 @@
 //
 
 import SwiftUI
+import RevenueCat
 
 
 @main
 struct PDFViewerApp: App {
     @StateObject private var drawingToolManager: DrawingToolManager
 
+  
     init() {
         let pdfSettings: [PDFAnnotationSetting] = [
             PDFAnnotationSetting(annotationTool: .none, lineWidth: 0.0, color: .clear, isExpandable: false),
@@ -22,6 +24,10 @@ struct PDFViewerApp: App {
 
         let selectePdfdSetting: PDFAnnotationSetting = PDFAnnotationSetting.noneData()
         _drawingToolManager = StateObject(wrappedValue: DrawingToolManager(pdfSettings: pdfSettings, selectePdfdSetting: selectePdfdSetting))
+        
+        // Configure RevenueCat with your API key
+        Purchases.logLevel = .debug
+        Purchases.configure(withAPIKey: RevenueCatConfig.apiKey)
     }
 
     var body: some Scene {
