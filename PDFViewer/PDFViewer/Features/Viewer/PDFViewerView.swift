@@ -41,7 +41,7 @@ struct PDFViewerView: View {
             PDFAnnotationView(viewModel: viewModel.annotationViewModel, showControls: viewModel.showControls)
                 .zIndex(200)
 
-            //pageProgressText
+            // pageProgressText
         }
         .animation(.easeInOut(duration: 0.3), value: viewModel.showControls)
 
@@ -57,15 +57,10 @@ struct PDFViewerView: View {
 
         .navigationBarHidden(true)
 
-
         .sheet(isPresented: $viewModel.showBrightnessControls) {
             brightnessSettingsSheet
         }
-        
-        
     }
-
-   
 }
 
 #Preview {
@@ -112,16 +107,14 @@ extension PDFViewerView {
             if viewModel.showControls {
                 topBarOverlay
                     .transition(.move(edge: .top).combined(with: .opacity))
+
+                Spacer()
+
+                floatingButtons
             }
-            
-            Spacer()
-            
-            floatingButtons
-            
         }
     }
 }
-
 
 extension PDFViewerView {
     var floatingButtons: some View {
@@ -130,11 +123,10 @@ extension PDFViewerView {
             VStack(spacing: AppSpacing.md) {
                 ControlButton(systemName: AppImages.zoomOut, action: viewModel.zoomOut)
                 ControlButton(systemName: AppImages.zoomIn, action: viewModel.zoomIn)
-                ControlButton(systemName: AppImages.download, color: AppColors.success, foreground: AppColors.onPrimary, action: viewModel.annotationViewModel.exportPdf)
             }
-            .padding()
-            .padding(.bottom,100)
         }
+        .padding()
+        .padding(.bottom, 100)
     }
 
     var topBarOverlay: some View {
@@ -145,30 +137,38 @@ extension PDFViewerView {
                         .font(AppFonts.iconMedium)
                         .foregroundColor(AppColors.primary)
                 }
-                
+
                 Spacer()
-                
+
                 VStack(spacing: AppSpacing.xxs) {
                     Text(viewModel.pdfData.title ?? AppStrings.PDFInfo.unknownFile)
                         .font(AppFonts.headline)
                         .foregroundColor(AppColors.textPrimary)
                         .lineLimit(1)
-                    
+
                     Text(viewModel.pageProgressText)
                         .font(AppFonts.caption)
                         .foregroundColor(AppColors.textTertiary)
                 }
                 .padding(.horizontal, AppSpacing.xxxl)
-                
+
                 Spacer()
-                
+
                 HStack(spacing: AppSpacing.md) {
+                    Button {
+                        viewModel.annotationViewModel.exportPdf()
+                    } label: {
+                        Image(systemName: AppImages.download)
+                            .font(AppFonts.iconMedium)
+                            .foregroundColor(AppColors.textPrimary)
+                    }
+
                     Button {
                         viewModel.showBrightnessControls = true
                     } label: {
                         Image(systemName: AppImages.brightness)
-                        .font(AppFonts.iconMedium)
-                        .foregroundColor(AppColors.textPrimary)
+                            .font(AppFonts.iconMedium)
+                            .foregroundColor(AppColors.textPrimary)
                     }
 
                     Menu {
@@ -217,7 +217,6 @@ extension PDFViewerView {
 }
 
 extension PDFViewerView {
-
     var brightnessSettingsSheet: some View {
         BrightnessSettingPopupView(showPalette: $viewModel.showBrightnessControls,
                                    value: viewModel.displayBrightness) {
