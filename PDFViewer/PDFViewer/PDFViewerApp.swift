@@ -27,7 +27,7 @@ struct PDFViewerApp: App {
         
         // Configure RevenueCat with your API key
         Purchases.logLevel = .debug
-        Purchases.configure(withAPIKey: RevenueCatConfig.apiKey)
+        Purchases.configure(withAPIKey: "appl_xdCLhyqVLsBapOIxktYmmkJnqOf")
     }
 
     var body: some Scene {
